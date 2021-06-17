@@ -15,9 +15,12 @@ subroutine out3f(maxmx,maxmy,maxmz,meqn,mbc,mx,my, mz,xlower,ylower,zlower,dx,dy
 ! Old indexing for output is preserved
 
 integer, intent(in) :: maxmx, maxmy, maxmz, meqn, mbc, mx, my, mz, iframe
-real(real64), intent(in) :: xlower, ylower, zlower, dx, dy, dz, q, t
+real(real64), intent(in) :: xlower, ylower, zlower, dx, dy, dz, t, &
+  q(meqn, 1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc, 1-mbc:maxmz+mbc)
 
-
+integer, parameter :: nDim = 3, drank = 4
+integer :: ierr
+integer :: mpi_comm_3d, lx, ly, lz, mstart, np, id
 
 !------------------ HDF variables ------------------!
 integer(hid_t) :: plist_id      ! property list identifier
@@ -25,9 +28,9 @@ integer(hid_t) :: dcpl          ! property list identifier
 integer(hid_t) :: file_id       ! file identifier
 integer(hid_t) :: dataset_id    ! dataset identifier
 integer(hid_t) :: dataspace_id  ! dataspace identifier
-double precision, dimension(25) :: attr_datacur
-INTEGER(HSIZE_T), DIMENSION(1) :: adims = (/25/) ! Attribute dimension
-INTEGER(HSIZE_T), DIMENSION(1) :: data_dims
+real(real64) :: attr_datacur(25)
+INTEGER(HSIZE_T) :: adims(1) = [25] ! Attribute dimension
+INTEGER(HSIZE_T) :: data_dims(1)
 INTEGER(HID_T) :: attr_id ! Attribute identifier
 INTEGER(HID_T) :: aspace_id ! Attribute dataspace identifier
 INTEGER(HID_T) :: atype_id ! Attribute dataspace identifier
@@ -35,34 +38,26 @@ INTEGER :: arank = 1 ! Attribute rank
 integer(hid_t) :: filespace, memspace, memd
 !---------------------------------------------------!
 
-parameter   (nDim = 3)
 
-!------------------ Filter variables ---------------!
-!double precision, allocatable :: data(:,:,:,:)           ! data
-!double precision, allocatable :: data(:,:,:,:)           ! data
-integer(hsize_t), dimension(4) :: cdims = (/1,1,1,1/) ! chunks data dimensions
-!INTEGER :: szip_options_mask
-!INTEGER :: szip_pixels_per_block
+
+integer(hsize_t) :: cdims(drank) = [1,1,1,1] ! chunks data dimensions
 !---------------------------------------------------!
 
 !------------------ miscellaneous ------------------!
 character(len=3) :: c                                     ! dataset name for specific rank
 character(len=10) :: dataset_name
-integer :: rank = 4                                       ! data rank. q is 4D
 character(mpi_max_processor_name) hostname
-dimension q(meqn, 1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc,&
-  &               1-mbc:maxmz+mbc), mtotal(nDim)
-integer(hsize_t), dimension(4) :: dimsf ! data dataset dimensions
+
+integer :: mtotal(nDim)
+integer(hsize_t) :: dimsf(drank) ! data dataset dimensions
 integer :: i,j,k,l,m,info,idd
   real*8 :: ngrids_out
 character*20 fname
-common /mpicomm/ mpi_comm_3d, lx, ly, lz, mtotal, mstart
-common /mpi_proc_info/ np, id
 !---------------------------------------------------!
 
 ! initialize HDF5 fortran interface
 call h5open_f(ierr)
-ngrids_out = 1.d0
+ngrids_out = 1
 
 ! define size of q for every core
 dimsf(1) = meqn
@@ -72,12 +67,12 @@ dimsf(4) = mz
 
 info = mpi_info_null
 
-fname = 'fort.q' &
-& // char(ichar('0') + mod(iframe/1000,10)) &
-& // char(ichar('0') + mod(iframe/100,10)) &
-& // char(ichar('0') + mod(iframe/10,10)) &
-& // char(ichar('0') + mod(iframe,10)) &
-& // '.h5'
+fname = 'fort.q' // &
+char(ichar('0') + mod(iframe/1000,10)) // &
+char(ichar('0') + mod(iframe/100,10)) // &
+char(ichar('0') + mod(iframe/10,10)) // &
+char(ichar('0') + mod(iframe,10)) // &
+'.h5'
 
 
 ! have id 0 creates hdf5 data layout and write all attributes
@@ -91,9 +86,7 @@ if (id == 0) then
 
   ! Current version sets chunks size as whole dataset of q
   cdims(1) = 1 !dimsf(1)
-  cdims(2) = dimsf(2)
-  cdims(3) = dimsf(3)
-  cdims(4) = dimsf(4)
+  cdims(2:4) = dimsf(2:4)
 
   ! create scalar dataspace for the attribute
   call h5screate_simple_f(arank,adims,aspace_id, ierr)
@@ -108,7 +101,7 @@ if (id == 0) then
   ! rank: rank of datasets
   ! dimsf: size of every dimension
   ! dataspace_id: identifier of dataspace
-  call h5screate_simple_f(rank, dimsf, dataspace_id, ierr)
+  call h5screate_simple_f(drank, dimsf, dataspace_id, ierr)
 
   ! create properties variable for the data
   ! h5p_dataset_create_f: property to create a data dataset
@@ -261,7 +254,7 @@ writer: do i=1,np
   ! data: data by itself
   ! dimsf: dimensions of data we want to write to file
   ! xfer_prp = plist_id: data transfer property variable
-  call h5dwrite_f(dataset_id, h5t_native_double,
+  call h5dwrite_f(dataset_id, h5t_native_double, &
   q(1:10, 1:maxmx, 1:maxmy, 1:maxmz), &
   dimsf, ierr, file_space_id = filespace, xfer_prp = plist_id)
 
