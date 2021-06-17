@@ -3,8 +3,9 @@ module original
 use, intrinsic :: iso_fortran_env, only : real64
 use mpi
 use hdf5
+use hdf5, only : h5pset_fapl_mpio_f, h5pset_dxpl_mpio_f !< parallel HDF5
 
-implicit none
+implicit none (type, external)
 
 contains
 
