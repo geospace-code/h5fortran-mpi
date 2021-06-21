@@ -8,7 +8,7 @@ FindHDF5
 
 by Michael Hirsch www.scivision.dev
 
-Finds HDF5 library for C, CXX, Fortran.
+Finds HDF5 library for C, CXX, Fortran. Serial or parallel HDF5.
 
 
 Result Variables
@@ -25,15 +25,19 @@ Components
 ==========
 
 ``C``
+  C is normally available for all HDF5 library installs
 
 ``CXX``
+  C++ is an optional feature that not all HDF5 library installs are built with
 
 ``Fortran``
+  Fortran is an optional feature that not all HDF5 library installs are built with
 
-``parallel`` checks that the MPI parallel HDF5 layer is enabled
+``parallel``
+  checks that the optional MPI parallel HDF5 layer is enabled
 
-The ``HL`` component is implied and silently accepted to keep
-compatibility with factory FindHDF5
+``HL``
+  always implied and silently accepted to keep compatibility with factory FindHDF5.cmake
 
 
 Targets
@@ -44,7 +48,8 @@ Targets
 #]=======================================================================]
 
 include(CheckSymbolExists)
-include(CheckSourceCompiles)
+include(CheckCSourceCompiles)
+include(CheckFortranSourceCompiles)
 
 function(detect_config)
 
@@ -107,28 +112,24 @@ if( "${_def}" MATCHES
   set(HDF5_VERSION ${HDF5_VERSION} PARENT_SCOPE)
 endif()
 
-# this helps avoid picking up miniconda zlib over the desired zlib
+# avoid picking up incompatible zlib over the desired zlib
 get_filename_component(_hint ${HDF5_C_LIBRARY} DIRECTORY)
 if(NOT ZLIB_ROOT)
-  set(ZLIB_ROOT "${_hint}/..;${_hint}/../..")
+  set(ZLIB_ROOT "${HDF5_ROOT};${_hint}/..;${_hint}/../..")
 endif()
 if(NOT SZIP_ROOT)
   set(SZIP_ROOT "${ZLIB_ROOT}")
 endif()
 
 if(_zlib)
-  find_package(ZLIB REQUIRED)
+  find_package(ZLIB)
 
   if(_szip)
-    # Szip even though not used by h5fortran.
-    # If system HDF5 dynamically links libhdf5 with szip,
-    # our builds will fail if we don't also link szip.
-    # however, we don't require SZIP for this case as other HDF5 libraries may statically
-    # link SZIP.
+    # Szip even though not used by default.
+    # If system HDF5 dynamically links libhdf5 with szip, our builds will fail if we don't also link szip.
+    # however, we don't require SZIP for this case as other HDF5 libraries may statically link SZIP.
     find_package(SZIP)
-    if(SZIP_FOUND)
-      list(APPEND CMAKE_REQUIRED_LIBRARIES SZIP::SZIP)
-    endif()
+    list(APPEND CMAKE_REQUIRED_LIBRARIES SZIP::SZIP)
   endif()
 
   list(APPEND CMAKE_REQUIRED_LIBRARIES ZLIB::ZLIB)
@@ -157,10 +158,10 @@ set(CMAKE_REQUIRED_LIBRARIES)
 set(_lsuf hdf5 hdf5/serial)
 set(_psuf static ${_lsuf})
 
-# we don't use pkg-config directly because some distros pkg-config for HDF5 is broken
+# we don't use pkg-config names because some distros pkg-config for HDF5 is broken
 # however at least the paths are often correct
 find_package(PkgConfig)
-if(PkgConfig_FOUND AND NOT HDF5_C_LIBRARY)
+if(NOT HDF5_C_LIBRARY)
   pkg_search_module(pc_hdf5 hdf5 hdf5-serial)
 endif()
 
@@ -273,7 +274,7 @@ if(HDF5_Fortran_FOUND)
 
 set(CMAKE_REQUIRED_INCLUDES ${HDF5_Fortran_INCLUDE_DIR} ${HDF5_INCLUDE_DIR})
 
-check_source_compiles(Fortran
+check_fortran_source_compiles(
 "program test_minimal
 use hdf5, only : h5open_f, h5close_f
 use h5lt, only : h5ltmake_dataset_f
@@ -282,7 +283,7 @@ integer :: i
 call h5open_f(i)
 call h5close_f(i)
 end program"
-HDF5_Fortran_links)
+HDF5_Fortran_links SRC_EXT f90)
 
 endif(HDF5_Fortran_FOUND)
 
@@ -291,7 +292,7 @@ if(HDF5_C_FOUND)
 
 set(CMAKE_REQUIRED_INCLUDES ${HDF5_INCLUDE_DIR})
 
-check_source_compiles(C
+check_c_source_compiles(
 "
 #include \"hdf5.h\"
 
