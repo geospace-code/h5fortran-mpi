@@ -7,84 +7,103 @@ use hdf5, only : h5pset_fapl_mpio_f, h5pset_dxpl_mpio_f !< parallel HDF5
 
 implicit none (type, external)
 
+type param
+
+integer :: maxmx, maxmy, maxmz, meqn, mbc, mx, my, mz, iframe
+real(real64) :: xlower, ylower, zlower, dx, dy, dz, t
+
+real(real64) :: ngrids_out
+
+integer :: ndim, drank
+
+INTEGER(HSIZE_T) :: adims(1) = [25] ! Attribute dimension
+INTEGER :: arank = 1 ! Attribute rank
+
+end type param
+
+
+integer :: mpi_comm_3d, id
+integer, parameter :: info = mpi_info_null
+
+
 contains
 
-subroutine out3f(maxmx,maxmy,maxmz,meqn,mbc,mx,my, mz,xlower,ylower,zlower,dx,dy,dz,q,t,iframe)
+
+subroutine out3f(P,q)
 
 ! Routine to save compressed chunked output
 ! Note current filter is based on GZIP compression
 ! Old indexing for output is preserved
 
-integer, intent(in) :: maxmx, maxmy, maxmz, meqn, mbc, mx, my, mz, iframe
-real(real64), intent(in) :: xlower, ylower, zlower, dx, dy, dz, t, &
-  q(meqn, 1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc, 1-mbc:maxmz+mbc)
+type(param), intent(in) :: P
+real(real64), intent(in) :: q(:,:,:,:)
 
-integer, parameter :: nDim = 3, drank = 4
 integer :: ierr
-integer :: mpi_comm_3d, lx, ly, lz, mstart, np, id
+integer ::  mstart
 
-!------------------ HDF variables ------------------!
-integer(hid_t) :: plist_id      ! property list identifier
-integer(hid_t) :: dcpl          ! property list identifier
-integer(hid_t) :: file_id       ! file identifier
-integer(hid_t) :: dataset_id    ! dataset identifier
-integer(hid_t) :: dataspace_id  ! dataspace identifier
-real(real64) :: attr_datacur(25)
-INTEGER(HSIZE_T) :: adims(1) = [25] ! Attribute dimension
-INTEGER(HSIZE_T) :: data_dims(1)
-INTEGER(HID_T) :: attr_id ! Attribute identifier
-INTEGER(HID_T) :: aspace_id ! Attribute dataspace identifier
-INTEGER(HID_T) :: atype_id ! Attribute dataspace identifier
-INTEGER :: arank = 1 ! Attribute rank
-integer(hid_t) :: filespace, memspace, memd
-!---------------------------------------------------!
+integer(hid_t) :: memspace, memd
 
-
-
-integer(hsize_t) :: cdims(drank) = [1,1,1,1] ! chunks data dimensions
-!---------------------------------------------------!
-
-!------------------ miscellaneous ------------------!
-character(len=3) :: c
 !! dataset name for specific rank
-character(len=10) :: dataset_name
 character(mpi_max_processor_name) hostname
 
-integer :: mtotal(nDim)
-integer(hsize_t) :: dimsf(drank)
 !! data dataset dimensions
-integer :: i,j,k,l,m,info,idd
-real(real64) :: ngrids_out
+integer :: i,j,k,l,m,idd
 character(:), allocatable :: fname
+
+
+integer(hsize_t) :: dimsf(P%drank)
+integer(hsize_t) :: cdims(P%drank) ! chunks data dimensions
+
+! define size of q for every core
+dimsf(1) = P%meqn
+dimsf(2) = P%mx
+dimsf(3) = P%my
+dimsf(4) = P%mz
+
+! Current version sets chunks size as whole dataset of q
+cdims(1) = 1 !dimsf(1)
+cdims(2:4) = dimsf(2:4)
 
 
 ! initialize HDF5 fortran interface
 call h5open_f(ierr)
-ngrids_out = 1
 
-! define size of q for every core
-dimsf(1) = meqn
-dimsf(2) = mx
-dimsf(3) = my
-dimsf(4) = mz
-
-info = mpi_info_null
-
-write(fname, "(A6,I4,A3)") 'fort.q', mod(iframe,10), '.h5'
+write(fname, "(A6,I4,A3)") 'fort.q', mod(P%iframe,10), '.h5'
 
 ! have id 0 creates hdf5 data layout and write all attributes
-if (id == 0) call creator()
+if (id == 0) call creator(P, fname, dimsf, cdims)
 
 ! mpi barrier to make sure everything is synched
 call mpi_barrier(mpi_comm_3d, ierr)
 
-call writer()
+call write_file(P,q, dimsf, fname)
 
 
-contains
+end subroutine out3f
 
 
-subroutine creator()
+subroutine creator(P, fname, dimsf, cdims)
+
+type(param), intent(in) :: P
+character(*), intent(in) :: fname
+integer(hsize_t), intent(in) :: dimsf(:), cdims(:)
+
+integer :: ierr, np, i
+
+INTEGER(HID_T) :: atype_id ! Attribute dataspace identifier
+integer(hid_t) :: file_id       ! file identifier
+integer(hid_t) :: dcpl          ! property list identifier
+integer(hid_t) :: dataset_id    ! dataset identifier
+integer(hid_t) :: dataspace_id  ! dataspace identifier
+INTEGER(HID_T) :: aspace_id ! Attribute dataspace identifier
+INTEGER(HID_T) :: attr_id ! Attribute identifier
+
+INTEGER(HSIZE_T) :: data_dims(1)
+real(real64) :: attr_datacur(25)
+integer :: mtotal(P%nDim), lx, ly, lz
+
+character(len=10) :: dataset_name
+character(len=3) :: c
 
 ! create datatype for the attribute
 ! Copy existing datatype
@@ -92,19 +111,15 @@ subroutine creator()
 ! atype_id - copy datatype to this variable
 call h5tcopy_f(h5t_native_double,atype_id,ierr)
 
-! Current version sets chunks size as whole dataset of q
-cdims(1) = 1 !dimsf(1)
-cdims(2:4) = dimsf(2:4)
-
 ! create scalar dataspace for the attribute
-call h5screate_simple_f(arank,adims,aspace_id, ierr)
+call h5screate_simple_f(P%arank, P%adims, aspace_id, ierr)
 
 ! create the hdf5 file
 call h5fcreate_f(fname, h5f_acc_trunc_f, file_id, ierr)
 
 ! create the dataspace for the dataset
 ! dimsf: size of every dimension
-call h5screate_simple_f(drank, dimsf, dataspace_id, ierr)
+call h5screate_simple_f(P%drank, dimsf, dataspace_id, ierr)
 
 ! create properties variable for the data
 call h5pcreate_f(h5p_dataset_create_f, dcpl, ierr)
@@ -147,32 +162,32 @@ create: do i=1,np
   if (i == 1) then
     ! Attributes list is created only for MASTER
 
-    attr_datacur(1) = ngrids_out
-    attr_datacur(2) = nDim
-    attr_datacur(3) = t
-    attr_datacur(4) = meqn
+    attr_datacur(1) = P%ngrids_out
+    attr_datacur(2) = P%nDim
+    attr_datacur(3) = P%t
+    attr_datacur(4) = P%meqn
     attr_datacur(5) = 1.
     attr_datacur(6) = mtotal(1) ! Full mx (all processors)
     attr_datacur(7) = mtotal(2) ! Full my
     attr_datacur(8) = mtotal(3) ! Full mz
     attr_datacur(9) = 0.
-    attr_datacur(10) = xlower ! lower boundary x
-    attr_datacur(11) = ylower ! lower boundary y
-    attr_datacur(12) = zlower ! lower boundary z
+    attr_datacur(10) = P%xlower ! lower boundary x
+    attr_datacur(11) = P%ylower ! lower boundary y
+    attr_datacur(12) = P%zlower ! lower boundary z
     attr_datacur(13) = 0
-    attr_datacur(14) = xlower+mtotal(1)*dx ! upper boundary x
-    attr_datacur(15) = ylower+mtotal(2)*dy ! upper boundary y
-    attr_datacur(16) = zlower+mtotal(3)*dz ! upper boundary z
+    attr_datacur(14) = P%xlower+mtotal(1)*P%dx ! upper boundary x
+    attr_datacur(15) = P%ylower+mtotal(2)*P%dy ! upper boundary y
+    attr_datacur(16) = P%zlower+mtotal(3)*P%dz ! upper boundary z
     attr_datacur(17) = 0.
-    attr_datacur(18) = dx
-    attr_datacur(19) = dy
-    attr_datacur(20) = dz
+    attr_datacur(18) = P%dx
+    attr_datacur(19) = P%dy
+    attr_datacur(20) = P%dz
     attr_datacur(21) = 0.
     ! Next variable are not included for HDF4 version but needed for slicing in HDF5
     attr_datacur(22) = lx
     attr_datacur(23) = ly
     attr_datacur(24) = lz
-    attr_datacur(25) = iframe ! Control variable
+    attr_datacur(25) = P%iframe ! Control variable
 
     call h5acreate_f(dataset_id,"Parameters",atype_id,aspace_id,attr_id, ierr)
 
@@ -207,7 +222,23 @@ call h5fclose_f(file_id, ierr)
 end subroutine creator
 
 
-subroutine writer()
+subroutine write_file(P,q, dimsf, fname)
+
+type(param), intent(in) :: P
+real(real64), intent(in) :: q(:,:,:,:)
+integer(hsize_t), intent(in) :: dimsf(:)
+character(*), intent(in) :: fname
+
+integer(hid_t) :: plist_id      ! property list identifier
+integer(hid_t) :: file_id       ! file identifier
+integer(hid_t) :: dataset_id    ! dataset identifier
+integer(hid_t) :: filespace
+
+integer :: i,np, ierr
+
+character(len=10) :: dataset_name
+character(len=3) :: c
+
 ! setup file access property variable with parallel i/o access
 ! plist_id: property variable
 ! comm - mpi communicator for mpi/io
@@ -254,7 +285,7 @@ writer: do i=1,np
   ! dimsf: dimensions of data we want to write to file
   ! xfer_prp = plist_id: data transfer property variable
   call h5dwrite_f(dataset_id, h5t_native_double, &
-  q(1:10, 1:maxmx, 1:maxmy, 1:maxmz), &
+  q(1:10, 1:P%maxmx, 1:P%maxmy, 1:P%maxmz), &
   dimsf, ierr, file_space_id = filespace, xfer_prp = plist_id)
 
   call h5dclose_f(dataset_id,ierr)
@@ -271,6 +302,6 @@ call h5fclose_f(file_id, ierr)
 ! close fortran interface
 call h5close_f(ierr)
 
-end subroutine writer
+end subroutine write_file
 
 end module original

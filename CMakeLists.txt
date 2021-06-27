@@ -9,5 +9,5 @@ find_package(MPI COMPONENTS Fortran REQUIRED)
 set(HDF5_PREFER_PARALLEL true)
 find_package(HDF5 COMPONENTS Fortran parallel REQUIRED)
 
-add_library(original out3f_mpi_h5.f90)
+add_executable(original out3f_driver.f90 out3f_mpi_h5.f90)
 target_link_libraries(original PRIVATE HDF5::HDF5 MPI::MPI_Fortran)
