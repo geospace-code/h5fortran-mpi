@@ -127,7 +127,6 @@ endif()
 find_program(c_wrap
   NAMES ${wrap_name}
   HINTS ${_hints}
-  PATH_SUFFIXES bin sbin
   NAMES_PER_DIR)
 if(c_wrap)
   get_filename_component(_wrap_hint ${c_wrap} DIRECTORY)
@@ -175,9 +174,8 @@ endif()
 
 set(CMAKE_REQUIRED_INCLUDES ${MPI_C_INCLUDE_DIR})
 set(CMAKE_REQUIRED_LIBRARIES ${MPI_C_LIBRARY})
-if(Threads_FOUND)
-  list(APPEND CMAKE_REQUIRED_LIBRARIES Threads::Threads)
-endif()
+list(APPEND CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+
 check_c_source_compiles("
 #include <mpi.h>
 #ifndef NULL
@@ -236,7 +234,6 @@ endif()
 find_program(cxx_wrap
   NAMES ${wrap_name}
   HINTS ${_hints}
-  PATH_SUFFIXES bin sbin
   NAMES_PER_DIR)
 if(cxx_wrap)
   get_filename_component(_wrap_hint ${cxx_wrap} DIRECTORY)
@@ -346,7 +343,6 @@ endif()
 find_program(f_wrap
   NAMES ${wrap_name}
   HINTS ${_hints}
-  PATH_SUFFIXES bin sbin
   NAMES_PER_DIR)
 if(f_wrap)
   get_filename_component(_wrap_hint ${f_wrap} DIRECTORY)
@@ -435,7 +431,8 @@ find_package(PkgConfig)
 find_package(Threads)
 
 # Intel MPI, which works with non-Intel compilers on Linux
-if(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_C_COMPILER_ID MATCHES Intel)
+if((CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_C_COMPILER_ID MATCHES Intel) AND
+      DEFINED ENV{I_MPI_ROOT})
   list(APPEND _hints $ENV{I_MPI_ROOT})
 endif()
 
@@ -449,7 +446,7 @@ find_program(MPIEXEC_EXECUTABLE
   NAMES mpiexec mpirun orterun
   HINTS ${_hints} $ENV{MSMPI_BIN}
   PATHS /usr/lib64
-  PATH_SUFFIXES bin sbin openmpi/bin mpich/bin
+  PATH_SUFFIXES bin openmpi/bin mpich/bin
 )
 
 
