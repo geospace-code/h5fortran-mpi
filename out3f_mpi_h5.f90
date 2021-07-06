@@ -8,7 +8,7 @@ implicit none (type, external)
 
 type param
 
-integer :: maxmx, maxmy, maxmz, meqn, mbc, mx, my, mz, iframe
+integer :: maxmx, maxmy, maxmz, meqn, mbc, mx, my, mz
 real(real64) :: xlower, ylower, zlower, dx, dy, dz, t
 
 real(real64) :: ngrids_out
@@ -28,12 +28,13 @@ integer, parameter :: info = mpi_info_null
 contains
 
 
-subroutine out3f(P,q)
+subroutine out3f(P, q, fname)
 
 ! Routine to save compressed chunked output
 ! Note current filter is based on GZIP compression
 ! Old indexing for output is preserved
 
+character(*), intent(in) :: fname
 type(param), intent(in) :: P
 real(real64), intent(in) :: q(:,:,:,:)
 
@@ -43,11 +44,10 @@ integer ::  mstart
 integer(hid_t) :: memspace, memd
 
 !! dataset name for specific rank
-character(mpi_max_processor_name) hostname
+character(mpi_max_processor_name) :: hostname
 
 !! data dataset dimensions
 integer :: i,j,k,l,m,idd
-character(:), allocatable :: fname
 
 
 integer(hsize_t) :: dimsf(P%drank)
@@ -66,8 +66,6 @@ cdims(2:4) = dimsf(2:4)
 
 ! initialize HDF5 fortran interface
 call h5open_f(ierr)
-
-write(fname, "(A6,I4,A3)") 'fort.q', mod(P%iframe,10), '.h5'
 
 ! have id 0 creates hdf5 data layout and write all attributes
 if (id == 0) call creator(P, fname, dimsf, cdims)
@@ -89,29 +87,15 @@ integer(hsize_t), intent(in) :: dimsf(:), cdims(:)
 
 integer :: ierr, np, i
 
-INTEGER(HID_T) :: atype_id ! Attribute dataspace identifier
 integer(hid_t) :: file_id       ! file identifier
 integer(hid_t) :: dcpl          ! property list identifier
 integer(hid_t) :: dataset_id    ! dataset identifier
 integer(hid_t) :: dataspace_id  ! dataspace identifier
-INTEGER(HID_T) :: aspace_id ! Attribute dataspace identifier
-INTEGER(HID_T) :: attr_id ! Attribute identifier
 
-INTEGER(HSIZE_T) :: data_dims(1)
-real(real64) :: attr_datacur(25)
-integer :: mtotal(P%nDim), lx, ly, lz
+! integer :: mtotal(P%nDim)
 
-character(len=10) :: dataset_name
-character(len=3) :: c
-
-! create datatype for the attribute
-! Copy existing datatype
-! H5T_NATIVE_CHARACTER - copy this datatype
-! atype_id - copy datatype to this variable
-call h5tcopy_f(h5t_native_double,atype_id,ierr)
-
-! create scalar dataspace for the attribute
-call h5screate_simple_f(P%arank, P%adims, aspace_id, ierr)
+character(10) :: dataset_name
+character(3) :: c
 
 ! create the hdf5 file
 call h5fcreate_f(fname, h5f_acc_trunc_f, file_id, ierr)
@@ -145,7 +129,7 @@ call h5pset_alloc_time_f(dcpl, h5d_alloc_time_early_f, ierr)
 ! create name for every dataset
 create: do i=1,np
 
-  write(c,"(i0)") i
+  write(c, "(i0)") i
   dataset_name = "Pid" // trim(c)
 
   ! create dataset for this processor (based on id)
@@ -156,52 +140,10 @@ create: do i=1,np
   ! dataset_id: identifier for dataset
   ! dcpl_id: dataset creation property list
   call h5dcreate_f(file_id, dataset_name, h5t_native_double, &
-                      dataspace_id, dataset_id, ierr, dcpl_id=dcpl)
+                    dataspace_id, dataset_id, ierr, dcpl_id=dcpl)
 
-  if (i == 1) then
-    ! Attributes list is created only for MASTER
-
-    attr_datacur(1) = P%ngrids_out
-    attr_datacur(2) = P%nDim
-    attr_datacur(3) = P%t
-    attr_datacur(4) = P%meqn
-    attr_datacur(5) = 1.
-    attr_datacur(6) = mtotal(1) ! Full mx (all processors)
-    attr_datacur(7) = mtotal(2) ! Full my
-    attr_datacur(8) = mtotal(3) ! Full mz
-    attr_datacur(9) = 0.
-    attr_datacur(10) = P%xlower ! lower boundary x
-    attr_datacur(11) = P%ylower ! lower boundary y
-    attr_datacur(12) = P%zlower ! lower boundary z
-    attr_datacur(13) = 0
-    attr_datacur(14) = P%xlower+mtotal(1)*P%dx ! upper boundary x
-    attr_datacur(15) = P%ylower+mtotal(2)*P%dy ! upper boundary y
-    attr_datacur(16) = P%zlower+mtotal(3)*P%dz ! upper boundary z
-    attr_datacur(17) = 0.
-    attr_datacur(18) = P%dx
-    attr_datacur(19) = P%dy
-    attr_datacur(20) = P%dz
-    attr_datacur(21) = 0.
-    ! Next variable are not included for HDF4 version but needed for slicing in HDF5
-    attr_datacur(22) = lx
-    attr_datacur(23) = ly
-    attr_datacur(24) = lz
-    attr_datacur(25) = P%iframe ! Control variable
-
-    call h5acreate_f(dataset_id,"Parameters",atype_id,aspace_id,attr_id, ierr)
-
-    data_dims(1) = 25
-    call h5awrite_f(attr_id, atype_id, attr_datacur, data_dims, ierr)
-
-    ! close attribute
-    call h5aclose_f(attr_id, ierr)
-
-    ! close access to the dataspace for attribute
-    call h5sclose_f(aspace_id, ierr)
-
-    call h5tclose_f(atype_id, ierr)
-
-  end if
+  if (i == 1) call write_attr(P, dataset_id)
+  !! Attributes list is created only for MASTER
 
   ! close dataset
   call h5dclose_f(dataset_id, ierr)
@@ -219,6 +161,71 @@ call h5pclose_f(dcpl, ierr)
 call h5fclose_f(file_id, ierr)
 
 end subroutine creator
+
+
+subroutine write_attr(P, dataset_id)
+
+type(param), intent(in) :: P
+integer(hid_t), intent(in) :: dataset_id
+
+INTEGER(HSIZE_T) :: data_dims(1)
+real(real64) :: attr_datacur(25)
+
+INTEGER(HID_T) :: atype_id ! Attribute dataspace identifier
+INTEGER(HID_T) :: aspace_id ! Attribute dataspace identifier
+INTEGER(HID_T) :: attr_id ! Attribute identifier
+
+integer :: ierr
+
+! create datatype for the attribute
+! Copy existing datatype
+! H5T_NATIVE_CHARACTER - copy this datatype
+! atype_id - copy datatype to this variable
+call h5tcopy_f(h5t_native_double, atype_id, ierr)
+
+! create scalar dataspace for the attribute
+call h5screate_simple_f(P%arank, P%adims, aspace_id, ierr)
+
+attr_datacur(1) = P%ngrids_out
+attr_datacur(2) = P%nDim
+attr_datacur(3) = P%t
+attr_datacur(4) = P%meqn
+attr_datacur(5) = 1.
+! attr_datacur(6) = mtotal(1) ! Full mx (all processors)
+! attr_datacur(7) = mtotal(2) ! Full my
+! attr_datacur(8) = mtotal(3) ! Full mz
+attr_datacur(9) = 0.
+attr_datacur(10) = P%xlower ! lower boundary x
+attr_datacur(11) = P%ylower ! lower boundary y
+attr_datacur(12) = P%zlower ! lower boundary z
+attr_datacur(13) = 0
+! attr_datacur(14) = P%xlower+mtotal(1)*P%dx ! upper boundary x
+! attr_datacur(15) = P%ylower+mtotal(2)*P%dy ! upper boundary y
+! attr_datacur(16) = P%zlower+mtotal(3)*P%dz ! upper boundary z
+attr_datacur(17) = 0.
+attr_datacur(18) = P%dx
+attr_datacur(19) = P%dy
+attr_datacur(20) = P%dz
+attr_datacur(21) = 0.
+! Next variable are not included for HDF4 version but needed for slicing in HDF5
+! attr_datacur(22) = lx
+! attr_datacur(23) = ly
+! attr_datacur(24) = lz
+
+call h5acreate_f(dataset_id,"Parameters",atype_id,aspace_id,attr_id, ierr)
+
+data_dims(1) = 25
+call h5awrite_f(attr_id, atype_id, attr_datacur, data_dims, ierr)
+
+! close attribute
+call h5aclose_f(attr_id, ierr)
+
+! close access to the dataspace for attribute
+call h5sclose_f(aspace_id, ierr)
+
+call h5tclose_f(atype_id, ierr)
+
+end subroutine write_attr
 
 
 subroutine write_file(P,q, dimsf, fname)
