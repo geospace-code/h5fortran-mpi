@@ -211,14 +211,11 @@ integer :: i,np, ierr
 character(len=3) :: c
 
 ! setup file access property variable with parallel i/o access
-call h5pcreate_f(h5p_file_access_f, plist_id, ierr)
+call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, ierr)
 call h5pset_fapl_mpio_f(plist_id, MPI_COMM_WORLD, info, ierr)
 
-! open hdf5 file
-! plist_id: file access property list
-call h5fopen_f(fname, h5f_acc_rdwr_f, file_id, ierr, plist_id)
-
-! close the property list
+! open hdf5 file collectively
+call h5fopen_f(fname, H5F_ACC_RDWR_F, file_id, ierr, plist_id)
 call h5pclose_f(plist_id, ierr)
 
 ! create properties variable
