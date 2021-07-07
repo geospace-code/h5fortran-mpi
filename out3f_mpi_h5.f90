@@ -42,12 +42,7 @@ character(mpi_max_processor_name) :: hostname
 !! data dataset dimensions
 integer :: i,j,k,l,m,idd
 
-
-integer(hsize_t) :: dimsf(rank(q))
 integer(hsize_t) :: cdims(rank(q)) ! chunks data dimensions
-
-! size of q for every core
-dimsf = [P%x1, P%x2, P%x3, P%Ns]
 
 !! TODO: add our auto-chunking for 1-16 MB or so per recent recommendations
 !! and experimental tuning
@@ -64,12 +59,12 @@ print *, "MPI image online: #",mpi_id
 call h5open_f(ierr)
 
 ! id 0 creates hdf5 data layout and write attributes
-if (mpi_id == 0) call creator(P, fname, dname, dimsf, cdims)
+if (mpi_id == 0) call creator(P, fname, dname, int(shape(q), kind=hsize_t), cdims)
 
 ! sync all images
 call mpi_barrier(MPI_COMM_WORLD, ierr)
 
-call write_file(P,q, dimsf, fname, dname)
+call write_file(P,q, fname, dname)
 
 
 end subroutine out3f
@@ -102,7 +97,7 @@ call h5pcreate_f(h5p_dataset_create_f, dcpl, ierr)
 
 ! attribute the chunk size
 ! dcpl: link this property variable with chunk size
-! 4: dimension of q
+! 4: dimension of data
 ! cdims: dimensions of chunk in every direction
 call h5pset_chunk_f(dcpl, size(dimsf), cdims, ierr)
 
@@ -200,11 +195,10 @@ call h5tclose_f(atype_id, ierr)
 end subroutine write_attr
 
 
-subroutine write_file(P,q, dimsf, fname, dname)
+subroutine write_file(P,q, fname, dname)
 
 type(param), intent(in) :: P
 real(real64), intent(in) :: q(:,:,:,:)
-integer(hsize_t), intent(in) :: dimsf(:)
 character(*), intent(in) :: fname, dname
 
 integer(hid_t) :: plist_id      ! property list identifier
@@ -246,14 +240,11 @@ call h5dget_space_f(dataset_id,filespace,ierr)
 if (mpi_id /= 0) call h5sselect_none_f(filespace, ierr)
 
 ! write data to dataset
-! dataset_id: identifier of dataset
-! h5t_native_integer: type of data in memory which we want to write to file
 ! data: data by itself
-! dimsf: dimensions of data we want to write to file
 ! xfer_prp = plist_id: data transfer property variable
 call h5dwrite_f(dataset_id, h5t_native_double, &
-  q(:, :, :, :), &
-  dimsf, ierr, file_space_id = filespace, xfer_prp = plist_id)
+  q(:, :, :, :), int(shape(q), kind=hsize_t), ierr, &
+  file_space_id = filespace, xfer_prp = plist_id)
 
 call h5dclose_f(dataset_id,ierr)
 
