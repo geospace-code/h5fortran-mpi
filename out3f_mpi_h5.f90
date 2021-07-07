@@ -15,19 +15,19 @@ INTEGER :: arank = 1 ! Attribute rank
 
 end type param
 
-integer :: id
+integer :: mpi_id, mpi_size
 integer, parameter :: info = mpi_info_null
 
 contains
 
 
-subroutine out3f(P, q, fname)
+subroutine out3f(P, q, fname, dname)
 
 ! Routine to save compressed chunked output
 ! Note current filter is based on GZIP compression
 ! Old indexing for output is preserved
 
-character(*), intent(in) :: fname
+character(*), intent(in) :: fname, dname
 type(param), intent(in) :: P
 real(real64), intent(in) :: q(:,:,:,:)
 
@@ -53,25 +53,32 @@ dimsf = [P%x1, P%x2, P%x3, P%Ns]
 !! and experimental tuning
 cdims = [P%x1 / 8, P%x2 / 16, P%x3 / 16, 1]
 
+call mpi_comm_size(MPI_COMM_WORLD, mpi_size, ierr)
+call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
+if (ierr/=0) error stop "mpi_comm"
+
+if(mpi_id==0) print *, "number of MPI images: ", mpi_size
+print *, "MPI image online: #",mpi_id
+
 ! initialize HDF5 fortran interface
 call h5open_f(ierr)
 
 ! id 0 creates hdf5 data layout and write attributes
-if (id == 0) call creator(P, fname, dimsf, cdims)
+if (mpi_id == 0) call creator(P, fname, dname, dimsf, cdims)
 
 ! sync all images
 call mpi_barrier(MPI_COMM_WORLD, ierr)
 
-call write_file(P,q, dimsf, fname)
+call write_file(P,q, dimsf, fname, dname)
 
 
 end subroutine out3f
 
 
-subroutine creator(P, fname, dimsf, cdims)
+subroutine creator(P, fname, dname, dimsf, cdims)
 
 type(param), intent(in) :: P
-character(*), intent(in) :: fname
+character(*), intent(in) :: dname, fname
 integer(hsize_t), intent(in) :: dimsf(:), cdims(:)
 
 integer :: ierr
@@ -81,7 +88,6 @@ integer(hid_t) :: dcpl          ! property list identifier
 integer(hid_t) :: dataset_id    ! dataset identifier
 integer(hid_t) :: dataspace_id  ! dataspace identifier
 
-character(10) :: dataset_name
 character(3) :: c
 
 ! create the hdf5 file
@@ -89,7 +95,7 @@ call h5fcreate_f(fname, h5f_acc_trunc_f, file_id, ierr)
 
 ! create the dataspace for the dataset
 ! dimsf: size of every dimension
-call h5screate_simple_f(rank(dimsf), dimsf, dataspace_id, ierr)
+call h5screate_simple_f(size(dimsf), dimsf, dataspace_id, ierr)
 
 ! create properties variable for the data
 call h5pcreate_f(h5p_dataset_create_f, dcpl, ierr)
@@ -98,7 +104,7 @@ call h5pcreate_f(h5p_dataset_create_f, dcpl, ierr)
 ! dcpl: link this property variable with chunk size
 ! 4: dimension of q
 ! cdims: dimensions of chunk in every direction
-call h5pset_chunk_f(dcpl, 4, cdims, ierr)
+call h5pset_chunk_f(dcpl, size(dimsf), cdims, ierr)
 
 ! attribute the compression type (GZIP compression)
 call h5pset_deflate_f(dcpl, 6, ierr)
@@ -113,17 +119,11 @@ call h5pset_deflate_f(dcpl, 6, ierr)
 ! h5d_alloc_time_early_f - allocate all space when the dataset is created
 call h5pset_alloc_time_f(dcpl, h5d_alloc_time_early_f, ierr)
 
-dataset_name = "Pid"
-
 ! create dataset for this processor (based on id)
-! file_id: name of file where to create dataset
-! dataset_name: name of the dataset
-! h5t_native_integer: type of data in dataset
-! dataspace_id: dataspace used for dataset
-! dataset_id: identifier for dataset
 ! dcpl_id: dataset creation property list
-call h5dcreate_f(file_id, dataset_name, h5t_native_double, &
+call h5dcreate_f(file_id, dname, h5t_native_double, &
                   dataspace_id, dataset_id, ierr, dcpl_id=dcpl)
+if(ierr/=0) error stop "creator:h5dcreate"
 
 call write_attr(P, dataset_id)
 
@@ -200,12 +200,12 @@ call h5tclose_f(atype_id, ierr)
 end subroutine write_attr
 
 
-subroutine write_file(P,q, dimsf, fname)
+subroutine write_file(P,q, dimsf, fname, dname)
 
 type(param), intent(in) :: P
 real(real64), intent(in) :: q(:,:,:,:)
 integer(hsize_t), intent(in) :: dimsf(:)
-character(*), intent(in) :: fname
+character(*), intent(in) :: fname, dname
 
 integer(hid_t) :: plist_id      ! property list identifier
 integer(hid_t) :: file_id       ! file identifier
@@ -214,20 +214,13 @@ integer(hid_t) :: filespace
 
 integer :: i,np, ierr
 
-character(len=10) :: dataset_name
 character(len=3) :: c
 
 ! setup file access property variable with parallel i/o access
-! plist_id: property variable
-! comm - mpi communicator for mpi/io
-! info - info regarding file access patterns and file system specifications
 call h5pcreate_f(h5p_file_access_f, plist_id, ierr)
 call h5pset_fapl_mpio_f(plist_id, MPI_COMM_WORLD, info, ierr)
 
-! open hdf5 file for current time
-! filename: filename of current hdf5 file
-! h5f_acc_rdwr_f: open to read and write
-! file_id: file identifier
+! open hdf5 file
 ! plist_id: file access property list
 call h5fopen_f(fname, h5f_acc_rdwr_f, file_id, ierr, plist_id)
 
@@ -244,18 +237,13 @@ if (ierr /= 0) error stop "h5pset_dxpl_mpio"
 
 ! Parallel compression requires collective writing
 
-dataset_name = "Pid"
-
 ! open dataset (each processor opens its own dataset)
-! file_id: hdf5 file identifier
-! dataset_name: dataset which belongs to this processor
-! dataset_id: identifier for dataset
-call h5dopen_f(file_id, dataset_name, dataset_id, ierr)
+call h5dopen_f(file_id, dname, dataset_id, ierr)
 if (ierr /= 0) error stop "h5dopen_f"
 
 call h5dget_space_f(dataset_id,filespace,ierr)
 
-if (id /= 0) call h5sselect_none_f(filespace, ierr)
+if (mpi_id /= 0) call h5sselect_none_f(filespace, ierr)
 
 ! write data to dataset
 ! dataset_id: identifier of dataset

@@ -15,7 +15,7 @@ type(param) :: P
 
 real(real64), allocatable :: q(:,:,:,:)
 
-character(:), allocatable :: fname
+character(:), allocatable :: fname, dname
 
 call mpi_init(ierr)
 
@@ -27,8 +27,9 @@ P%Ns = 7
 allocate(q(P%x1, P%x2, P%x3, P%Ns))
 
 fname = "out.h5"
+dname = "/pid"
 
-call out3f(P, q, fname)
+call out3f(P, q, fname, dname)
 
 call mpi_finalize(ierr)
 
