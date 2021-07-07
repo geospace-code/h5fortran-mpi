@@ -1,0 +1,227 @@
+module mpi_h5write
+
+use, intrinsic :: iso_fortran_env, only : real32, real64, stderr=>error_unit
+
+use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL
+use hdf5
+
+implicit none
+
+integer, parameter :: mpi_h5comm = MPI_COMM_WORLD, mpi_h5info = MPI_INFO_NULL
+
+type :: hdf5_file
+
+character(:), allocatable :: filename
+integer(HID_T) :: file_id
+logical :: is_open = .false.
+
+integer :: comp_lvl = 0 !< compression level (1-9)  0: disable compression
+
+contains
+
+procedure, public :: open => ph5open, close => ph5close
+!! procedures without mapping
+
+generic, public :: write => ph5write3d_r32
+!! mapped procedures
+
+procedure,private :: ph5write3d_r32
+!! mapped procedures must be declared again like this
+
+end type hdf5_file
+
+private
+public :: mpi_h5comm, hdf5_file
+
+contains
+
+
+subroutine ph5open(self, filename, action)
+!! collective: open/create file
+!!
+!! PARAMETERS:
+!! ----------
+!! filename
+!! action: "r", "w", "rw"
+
+class(hdf5_file), intent(inout) :: self
+character(*), intent(in) :: filename
+character(*), intent(in), optional :: action
+
+character(2) :: laction
+integer :: ierr
+integer(HID_T) :: plist_id
+logical :: exists
+
+laction = "rw"
+if (present(action)) laction = action
+
+call h5open_f(ierr)
+if(ierr/=0) error stop "h5open: could not open HDF5 library"
+!! OK to call repeatedly
+!! https://support.hdfgroup.org/HDF5/doc/RM/RM_H5.html#Library-Open
+
+inquire(file=filename, exist=exists)
+if (action(1:1) == "r".and..not.exists) error stop "h5open: file does not exist: " // filename
+
+! collective: setup for MPI access
+call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, ierr)
+call h5pset_fapl_mpio_f(plist_id, mpi_h5comm, mpi_h5info, ierr)
+
+!> from h5fortran
+select case(action)
+case('r')
+  call h5fopen_f(filename, H5F_ACC_RDONLY_F, self%file_id, ierr, access_prp=plist_id)
+case('r+')
+  call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ierr, access_prp=plist_id)
+case('rw', 'a')
+  if(exists) then
+    call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ierr, access_prp=plist_id)
+  else
+    call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ierr, access_prp=plist_id)
+  endif
+case ('w')
+  call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ierr, access_prp=plist_id)
+case default
+  error stop 'Unsupported action: ' // action
+end select
+
+call h5pclose_f(plist_id, ierr)
+
+self%filename = filename
+self%is_open = .true.
+
+end subroutine ph5open
+
+
+
+subroutine ph5close(self, ierr, close_hdf5_interface)
+!! This must be called on each HDF5 file to flush buffers to disk
+!! data loss can occur if program terminates before this procedure
+!!
+!! We don't reference count because applications might also invoke HDF5
+!! directly.
+!! close_hdf5_interface is when you know you have exactly one HDF5 file in your
+!! application, if true it closes ALL files, even those invoked directly from HDF5.
+
+class(hdf5_file), intent(inout) :: self
+logical, intent(in), optional :: close_hdf5_interface
+integer, intent(out), optional :: ierr
+integer :: ier
+
+if (.not. self%is_open) then
+  write(stderr,*) 'WARNING:h5fortran:finalize: file handle is already closed: '// self%filename
+  return
+endif
+
+!> close hdf5 file
+call h5fclose_f(self%file_id, ier)
+if (present(ierr)) ierr = ier
+if (check(ier, 'ERROR:finalize: HDF5 file close: ' // self%filename)) then
+  if (present(ierr)) return
+  error stop
+endif
+
+if (present(close_hdf5_interface)) then
+  if (close_hdf5_interface) then
+    call h5close_f(ier)
+    if (present(ierr)) ierr = ier
+    if (check(ier, 'ERROR: HDF5 library close')) then
+      if (present(ierr)) return
+      error stop
+    endif
+  endif
+endif
+
+!> sentinel lid
+self%file_id = 0
+
+self%is_open = .false.
+
+end subroutine ph5close
+
+
+subroutine ph5write3d_r32(self, dname, A, dims_file)
+!! A is the subset of the 3D array to write to dataset "dname" from this process
+
+class(hdf5_file), intent(inout) :: self
+character(*), intent(in) :: dname
+real(real32), intent(in) :: A(:,:,:)
+integer(HSIZE_T), intent(in) :: dims_file(3)  !< full disk shape of A (not just per worker)
+
+integer :: ierr, mpi_id
+
+integer(HSIZE_T), dimension(rank(A)) :: cnt, stride, blk, offset, dims_mem
+integer(HID_T) :: dset_id, filespace, memspace, plist_id
+
+dims_mem = shape(A)
+
+! create dataspace
+call h5screate_simple_f(size(dims_file), dims_file, filespace, ierr)
+call h5screate_simple_f(size(dims_mem), dims_mem, memspace, ierr)
+
+! collective: create dataset
+call h5dcreate_f(self%file_id, dname, H5T_NATIVE_REAL, filespace, dset_id, ierr)
+call h5sclose_f(filespace, ierr)
+
+! Each process defines dataset in memory and writes it to the hyperslab
+! in the file.
+call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
+
+!> chunk choices are arbitrary, but must be the same on all processes
+!> only chunking along first dim
+cnt = [integer(hsize_t) :: dims_mem(1), 1, 1]
+offset = [integer(hsize_t) ::mpi_id*cnt(1), 0, 0]
+stride = [integer(hsize_t) :: 1, 1, 1]
+blk = [integer(hsize_t) :: 1, dims_file(2), dims_file(3)]
+
+! Select hyperslab in the file.
+
+CALL h5dget_space_f(dset_id, filespace, ierr)
+CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, &
+  start=offset, &
+  count=cnt, hdferr=ierr, &
+  stride=stride, &
+  block=blk)
+if (ierr/=0) error stop "h5sselect_hyperslab"
+
+! Create property list for collective dataset write
+call h5pcreate_f(H5P_DATASET_XFER_F, plist_id, ierr)
+call h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_COLLECTIVE_F, ierr)
+
+! For independent write use
+! call h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_INDEPENDENT_F, ierr)
+
+! collective: Write dataset
+call h5dwrite_f(dset_id, H5T_NATIVE_REAL, A, dims_file, ierr, &
+  file_space_id=filespace, mem_space_id=memspace, xfer_prp = plist_id)
+if (ierr/=0) error stop "h5dwrite"
+
+! wind down
+call h5sclose_f(filespace, ierr)
+call h5dclose_f(dset_id, ierr)
+call h5pclose_f(plist_id, ierr)
+
+end subroutine ph5write3d_r32
+
+
+logical function check(ierr, filename, dname)
+integer, intent(in) :: ierr
+character(*), intent(in), optional :: filename, dname
+
+character(:), allocatable :: fn, dn
+
+check = .false.
+if (ierr==0) return
+
+check = .true.
+fn = ""
+dn = ""
+if (present(filename)) fn = filename
+if (present(dname)) dn = dname
+
+write(stderr,*) 'ERROR: ' // fn // ':' // dn // ' error code ', ierr
+
+end function check
+
+end module mpi_h5write

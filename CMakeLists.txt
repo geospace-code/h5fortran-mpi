@@ -9,12 +9,15 @@ include(cmake/compilers.cmake)
 
 find_package(HDF5 COMPONENTS Fortran parallel REQUIRED)
 
-add_executable(simple simple.f90)
-target_link_libraries(simple PRIVATE HDF5::HDF5 MPI::MPI_Fortran)
+
+add_library(h5mpi OBJECT mpi_h5write.f90)
+target_link_libraries(h5mpi PRIVATE HDF5::HDF5 MPI::MPI_Fortran)
 
 add_executable(slab simple_slab.f90)
-target_link_libraries(slab PRIVATE HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab PRIVATE h5mpi HDF5::HDF5 MPI::MPI_Fortran)
 
 
-# add_executable(original out3f_driver.f90 out3f_mpi_h5.f90)
-# target_link_libraries(original PRIVATE HDF5::HDF5 MPI::MPI_Fortran)
+# old standalone example, not useful for production.
+add_executable(simple simple.f90)
+target_link_libraries(simple PRIVATE HDF5::HDF5 MPI::MPI_Fortran)
+set_target_properties(simple PROPERTIES EXCLUDE_FROM_ALL true)
