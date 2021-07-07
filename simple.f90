@@ -18,11 +18,6 @@ integer :: ierr, i, j, k
 INTEGER :: comm, info
 INTEGER :: Nmpi, mpi_id
 
-fname = "out.h5"
-dname = "/x"
-
-allocate(data(1000, 1000))
-
 comm = MPI_COMM_WORLD
 info = MPI_INFO_NULL
 
@@ -30,11 +25,17 @@ call mpi_init(ierr)
 call mpi_comm_size(comm, Nmpi, ierr)
 call mpi_comm_rank(comm, mpi_id, ierr)
 
+fname = "out.h5"
+dname = "/x"
+
+allocate(data(10, 8))
+
 ! fake data
 do i = 1,Nmpi
-  j = (i-1) * size(data, 1) / Nmpi
+  j = (i-1) * size(data, 1) / Nmpi + 1
   k = i * size(data, 1) / Nmpi
-  if (i-1 == mpi_id) data(j:k, :) = i
+  !if (i-1 == mpi_id)
+  data(j:k, :) = i
 enddo
 
 ddims = shape(data)
@@ -49,6 +50,7 @@ call h5pset_fapl_mpio_f(plist_id, comm, info, ierr)
 ! collective: create file
 call h5fcreate_f(fname, H5F_ACC_TRUNC_F, file_id, ierr, access_prp = plist_id)
 call h5pclose_f(plist_id, ierr)
+if(ierr/=0) error stop "h5pclose"
 
 call h5screate_simple_f(size(ddims), ddims, filespace, ierr)
 
@@ -61,7 +63,6 @@ call h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_COLLECTIVE_F, ierr)
 
 ! For independent write use
 ! call h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_INDEPENDENT_F, ierr)
-
 
 ! collective: Write dataset
 call h5dwrite_f(dset_id, H5T_NATIVE_REAL, data, ddims, ierr, xfer_prp = plist_id)
