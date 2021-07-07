@@ -37,6 +37,7 @@ lx1 = 16
 lx2 = 4
 
 if (Nmpi > lx1) error stop "too many MPI workers"
+if (modulo(lx1, Nmpi) /= 0) error stop "number of MPI workers must evenly divide problem size."
 
 !! 1-D decompose in rows (neglect ghost cells)
 dx1 = lx1 / Nmpi
@@ -68,14 +69,10 @@ call h5sclose_f(filespace, ierr)
 ! Each process defines dataset in memory and writes it to the hyperslab
 ! in the file.
 !
-cnt(1)  = dims_mem(1)
-cnt(2)  = 1
-offset(1) = mpi_id*cnt(1)
-offset(2) = 0
-stride(1) = 1
-stride(2) = 1
-blk(1)  = 1
-blk(2)  = dims_file(2)
+cnt = [integer(hsize_t) :: dims_mem(1), 1]
+offset = [integer(hsize_t) ::mpi_id*cnt(1), 0]
+stride = [integer(hsize_t) :: 1, 1]
+blk = [integer(hsize_t) :: 1, dims_file(2)]
 
 ! Select hyperslab in the file.
 
