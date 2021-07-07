@@ -1,7 +1,6 @@
 program simple
-!! this example has undesirable effect that all workers must have copy of data.
-!! we "broadcast" our simulated data here implicitly
 !! a more optimal case is to use hyperslabs with each worker
+!! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90
 
 use mpi
 use hdf5
@@ -10,16 +9,18 @@ implicit none
 
 character(:), allocatable :: fname, dname
 
-integer(HID_T) :: file_id, dset_id, filespace, plist_id
+integer(HID_T) :: file_id, dset_id, filespace, memspace, plist_id
 
 real, allocatable :: data(:,:)
 
-integer(HSIZE_T) :: ddims(rank(data))
+integer(HSIZE_T) :: dims_file(rank(data)), dims_mem(rank(data))
 
-integer :: ierr, i, j, k
+integer :: ierr, i, j, k, lx1, lx2, dx1
 
 INTEGER :: comm, info
 INTEGER :: Nmpi, mpi_id
+
+INTEGER(HSIZE_T), DIMENSION(2) :: cnt, stride, blk, offset
 
 comm = MPI_COMM_WORLD
 info = MPI_INFO_NULL
@@ -31,17 +32,20 @@ call mpi_comm_rank(comm, mpi_id, ierr)
 fname = "out.h5"
 dname = "/x"
 
-allocate(data(10, 8))
+!! dummy problem
+lx1 = 16
+lx2 = 4
 
-! fake data
-do i = 1,Nmpi
-  j = (i-1) * size(data, 1) / Nmpi + 1
-  k = i * size(data, 1) / Nmpi
-  !if (i-1 == mpi_id)
-  data(j:k, :) = i
-enddo
+if (Nmpi > lx1) error stop "too many MPI workers"
 
-ddims = shape(data)
+!! 1-D decompose in rows (neglect ghost cells)
+dx1 = lx1 / Nmpi
+
+allocate(data(dx1, lx2))
+data = mpi_id
+
+dims_mem = [dx1, lx2]
+dims_file = [lx1, lx2]
 
 call h5open_f(ierr)
 if(ierr/=0) error stop "h5open"
@@ -53,12 +57,34 @@ call h5pset_fapl_mpio_f(plist_id, comm, info, ierr)
 ! collective: create file
 call h5fcreate_f(fname, H5F_ACC_TRUNC_F, file_id, ierr, access_prp = plist_id)
 call h5pclose_f(plist_id, ierr)
-if(ierr/=0) error stop "h5pclose"
 
-call h5screate_simple_f(size(ddims), ddims, filespace, ierr)
+call h5screate_simple_f(size(dims_file), dims_file, filespace, ierr)
+call h5screate_simple_f(size(dims_mem), dims_mem, memspace, ierr)
 
 ! collective: create dataset
 call h5dcreate_f(file_id, dname, H5T_NATIVE_REAL, filespace, dset_id, ierr)
+call h5sclose_f(filespace, ierr)
+
+! Each process defines dataset in memory and writes it to the hyperslab
+! in the file.
+!
+cnt(1)  = dims_mem(1)
+cnt(2)  = 1
+offset(1) = mpi_id*cnt(1)
+offset(2) = 0
+stride(1) = 1
+stride(2) = 1
+blk(1)  = 1
+blk(2)  = dims_file(2)
+
+! Select hyperslab in the file.
+
+CALL h5dget_space_f(dset_id, filespace, ierr)
+CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, &
+  start=offset, &
+  count=cnt, hdferr=ierr, &
+  stride=stride, &
+  block=blk)
 
 ! Create property list for collective dataset write
 call h5pcreate_f(H5P_DATASET_XFER_F, plist_id, ierr)
@@ -68,7 +94,8 @@ call h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_COLLECTIVE_F, ierr)
 ! call h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_INDEPENDENT_F, ierr)
 
 ! collective: Write dataset
-call h5dwrite_f(dset_id, H5T_NATIVE_REAL, data, ddims, ierr, xfer_prp = plist_id)
+call h5dwrite_f(dset_id, H5T_NATIVE_REAL, data, dims_file, ierr, &
+  file_space_id=filespace, mem_space_id=memspace, xfer_prp = plist_id)
 if (ierr/=0) error stop "h5dwrite"
 
 ! wind down
