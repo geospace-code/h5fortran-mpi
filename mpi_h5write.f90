@@ -22,16 +22,38 @@ contains
 procedure, public :: open => ph5open, close => ph5close
 !! procedures without mapping
 
-generic, public :: write => ph5write3d_r32
+generic, public :: write => ph5write2d_r32, ph5write3d_r32
 !! mapped procedures
 
-procedure,private :: ph5write3d_r32
+procedure,private :: ph5write2d_r32, ph5write3d_r32
 !! mapped procedures must be declared again like this
 
 end type hdf5_file
 
 private
 public :: mpi_h5comm, hdf5_file
+
+interface !< write.f90
+
+module subroutine ph5write2d_r32(self, dname, A, dims_file)
+!! A is the subset of the array to write to dataset "dname" from this process
+
+class(hdf5_file), intent(inout) :: self
+character(*), intent(in) :: dname
+real(real32), intent(in) :: A(:,:)
+integer(HSIZE_T), intent(in) :: dims_file(rank(A))  !< full disk shape of A (not just per worker)
+end subroutine ph5write2d_r32
+
+module subroutine ph5write3d_r32(self, dname, A, dims_file)
+!! A is the subset of the 3D array to write to dataset "dname" from this process
+
+class(hdf5_file), intent(inout) :: self
+character(*), intent(in) :: dname
+real(real32), intent(in) :: A(:,:,:)
+integer(HSIZE_T), intent(in) :: dims_file(rank(A))  !< full disk shape of A (not just per worker)
+end subroutine ph5write3d_r32
+
+end interface
 
 contains
 
@@ -139,70 +161,6 @@ self%file_id = 0
 self%is_open = .false.
 
 end subroutine ph5close
-
-
-subroutine ph5write3d_r32(self, dname, A, dims_file)
-!! A is the subset of the 3D array to write to dataset "dname" from this process
-
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-real(real32), intent(in) :: A(:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(3)  !< full disk shape of A (not just per worker)
-
-integer :: ierr, mpi_id
-
-integer(HSIZE_T), dimension(rank(A)) :: cnt, stride, blk, offset, dims_mem
-integer(HID_T) :: dset_id, filespace, memspace, plist_id
-
-dims_mem = shape(A)
-
-! create dataspace
-call h5screate_simple_f(size(dims_file), dims_file, filespace, ierr)
-call h5screate_simple_f(size(dims_mem), dims_mem, memspace, ierr)
-
-! collective: create dataset
-call h5dcreate_f(self%file_id, dname, H5T_NATIVE_REAL, filespace, dset_id, ierr)
-call h5sclose_f(filespace, ierr)
-
-! Each process defines dataset in memory and writes it to the hyperslab
-! in the file.
-call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
-
-!> chunk choices are arbitrary, but must be the same on all processes
-!> only chunking along first dim
-cnt = [integer(hsize_t) :: dims_mem(1), 1, 1]
-offset = [integer(hsize_t) ::mpi_id*cnt(1), 0, 0]
-stride = [integer(hsize_t) :: 1, 1, 1]
-blk = [integer(hsize_t) :: 1, dims_file(2), dims_file(3)]
-
-! Select hyperslab in the file.
-
-CALL h5dget_space_f(dset_id, filespace, ierr)
-CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, &
-  start=offset, &
-  count=cnt, hdferr=ierr, &
-  stride=stride, &
-  block=blk)
-if (ierr/=0) error stop "h5sselect_hyperslab"
-
-! Create property list for collective dataset write
-call h5pcreate_f(H5P_DATASET_XFER_F, plist_id, ierr)
-call h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_COLLECTIVE_F, ierr)
-
-! For independent write use
-! call h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_INDEPENDENT_F, ierr)
-
-! collective: Write dataset
-call h5dwrite_f(dset_id, H5T_NATIVE_REAL, A, dims_file, ierr, &
-  file_space_id=filespace, mem_space_id=memspace, xfer_prp = plist_id)
-if (ierr/=0) error stop "h5dwrite"
-
-! wind down
-call h5sclose_f(filespace, ierr)
-call h5dclose_f(dset_id, ierr)
-call h5pclose_f(plist_id, ierr)
-
-end subroutine ph5write3d_r32
 
 
 logical function check(ierr, filename, dname)

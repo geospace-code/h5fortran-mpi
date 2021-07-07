@@ -10,7 +10,7 @@ implicit none
 
 type(hdf5_file) :: h5
 
-real, allocatable :: A3(:,:,:)
+real, allocatable :: A2(:,:), A3(:,:,:)
 
 integer :: ierr, lx1, lx2, lx3, dx1
 integer :: Nmpi, mpi_id
@@ -34,12 +34,15 @@ if (modulo(lx1, Nmpi) /= 0) error stop "number of MPI workers must evenly divide
 !! 1-D decompose in rows (neglect ghost cells)
 dx1 = lx1 / Nmpi
 
-allocate(A3(dx1, lx2, lx3))
+allocate(A2(dx1, lx2), A3(dx1, lx2, lx3))
+!> dummy data
+A2 = mpi_id
 A3 = mpi_id
 
 call h5%open("out.h5", action="w")
 
-call h5%write("/x", A3, dims_full)
+call h5%write("/A2", A2, dims_full(:2))
+call h5%write("/A3", A3, dims_full)
 
 call h5%close(close_hdf5_interface=.true.)
 

@@ -10,7 +10,7 @@ include(cmake/compilers.cmake)
 find_package(HDF5 COMPONENTS Fortran parallel REQUIRED)
 
 
-add_library(h5mpi OBJECT mpi_h5write.f90)
+add_library(h5mpi OBJECT mpi_h5write.f90 write.f90)
 target_link_libraries(h5mpi PRIVATE HDF5::HDF5 MPI::MPI_Fortran)
 
 add_executable(slab simple_slab.f90)
