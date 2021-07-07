@@ -12,19 +12,20 @@ To build the HDF5 parallel library, regardless of what OS or compiler you're usi
 ```sh
 git clone https://github.com/geospace-code/h5fortran
 cd h5fortran/scripts
-cmake -B build -DCMAKE_INSTALL_PREFIX=~/libs_parallel
+cmake -B build -DCMAKE_INSTALL_PREFIX=~/libs_par
 cmake --build build
 ```
 
 that will build and install HDF5 under ~/lib_parallel (or other directory of your choice).
 
-## Build HDF5 benchmarks (this project)
+## Build ghis project
 
 Once you have a HDF5 parallel library, build this project like:
 
 ```sh
-cmake -B build -DHDF5_ROOT=~/libs_parallel
+cmake -B build -DHDF5_ROOT=~/libs_par
 cmake --build build
 ```
 
-TODO: add benchmark executables
+The test program "build/slab" writes a file "out.h5" that contains arrays "A2" and "A3" which are 2D and 3D respectively.
+The workers partition the writing by rows.
