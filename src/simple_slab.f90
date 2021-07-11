@@ -11,6 +11,8 @@ implicit none
 type(hdf5_file) :: h5
 
 real, allocatable :: A2(:,:), A3(:,:,:)
+character(:), allocatable :: outfn
+character(1000) :: argv
 
 integer :: ierr, lx1, lx2, lx3, dx1
 integer :: Nmpi, mpi_id
@@ -20,6 +22,10 @@ integer(HSIZE_T) :: dims_full(rank(A3))
 call mpi_init(ierr)
 call mpi_comm_size(mpi_h5comm, Nmpi, ierr)
 call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
+
+outfn = "out.h5"
+call get_command_argument(1, argv, status=ierr)
+if(ierr == 0) outfn = trim(argv)
 
 !! dummy problem
 lx1 = 16

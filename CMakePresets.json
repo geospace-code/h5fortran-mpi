@@ -26,7 +26,6 @@
   },
   "environment": {
     "CC": "icc",
-    "CXX": "icpc",
     "FC": "ifort"
   }
 },
@@ -39,8 +38,7 @@
     "rhs": "Windows"
   },
   "environment": {
-    "CC": "icl",
-    "CXX": "icl"
+    "CC": "icl"
   }
 },
 {
@@ -53,20 +51,7 @@
   },
   "environment": {
     "CC": "icx",
-    "CXX": "icpx",
     "FC": "ifx"
-  }
-},
-{
-  "name": "intelnextwin", "inherits": "intelnext",
-  "displayName": "Intel oneAPI LLVM: Windows",
-  "condition": {
-    "type": "equals",
-    "lhs": "${hostSystemName}",
-    "rhs": "Windows"
-  },
-  "environment": {
-    "CXX": "icx"
   }
 }
 ],
