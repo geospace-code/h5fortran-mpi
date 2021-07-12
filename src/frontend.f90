@@ -7,8 +7,13 @@ implicit none (type, external)
 
 integer :: lid, lx1, lx2, lx3, Ncpu, ierr, u
 character(1000) :: buf
-character(:), allocatable :: cmd, exe, extra
+character(:), allocatable :: cmd, exe, extra, sizefn
 logical :: exists
+
+sizefn = "simsize.txt"
+
+inquire(file=sizefn, exist=exists)
+if(.not.exists) error stop sizefn // ' not found'
 
 call get_command_argument(1, buf, status=ierr)
 if(ierr/=0) error stop "please input MPI-based program to run"
@@ -24,7 +29,7 @@ Ncpu = get_cpu_count()
 
 ! dummy problem
 open(newunit=u, file="simsize.txt", action="read", status='old', iostat=ierr)
-read(u, '(3I6)') lx1, lx2, lx3
+read(u, *) lx1, lx2, lx3
 close(u)
 
 lid = max_gcd(lx1, Ncpu)
