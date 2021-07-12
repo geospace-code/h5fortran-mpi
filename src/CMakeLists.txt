@@ -28,7 +28,7 @@ target_link_libraries(runner PRIVATE hwloc_ifc pathlib)
 set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 add_test(NAME Slab
-  COMMAND $<TARGET_FILE:runner> $<TARGET_FILE:slab>
+  COMMAND $<TARGET_FILE:runner> -exe $<TARGET_FILE:slab> -mpiexec ${MPIEXEC_EXECUTABLE}
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 set_tests_properties(Slab PROPERTIES TIMEOUT 10)
 

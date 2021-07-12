@@ -7,23 +7,37 @@ implicit none (type, external)
 
 integer :: lid, lx1, lx2, lx3, Ncpu, ierr, u
 character(1000) :: buf
-character(:), allocatable :: cmd, exe, extra, sizefn
+character(:), allocatable :: cmd, exe, mpiexec, sizefn
 logical :: exists
 
 sizefn = "simsize.txt"
-
 inquire(file=sizefn, exist=exists)
 if(.not.exists) error stop sizefn // ' not found'
 
-call get_command_argument(1, buf, status=ierr)
-if(ierr/=0) error stop "please input MPI-based program to run"
-exe = trim(buf)
+exe = ""
+mpiexec = "mpiexec"
+do u = 1,command_argument_count()
+  call get_command_argument(u, buf, status=ierr)
+  if(ierr/=0) exit
+  select case(buf)
+  case("-exe")
+    buf = ""
+    call get_command_argument(u+1, buf, status=ierr)
+    if(ierr/=0 .or. buf(1:1) == "-") error stop "-exe needs an argument"
+    exe = trim(buf)
+  case("-mpiexec")
+    buf = ""
+    call get_command_argument(u+1, buf, status=ierr)
+    if(ierr/=0 .or. buf(1:1) == "-") error stop "-mpiexec needs an argument"
+    mpiexec = trim(buf)
+    inquire(file=mpiexec, exist=exists)
+    if(.not. exists) error stop mpiexec // " is not a file."
+  end select
+end do
+
+if(len_trim(exe)==0) error stop "please specify MPI program to run with option:  -exe myprog.exe"
 inquire(file=exe, exist=exists)
 if(.not. exists) error stop exe // " is not a file."
-
-extra = ""
-call get_command_argument(2, buf, status=ierr)
-if(ierr==0) extra = trim(buf)
 
 Ncpu = get_cpu_count()
 
@@ -37,7 +51,7 @@ lid = max_gcd(lx1, Ncpu)
 print '(A,I0)', 'MPI images: ', lid
 
 !> run MPI-based executable
-write(buf, '(A,1X,I0,1X,A,1X,A)') 'mpiexec -n', lid, exe, extra
+write(buf, '(A1,A,A1,1X,A2,1X,I0,1X,A)') char(34),mpiexec,char(34), '-n', lid, exe
 
 !! quotes are for mpiexec path with spaces
 cmd = trim(buf)
