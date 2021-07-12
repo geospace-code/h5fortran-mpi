@@ -10,7 +10,7 @@ target_link_libraries(h5mpi PRIVATE HDF5::HDF5 MPI::MPI_Fortran)
 add_library(cli OBJECT utils/cli.f90)
 
 ## demo of OO interface
-add_executable(slab simple_slab.f90 $<TARGET_OBJECTS:cli>)
+add_executable(slab simple_slab.f90 utils/perf.f90 $<TARGET_OBJECTS:cli>)
 target_link_libraries(slab PRIVATE h5mpi HDF5::HDF5 MPI::MPI_Fortran)
 set_target_properties(slab PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
@@ -20,7 +20,7 @@ add_subdirectory(pathlib)
 
 configure_file(simsize.txt ${PROJECT_BINARY_DIR})
 
-add_executable(runner frontend.f90 partition.f90 utils/perf.f90 $<TARGET_OBJECTS:cli>)
+add_executable(runner frontend.f90 partition.f90 $<TARGET_OBJECTS:cli>)
 target_link_libraries(runner PRIVATE hwloc_ifc pathlib)
 set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
@@ -29,4 +29,4 @@ add_test(NAME Slab
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 set_tests_properties(Slab PROPERTIES TIMEOUT 10)
 
-set_targ_props(h5mpi)
+set_targ_props(h5mpi cli)

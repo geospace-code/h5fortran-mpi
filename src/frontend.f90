@@ -2,7 +2,6 @@ program frontend
 
 use hwloc_ifc, only : get_cpu_count
 use partition, only : max_gcd
-use perf, only : sysclock2ms
 use cli, only : get_cli
 
 implicit none (type, external)
