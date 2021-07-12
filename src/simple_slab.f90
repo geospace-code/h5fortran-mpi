@@ -15,13 +15,10 @@ character(:), allocatable :: outfn
 character(1000) :: argv
 
 integer :: ierr, lx1, lx2, lx3, dx1, u
-integer :: Nmpi, mpi_id
+integer :: Nmpi, mpi_id, mpi_req, mpi_status(MPI_STATUS_SIZE)
+integer, parameter :: mpi_root_id = 0
 
 integer(HSIZE_T) :: dims_full(rank(A3))
-
-call mpi_init(ierr)
-call mpi_comm_size(mpi_h5comm, Nmpi, ierr)
-call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
 
 outfn = "out.h5"
 call get_command_argument(1, argv, status=ierr)
@@ -31,6 +28,17 @@ if(ierr == 0) outfn = trim(argv)
 open(newunit=u, file="simsize.txt", action="read", status='old', iostat=ierr)
 read(u, '(3I6)') lx1, lx2, lx3
 close(u)
+
+call mpi_init(ierr)
+if(ierr/=0) error stop "mpi_init"
+call mpi_comm_size(mpi_h5comm, Nmpi, ierr)
+call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
+
+call mpi_ibcast(lx1, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
+call mpi_ibcast(lx2, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
+call mpi_ibcast(lx3, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
+call mpi_wait(mpi_req, mpi_status, ierr)
+if(ierr/=0) error stop "failed to send lx1, lx2, lx3"
 
 dims_full = [lx1, lx2, lx3]
 

@@ -21,12 +21,15 @@ endif()
 
 add_subdirectory(pathlib)
 
+configure_file(simsize.txt ${PROJECT_BINARY_DIR})
+
 add_executable(runner frontend.f90 partition.f90)
 target_link_libraries(runner PRIVATE hwloc_ifc pathlib)
 set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 add_test(NAME Slab
-  COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} $<TARGET_FILE:slab>)
+  COMMAND $<TARGET_FILE:runner> $<TARGET_FILE:slab>
+  WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 set_tests_properties(Slab PROPERTIES TIMEOUT 10)
 
 set_targ_props(h5mpi)
