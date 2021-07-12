@@ -195,7 +195,7 @@ endif()
 find_path(HDF5_Fortran_INCLUDE_DIR
   NAMES hdf5.mod
   HINTS ${pc_hdf5_INCLUDE_DIRS}
-  PATH_SUFFIXES ${_psuf} gfortran/modules
+  PATH_SUFFIXES ${_msuf}
   PATHS /usr/lib64
   DOC "HDF5 Fortran modules")
   # CentOS: /usr/lib64/gfortran/modules/hdf5.mod
@@ -288,7 +288,6 @@ endfunction(find_hdf5_c)
 # === main program
 
 set(CMAKE_REQUIRED_LIBRARIES)
-set(_lsuf hdf5)
 
 # we don't use pkg-config names because some distros pkg-config for HDF5 is broken
 # however at least the paths are often correct
@@ -301,12 +300,22 @@ if(NOT HDF5_FOUND)
   endif()
 endif()
 
+set(_lsuf hdf5)
 if(parallel IN_LIST HDF5_FIND_COMPONENTS)
-  list(PREPEND _lsuf hdf5/openmpi hdf5/mpich)
+  list(PREPEND _lsuf openmpi/lib mpich/lib hdf5/openmpi hdf5/mpich)
 else()
   list(PREPEND _lsuf hdf5/serial)
 endif()
+
 set(_psuf static ${_lsuf})
+if(parallel IN_LIST HDF5_FIND_COMPONENTS)
+  list(PREPEND _psuf openmpi-x86_64 mpich-x86_64)
+endif()
+
+set(_msuf ${_psuf} gfortran/modules)
+if(parallel IN_LIST HDF5_FIND_COMPONENTS)
+  list(PREPEND _msuf gfortran/modules/openmpi gfortran/modules/mpich)
+endif()
 
 # Not immediately clear the benefits of this, as we'd have to foreach()
 # a priori names, kind of like we already do with find_library()
