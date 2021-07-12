@@ -7,8 +7,10 @@ set_directory_properties(PROPERTIES CMAKE_CONFIGURE_DEPENDS writer_template.f90)
 add_library(h5mpi OBJECT mpi_h5write.f90 ${CMAKE_CURRENT_BINARY_DIR}/write.f90)
 target_link_libraries(h5mpi PRIVATE HDF5::HDF5 MPI::MPI_Fortran)
 
+add_library(cli OBJECT utils/cli.f90)
+
 ## demo of OO interface
-add_executable(slab simple_slab.f90)
+add_executable(slab simple_slab.f90 $<TARGET_OBJECTS:cli>)
 target_link_libraries(slab PRIVATE h5mpi HDF5::HDF5 MPI::MPI_Fortran)
 set_target_properties(slab PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
@@ -18,7 +20,7 @@ add_subdirectory(pathlib)
 
 configure_file(simsize.txt ${PROJECT_BINARY_DIR})
 
-add_executable(runner frontend.f90 partition.f90)
+add_executable(runner frontend.f90 partition.f90 utils/perf.f90 $<TARGET_OBJECTS:cli>)
 target_link_libraries(runner PRIVATE hwloc_ifc pathlib)
 set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 

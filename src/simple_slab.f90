@@ -5,6 +5,7 @@ program simple
 use mpi
 use hdf5
 use mpi_h5write, only : mpi_h5comm, hdf5_file
+use cli, only : get_cli
 
 implicit none
 
@@ -14,8 +15,8 @@ real, allocatable :: A2(:,:), A3(:,:,:)
 character(:), allocatable :: outfn
 character(1000) :: argv
 
-integer :: ierr, lx1, lx2, lx3, dx1
-integer :: Nmpi, mpi_id, mpi_req
+integer :: ierr, lx1, lx2, lx3, dx1, i
+integer :: Nmpi, mpi_id, mpi_req, Nrun
 integer, parameter :: mpi_root_id = 0
 
 integer(HSIZE_T) :: dims_full(rank(A3))
@@ -42,8 +43,19 @@ dims_full = [lx1, lx2, lx3]
 
 !> output HDF5 file to write
 outfn = "out.h5"
-call get_command_argument(1, argv, status=ierr)
-if(ierr == 0) outfn = trim(argv)
+Nrun = 1
+
+do i = 1, command_argument_count()
+  call get_command_argument(i, argv, status=ierr)
+  if(ierr/=0) exit
+
+  select case(argv)
+  case("-o")
+    call get_cli(i, argv, outfn)
+  case("-Nrun")
+    call get_cli(i, argv, Nrun)
+  end select
+end do
 
 !! 1-D decompose in rows (neglect ghost cells)
 dx1 = lx1 / Nmpi
@@ -53,12 +65,14 @@ allocate(A2(dx1, lx2), A3(dx1, lx2, lx3))
 A2 = mpi_id
 A3 = mpi_id
 
-call h5%open("out.h5", action="w")
+main : do i = 1, Nrun
+  call h5%open("out.h5", action="w")
 
-call h5%write("/A2", A2, dims_full(:2))
-call h5%write("/A3", A3, dims_full)
+  call h5%write("/A2", A2, dims_full(:2))
+  call h5%write("/A3", A3, dims_full)
 
-call h5%close(close_hdf5_interface=.true.)
+  call h5%close()
+end do main
 
 call mpi_finalize(ierr)
 
