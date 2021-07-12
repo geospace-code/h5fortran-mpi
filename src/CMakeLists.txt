@@ -19,9 +19,14 @@ else()
   return()
 endif()
 
+add_subdirectory(pathlib)
+
 add_executable(runner frontend.f90 partition.f90)
-target_link_libraries(runner PRIVATE hwloc_ifc)
+target_link_libraries(runner PRIVATE hwloc_ifc pathlib)
+set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 add_test(NAME Slab
   COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} $<TARGET_FILE:slab>)
 set_tests_properties(Slab PROPERTIES TIMEOUT 10)
+
+set_targ_props(h5mpi)

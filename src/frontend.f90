@@ -1,13 +1,13 @@
 program frontend
 
 use hwloc_ifc, only : get_cpu_count
-use partition, only : max_mpi
+use partition, only : max_gcd
 
 implicit none (type, external)
 
-integer :: lid, lx2, lx3, Ncpu, ierr
+integer :: lid, lx1, lx2, lx3, Ncpu, ierr, u
 character(1000) :: buf
-character(:), allocatable :: cmd, exe
+character(:), allocatable :: cmd, exe, extra
 logical :: exists
 
 call get_command_argument(1, buf, status=ierr)
@@ -16,14 +16,23 @@ exe = trim(buf)
 inquire(file=exe, exist=exists)
 if(.not. exists) error stop exe // " is not a file."
 
+extra = ""
+call get_command_argument(2, buf, status=ierr)
+if(ierr==0) extra = trim(buf)
+
 Ncpu = get_cpu_count()
 
-lid = max_mpi(lx2, lx3, Ncpu)
+! dummy problem
+open(newunit=u, file="simsize.txt", action="read", status='old', iostat=ierr)
+read(u, '(3I6)') lx1, lx2, lx3
+close(u)
+
+lid = max_gcd(lx1, Ncpu)
 
 print '(A,I0)', 'MPI images: ', lid
 
 !> run MPI-based executable
-write(buf, '(A1,A,A,I0,1X,A,1X,A,1X,A)') 'mpiexec -n ', lid, exe
+write(buf, '(A,1X,I0,1X,A,1X,A)') 'mpiexec -n', lid, exe, extra
 
 !! quotes are for mpiexec path with spaces
 cmd = trim(buf)

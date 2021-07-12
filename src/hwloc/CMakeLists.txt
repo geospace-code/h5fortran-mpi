@@ -5,6 +5,6 @@ target_link_libraries(hwloc_c PRIVATE HWLOC::HWLOC)
 
 # not OBJECT to avoid link issues
 add_library(hwloc_ifc hwloc_ifc.f90)
-set_target_properties(hwloc_ifc PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
-target_include_directories(hwloc_ifc INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/include)
 target_link_libraries(hwloc_ifc PRIVATE hwloc_c)
+
+set_targ_props(hwloc_ifc)
