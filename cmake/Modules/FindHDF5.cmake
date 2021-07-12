@@ -149,14 +149,22 @@ endfunction(detect_config)
 function(find_hdf5_fortran)
 # NOTE: the "lib*" are for Windows Intel compiler, even for self-built HDF5.
 # CMake won't look for lib prefix automatically.
+set(_names hdf5_fortran libhdf5_fortran)
+set(_hl_names hdf5_hl_fortran hdf5hl_fortran libhdf5_hl_fortran libhdf5hl_fortran)
+if(parallel IN_LIST HDF5_FIND_COMPONENTS)
+  list(PREPEND _names hdf5_openmpi_fortran hdf5_mpich_fortran)
+  list(PREPEND _hl_names hdf5_openmpihl_fortran hdf5_mpichhl_fortran)
+endif()
+
 find_library(HDF5_Fortran_LIBRARY
-  NAMES hdf5_fortran libhdf5_fortran
+  NAMES ${_names}
   HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "HDF5 Fortran API")
+
 find_library(HDF5_Fortran_HL_LIBRARY
-  NAMES hdf5_hl_fortran hdf5hl_fortran libhdf5_hl_fortran libhdf5hl_fortran
+  NAMES ${_hl_names}
   HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
@@ -237,14 +245,22 @@ endfunction(find_hdf5_cxx)
 
 function(find_hdf5_c)
 
+set(_names hdf5 libhdf5)
+set(_hl_names hdf5_hl libhdf5_hl)
+if(parallel IN_LIST HDF5_FIND_COMPONENTS)
+  list(PREPEND _names hdf5_openmpi hdf5_mpich)
+  list(PREPEND _hl_names hdf5_openmpi_hl hdf5_mpich_hl)
+endif()
+
 find_library(HDF5_C_LIBRARY
-  NAMES hdf5 libhdf5
+  NAMES ${_names}
   HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "HDF5 C library (necessary for all languages)")
+
 find_library(HDF5_C_HL_LIBRARY
-  NAMES hdf5_hl libhdf5_hl
+  NAMES ${_hl_names}
   HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
@@ -273,22 +289,24 @@ endfunction(find_hdf5_c)
 
 set(CMAKE_REQUIRED_LIBRARIES)
 set(_lsuf hdf5)
-set(_psuf static ${_lsuf})
 
 # we don't use pkg-config names because some distros pkg-config for HDF5 is broken
 # however at least the paths are often correct
 find_package(PkgConfig)
 if(NOT HDF5_FOUND)
   if(parallel IN_LIST HDF5_FIND_COMPONENTS)
-    pkg_search_module(pc_hdf5 hdf5)
+    pkg_search_module(pc_hdf5 hdf5-openmpi hdf5-mpich hdf5)
   else()
-    pkg_search_module(pc_hdf5 hdf5 hdf5-serial)
+    pkg_search_module(pc_hdf5 hdf5-serial hdf5)
   endif()
 endif()
 
-if(NOT parallel IN_LIST HDF5_FIND_COMPONENTS)
-  list(APPEND _lsuf hdf5/serial)
+if(parallel IN_LIST HDF5_FIND_COMPONENTS)
+  list(PREPEND _lsuf hdf5/openmpi hdf5/mpich)
+else()
+  list(PREPEND _lsuf hdf5/serial)
 endif()
+set(_psuf static ${_lsuf})
 
 # Not immediately clear the benefits of this, as we'd have to foreach()
 # a priori names, kind of like we already do with find_library()

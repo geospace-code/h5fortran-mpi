@@ -70,7 +70,7 @@ class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: filename
 character(*), intent(in), optional :: action
 
-character(2) :: laction
+character(len=2) :: laction
 integer :: ierr
 integer(HID_T) :: plist_id
 logical :: exists

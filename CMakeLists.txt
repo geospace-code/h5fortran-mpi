@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14...3.21)
+cmake_minimum_required(VERSION 3.19...3.21)
 project(HDF5benchmark LANGUAGES C Fortran)
 
 include(CTest)
