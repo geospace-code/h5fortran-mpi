@@ -17,6 +17,7 @@ if(.not.exists) error stop sizefn // ' not found'
 
 !> defaults
 Ncpu = 0
+Nrun = 1
 
 do i = 1,command_argument_count()
   call get_command_argument(i, buf, status=ierr)
