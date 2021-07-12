@@ -14,7 +14,7 @@ real, allocatable :: A2(:,:), A3(:,:,:)
 character(:), allocatable :: outfn
 character(1000) :: argv
 
-integer :: ierr, lx1, lx2, lx3, dx1
+integer :: ierr, lx1, lx2, lx3, dx1, u
 integer :: Nmpi, mpi_id
 
 integer(HSIZE_T) :: dims_full(rank(A3))
@@ -28,9 +28,9 @@ call get_command_argument(1, argv, status=ierr)
 if(ierr == 0) outfn = trim(argv)
 
 !! dummy problem
-lx1 = 16
-lx2 = 4
-lx3 = 8
+open(newunit=u, file="simsize.txt", action="read", status='old', iostat=ierr)
+read(u, '(3I6)') lx1, lx2, lx3
+close(u)
 
 dims_full = [lx1, lx2, lx3]
 
