@@ -33,7 +33,6 @@ if(mpi_id == 0) call get_simsize("simsize.txt", Nmpi, lx1, lx2, lx3)
 call mpi_ibcast(lx1, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
 call mpi_ibcast(lx2, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
 call mpi_ibcast(lx3, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
-print *, 'MPI worker: ', mpi_id, 'request:' , mpi_req
 call mpi_wait(mpi_req, MPI_STATUS_IGNORE, ierr)
 if(ierr/=0) error stop "failed to send lx1, lx2, lx3"
 
