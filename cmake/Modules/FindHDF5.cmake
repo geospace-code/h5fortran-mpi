@@ -346,16 +346,43 @@ if(HDF5_C_FOUND)
 list(PREPEND CMAKE_REQUIRED_LIBRARIES ${HDF5_C_LIBRARIES})
 set(CMAKE_REQUIRED_INCLUDES ${HDF5_C_INCLUDE_DIR})
 
-check_c_source_compiles(
-"
-#include \"hdf5.h\"
+check_c_source_compiles([=[
+#include "hdf5.h"
 
 int main(void){
-hid_t f = H5Fcreate (\"junk.h5\", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+hid_t f = H5Fcreate ("junk.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 herr_t status = H5Fclose (f);
 return 0;}
-"
+]=]
 HDF5_C_links)
+
+if(HDF5_C_links AND parallel IN_LIST HDF5_FIND_COMPONENTS)
+
+list(APPEND CMAKE_REQUIRED_LIBRARIES MPI::MPI_C)
+
+check_c_source_compiles([=[
+#include "hdf5.h"
+#include "mpi.h"
+
+int main(void){
+MPI_Init(NULL, NULL);
+
+hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
+H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL);
+
+H5Pclose(plist_id);
+
+MPI_Finalize();
+
+return 0;
+}
+]=]
+HDF5_C_MPI_links)
+
+if(NOT HDF5_C_MPI_links)
+  set(HDF5_C_links false)
+endif()
+endif()
 
 set(HDF5_links ${HDF5_C_links})
 
@@ -377,6 +404,38 @@ call h5open_f(i)
 call h5close_f(i)
 end program"
 HDF5_Fortran_links SRC_EXT f90)
+
+if(HDF5_Fortran_links AND parallel IN_LIST HDF5_FIND_COMPONENTS)
+
+list(APPEND CMAKE_REQUIRED_LIBRARIES MPI::MPI_Fortran)
+
+check_fortran_source_compiles("
+program test_fortran_mpi
+
+use hdf5
+use mpi
+
+integer :: ierr
+integer(HID_T) :: plist_id
+
+call mpi_init(ierr)
+
+call h5open_f(ierr)
+
+call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, ierr)
+call h5pset_fapl_mpio_f(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL, ierr)
+
+call h5pclose_f(plist_id, ierr)
+
+call mpi_finalize(ierr)
+
+end program"
+HDF5_Fortran_MPI_links SRC_EXT f90)
+
+if(NOT HDF5_Fortran_MPI_links)
+  set(HDF5_Fortran_links false)
+endif()
+endif()
 
 endif()
 

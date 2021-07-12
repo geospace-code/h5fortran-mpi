@@ -15,7 +15,7 @@ character(:), allocatable :: outfn
 character(1000) :: argv
 
 integer :: ierr, lx1, lx2, lx3, dx1
-integer :: Nmpi, mpi_id, mpi_req, mpi_status(MPI_STATUS_SIZE)
+integer :: Nmpi, mpi_id, mpi_req
 integer, parameter :: mpi_root_id = 0
 
 integer(HSIZE_T) :: dims_full(rank(A3))
@@ -34,7 +34,7 @@ call mpi_ibcast(lx1, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
 call mpi_ibcast(lx2, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
 call mpi_ibcast(lx3, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
 print *, 'MPI worker: ', mpi_id, 'request:' , mpi_req
-call mpi_wait(mpi_req, mpi_status, ierr)
+call mpi_wait(mpi_req, MPI_STATUS_IGNORE, ierr)
 if(ierr/=0) error stop "failed to send lx1, lx2, lx3"
 
 print *, 'MPI worker: ', mpi_id, ' lx1, lx2, lx3 = ', lx1, lx2, lx3
