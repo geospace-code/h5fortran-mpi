@@ -12,12 +12,7 @@ add_executable(slab simple_slab.f90)
 target_link_libraries(slab PRIVATE h5mpi HDF5::HDF5 MPI::MPI_Fortran)
 set_target_properties(slab PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
-find_package(HWLOC)
-if(HWLOC_FOUND)
-  add_subdirectory(hwloc)
-else()
-  return()
-endif()
+add_subdirectory(hwloc)
 
 add_subdirectory(pathlib)
 
