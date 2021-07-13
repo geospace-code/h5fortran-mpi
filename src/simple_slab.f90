@@ -2,7 +2,7 @@ program simple
 !! a more optimal case is to use hyperslabs with each worker
 !! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90
 
-use, intrinsic :: iso_fortran_env, only : int64, stderr=>error_unit
+use, intrinsic :: iso_fortran_env, only : int64, real64, stderr=>error_unit
 use mpi
 use hdf5
 use mpi_h5write, only : mpi_h5comm, hdf5_file
@@ -22,6 +22,7 @@ integer :: Nmpi, mpi_id, mpi_req, Nrun
 integer, parameter :: mpi_root_id = 0
 
 integer(int64) :: tic, toc, tmin
+real(real64) :: file_Mbytes, t_ms
 
 integer(HSIZE_T) :: dims_full(rank(A3))
 
@@ -90,7 +91,15 @@ end do main
 
 call mpi_finalize(ierr)
 
-if(mpi_id == mpi_root_id) print "(A,I0,A,F8.3,A)", "Nrun = ", Nrun, " time =", sysclock2ms(tmin), " ms/run"
+file_Mbytes = real((storage_size(A3) / 8 * product(dims_full)) + &
+                   (storage_size(A3) / 8 * product(dims_full(:2))), real64) / 1024 / 1024
+
+print *, "data size: (megabytes)", file_Mbytes
+
+t_ms = sysclock2ms(tmin)
+if(mpi_id == mpi_root_id) print "(A,I0,A,F8.3,A,F8.3,A)", "Nrun = ", Nrun, &
+  " time =", t_ms, " ms/run", &
+  file_Mbytes/t_ms/1000, " Mbytes/sec"
 
 
 contains
