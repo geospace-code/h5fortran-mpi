@@ -19,7 +19,7 @@ integer :: comp_lvl = 0 !< compression level (1-9)  0: disable compression
 
 contains
 
-procedure, public :: open => ph5open, close => ph5close
+procedure, public :: open => ph5open, close => ph5close, flush => hdf_flush
 !! procedures without mapping
 
 generic, public :: write => ph5write2d_r32, ph5write3d_r32
@@ -161,6 +161,21 @@ self%file_id = 0
 self%is_open = .false.
 
 end subroutine ph5close
+
+
+subroutine hdf_flush(self, ierr)
+!! request operating system flush data to disk.
+!! The operating system can do this when it desires, which might be a while.
+class(hdf5_file), intent(in) :: self
+integer, intent(out), optional :: ierr
+integer :: ier
+
+call h5fflush_f(self%file_id, H5F_SCOPE_GLOBAL_F, ier)
+
+if (present(ierr)) ierr = ier
+if (check(ier, 'ERROR: HDF5 flush ' // self%filename) .and. .not.present(ierr)) error stop
+
+end subroutine hdf_flush
 
 
 logical function check(ierr, filename, dname)

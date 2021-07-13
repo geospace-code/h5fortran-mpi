@@ -82,6 +82,8 @@ main : do i = 1, Nrun
   call h5%write("/A2", A2, dims_full(:2))
   call h5%write("/A3", A3, dims_full)
 
+  call h5%flush()
+
   call h5%close()
   if(mpi_id == mpi_root_id) then
     call system_clock(count=toc)
