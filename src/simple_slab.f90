@@ -22,7 +22,7 @@ integer :: Nmpi, mpi_id, mpi_req, Nrun
 integer, parameter :: mpi_root_id = 0
 
 integer(int64) :: tic, toc, tmin
-real(real64) :: file_Mbytes, t_ms
+real(real64) :: file_Mbytes, t_ms, Mbytes_sec
 
 integer(HSIZE_T) :: dims_full(rank(A3))
 
@@ -89,17 +89,25 @@ main : do i = 1, Nrun
   endif
 end do main
 
-call mpi_finalize(ierr)
+!> RESULTS
 
-file_Mbytes = real((storage_size(A3) / 8 * product(dims_full)) + &
+if(mpi_id == mpi_root_id) then
+  file_Mbytes = real((storage_size(A3) / 8 * product(dims_full)) + &
                    (storage_size(A3) / 8 * product(dims_full(:2))), real64) / 1024 / 1024
 
-print *, "data size: (megabytes)", file_Mbytes
+  print '(A,F8.3)', "data size: (megabytes)", file_Mbytes
 
-t_ms = sysclock2ms(tmin)
-if(mpi_id == mpi_root_id) print "(A,I0,A,F8.3,A,F8.3,A)", "Nrun = ", Nrun, &
-  " time =", t_ms, " ms/run", &
-  file_Mbytes/t_ms/1000, " Mbytes/sec"
+  t_ms = sysclock2ms(tmin)
+  Mbytes_sec = file_Mbytes/(t_ms/1000)
+
+  print "(A,I0,A,F8.3,A,F10.3,A)", "Nrun = ", Nrun, &
+    " time =", t_ms, " ms/run ", Mbytes_sec, " Mbytes/sec"
+
+  if(Mbytes_sec < 10) write(stderr,*) "write speed seems unusally slow"
+  if(file_Mbytes < 1) write(stderr,*) "benchmark may lose accuracy with small files in general"
+endif
+
+call mpi_finalize(ierr)
 
 
 contains
