@@ -99,18 +99,26 @@ contains
 subroutine get_simsize(sizefn, Nmpi, lx1, lx2, lx3)
 
 character(*), intent(in) :: sizefn
+
+character(9) :: buf
 integer, intent(in) :: Nmpi
 integer, intent(out) :: lx1, lx2, lx3
 
-logical :: exists
-integer :: u, ierr
+integer :: ierr, argc
 
-!! dummy problem
-inquire(file=sizefn, exist=exists)
-if(.not.exists) error stop sizefn // ' not found'
-open(newunit=u, file=sizefn, action="read", status='old', iostat=ierr)
-read(u, *) lx1, lx2, lx3
-close(u)
+argc = command_argument_count()
+if(argc < 5) error stop "must input at least: lx1 lx2 lx3 -exe my.exe"
+call get_command_argument(1, buf, status=ierr)
+if(ierr/=0) error stop "could not read lx1"
+read(buf,*) lx1
+
+call get_command_argument(2, buf, status=ierr)
+if(ierr/=0) error stop "could not read lx2"
+read(buf,*) lx2
+
+call get_command_argument(3, buf, status=ierr)
+if(ierr/=0) error stop "could not read lx3"
+read(buf,*) lx3
 
 !> MPI sanity check
 if (Nmpi > lx1) error stop "too many MPI workers"

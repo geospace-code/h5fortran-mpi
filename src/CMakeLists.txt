@@ -18,14 +18,12 @@ add_subdirectory(hwloc)
 
 add_subdirectory(pathlib)
 
-configure_file(simsize.txt ${PROJECT_BINARY_DIR})
-
 add_executable(runner frontend.f90 partition.f90)
 target_link_libraries(runner PRIVATE hwloc_ifc cli pathlib)
 set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 add_test(NAME Slab
-  COMMAND $<TARGET_FILE:runner> -exe $<TARGET_FILE:slab> -mpiexec ${MPIEXEC_EXECUTABLE}
+  COMMAND $<TARGET_FILE:runner> 16 4 8 -exe $<TARGET_FILE:slab> -mpiexec ${MPIEXEC_EXECUTABLE}
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 set_tests_properties(Slab PROPERTIES TIMEOUT 10)
 

@@ -6,20 +6,30 @@ use cli, only : get_cli
 
 implicit none (type, external)
 
-integer :: lid, lx1, lx2, lx3, Ncpu, ierr, u, Nrun, i
+integer :: lid, lx1, lx2, lx3, Ncpu, ierr, u, Nrun, i, argc
 character(1000) :: buf, exe, mpiexec
 character(:), allocatable :: cmd, sizefn
 logical :: exists
 
-sizefn = "simsize.txt"
-inquire(file=sizefn, exist=exists)
-if(.not.exists) error stop sizefn // ' not found'
+argc = command_argument_count()
+if(argc < 5) error stop "must input at least: lx1 lx2 lx3 -exe my.exe"
+call get_command_argument(1, buf, status=ierr)
+if(ierr/=0) error stop "could not read lx1"
+read(buf,*) lx1
+
+call get_command_argument(2, buf, status=ierr)
+if(ierr/=0) error stop "could not read lx2"
+read(buf,*) lx2
+
+call get_command_argument(3, buf, status=ierr)
+if(ierr/=0) error stop "could not read lx3"
+read(buf,*) lx3
 
 !> defaults
 Ncpu = 0
 Nrun = 1
 
-do i = 1,command_argument_count()
+do i = 4, argc
   call get_command_argument(i, buf, status=ierr)
   if(ierr/=0) exit
 
@@ -45,11 +55,6 @@ if(.not. exists) error stop trim(exe) // " is not a file."
 
 if(Ncpu < 1) Ncpu = get_cpu_count()
 
-! dummy problem
-open(newunit=u, file="simsize.txt", action="read", status='old', iostat=ierr)
-read(u, *) lx1, lx2, lx3
-close(u)
-
 lid = max_gcd(lx1, Ncpu)
 
 print '(A,I0)', 'MPI images: ', lid
@@ -57,8 +62,11 @@ print '(A,I0)', 'MPI images: ', lid
 !> run MPI-based executable
 !> need to quote executables in case they have spaces in the path.
 !> don't quote "exe" as this makes the CLI invalid syntax--don't have spaces in the exe path.
-write(buf, '(A1,A,A1,1X,A2,1X,I0,1X,A,1X,A5,1X,I0)') char(34), trim(mpiexec), char(34), '-n', lid, &
-  trim(exe), "-Nrun", Nrun
+write(buf, '(A1,A,A1,1X,A2,1X,I0,1X,A,1X,I0,1X,I0,1X,I0,1X,A5,1X,I0)') &
+  char(34), trim(mpiexec), char(34), '-n', lid, &
+  trim(exe), &
+  lx1,lx2,lx3, &
+  "-Nrun", Nrun
 
 !! quotes are for mpiexec path with spaces
 cmd = trim(buf)
