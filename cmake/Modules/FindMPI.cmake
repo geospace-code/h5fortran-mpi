@@ -94,6 +94,11 @@ string(REGEX MATCHALL "(^| )(${CMAKE_LIBRARY_PATH_FLAG})([^\" ]+|\"[^\"]+\")" _L
 list(TRANSFORM _Lflags STRIP)
 set(_flags ${_Lflags})
 
+# check if compiler absolute path is first element and remove
+if(${_flags} MATCHES "^/")
+  list(REMOVE_AT _flags 0)
+endif()
+
 string(REGEX MATCHALL "(^| )(-Wl,)([^\" ]+|\"[^\"]+\")" _Wflags "${raw}")
 list(TRANSFORM _Wflags STRIP)
 if(_Wflags)
