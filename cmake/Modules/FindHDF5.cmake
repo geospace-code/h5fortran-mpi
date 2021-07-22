@@ -16,10 +16,15 @@ Result Variables
 
 ``HDF5_FOUND``
   HDF5 libraries were found
+
 ``HDF5_INCLUDE_DIRS``
   HDF5 include directory
+
 ``HDF5_LIBRARIES``
   HDF5 library files
+
+``HDF5_<lang>_COMPILER_EXECUTABLE``
+  wrapper compiler for HDF5
 
 Components
 ==========
@@ -154,10 +159,16 @@ function(find_hdf5_fortran)
 # CMake won't look for lib prefix automatically.
 set(_names hdf5_fortran libhdf5_fortran)
 set(_hl_names hdf5_hl_fortran hdf5hl_fortran libhdf5_hl_fortran libhdf5hl_fortran)
+set(wrapper_names h5fc h5fc-64)
 if(parallel IN_LIST HDF5_FIND_COMPONENTS)
   list(PREPEND _names hdf5_openmpi_fortran hdf5_mpich_fortran)
   list(PREPEND _hl_names hdf5_openmpihl_fortran hdf5_mpichhl_fortran)
+  set(wrapper_names h5pfc h5pfc.openmpi h5pfc.mpich)
 endif()
+
+find_program(HDF5_Fortran_COMPILER_EXECUTABLE
+  NAMES ${wrapper_names}
+)
 
 find_library(HDF5_Fortran_LIBRARY
   NAMES ${_names}
@@ -216,6 +227,10 @@ endfunction(find_hdf5_fortran)
 
 function(find_hdf5_cxx)
 
+find_program(HDF5_CXX_COMPILER_EXECUTABLE
+  NAMES h5c++ h5c++-64
+)
+
 find_library(HDF5_CXX_LIBRARY
   NAMES hdf5_cpp libhdf5_cpp
   HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
@@ -250,10 +265,16 @@ function(find_hdf5_c)
 
 set(_names hdf5 libhdf5)
 set(_hl_names hdf5_hl libhdf5_hl)
+set(wrapper_names h5cc h5cc-64)
 if(parallel IN_LIST HDF5_FIND_COMPONENTS)
   list(PREPEND _names hdf5_openmpi hdf5_mpich)
   list(PREPEND _hl_names hdf5_openmpi_hl hdf5_mpich_hl)
+  set(wrapper_names h5pcc h5pcc.openmpi h5pcc.mpich)
 endif()
+
+find_program(HDF5_C_COMPILER_EXECUTABLE
+  NAMES ${wrapper_names}
+)
 
 find_library(HDF5_C_LIBRARY
   NAMES ${_names}

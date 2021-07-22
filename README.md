@@ -16,9 +16,16 @@ cmake -B build -DCMAKE_INSTALL_PREFIX=~/libs_par
 cmake --build build
 ```
 
-that will build and install HDF5 under ~/lib_parallel (or other directory of your choice).
+that will build and install HDF5 under ~/lib_par (or other directory of your choice).
 
-## Build ghis project
+---
+
+Alternatively, some Linux distros do have a parallel HDF5 package:
+
+* Ubuntu: `apt install libhdf5-openmpi-dev`
+* CentOS: `yum install hdf5-openmpi-devel`
+
+## Build this project
 
 Once you have a HDF5 parallel library, build this project like:
 
