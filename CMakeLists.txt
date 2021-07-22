@@ -5,7 +5,7 @@ include(CTest)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 
-find_package(MPI COMPONENTS Fortran REQUIRED)
+find_package(MPI COMPONENTS C Fortran REQUIRED)
 
 include(cmake/compilers.cmake)
 include(cmake/SetTargProps.cmake)

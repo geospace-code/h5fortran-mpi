@@ -34,7 +34,7 @@ call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
 lx1 = -1
 lx2 = -1
 lx3 = -1
-if(mpi_id == 0) call get_simsize("simsize.txt", Nmpi, lx1, lx2, lx3)
+if(mpi_id == 0) call get_simsize(Nmpi, lx1, lx2, lx3)
 
 call mpi_ibcast(lx1, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
 call mpi_ibcast(lx2, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
@@ -56,7 +56,7 @@ Nrun = 1
 
 do i = 1, command_argument_count()
   call get_command_argument(i, argv, status=ierr)
-  if(ierr/=0) exit
+  if(ierr/=0) error stop "unknown argument: " // argv
 
   select case(argv)
   case("-o")
@@ -74,6 +74,7 @@ allocate(A2(dx1, lx2), A3(dx1, lx2, lx3))
 A2 = mpi_id
 A3 = mpi_id
 
+!> benchmark loop
 tmin = huge(0_int64)
 main : do i = 1, Nrun
   if(mpi_id == mpi_root_id) call system_clock(count=tic)
@@ -115,9 +116,7 @@ call mpi_finalize(ierr)
 contains
 
 
-subroutine get_simsize(sizefn, Nmpi, lx1, lx2, lx3)
-
-character(*), intent(in) :: sizefn
+subroutine get_simsize(Nmpi, lx1, lx2, lx3)
 
 character(9) :: buf
 integer, intent(in) :: Nmpi
@@ -127,17 +126,18 @@ integer :: ierr, argc
 
 argc = command_argument_count()
 if(argc < 5) error stop "must input at least: lx1 lx2 lx3 -exe my.exe"
+
 call get_command_argument(1, buf, status=ierr)
 if(ierr/=0) error stop "could not read lx1"
-read(buf,*) lx1
+read(buf, '(I9)') lx1
 
 call get_command_argument(2, buf, status=ierr)
 if(ierr/=0) error stop "could not read lx2"
-read(buf,*) lx2
+read(buf, '(I9)') lx2
 
 call get_command_argument(3, buf, status=ierr)
 if(ierr/=0) error stop "could not read lx3"
-read(buf,*) lx3
+read(buf, '(I9)') lx3
 
 !> MPI sanity check
 if (Nmpi > lx1) error stop "too many MPI workers"
