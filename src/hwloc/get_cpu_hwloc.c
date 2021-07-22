@@ -20,7 +20,7 @@ int cpu_count_c(void){
   if (nCore < 1) {
     // assume hyperthreading / 2
     nCore = hwloc_get_nbobjs_by_type(sTopology, HWLOC_OBJ_PU) / 2;
-    printf("hwloc: fallback to PU count/2: %d CORE count not available\n", nCore);
+    fprintf(stderr, "hwloc: fallback to HWLOC_OBJ_PU count/2: HWLOC_OBJ_CORE count not available\n");
   }
 
   hwloc_topology_destroy(sTopology);

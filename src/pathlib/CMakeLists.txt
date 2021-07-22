@@ -21,9 +21,8 @@ if(BUILD_TESTING)
   add_executable(test_pathlib test_pathlib.f90)
   target_link_libraries(test_pathlib PRIVATE pathlib)
 
-  add_test(NAME unit:pathlib COMMAND $<TARGET_FILE:test_pathlib>)
-  set_tests_properties(unit:pathlib PROPERTIES
-    LABELS unit
+  add_test(NAME pathlib COMMAND $<TARGET_FILE:test_pathlib>)
+  set_tests_properties(pathlib PROPERTIES
     TIMEOUT 10)
 endif()
 

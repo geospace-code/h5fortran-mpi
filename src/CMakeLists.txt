@@ -27,6 +27,8 @@ set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINAR
 add_test(NAME SmallSlab
   COMMAND $<TARGET_FILE:runner> 16 4 8 -exe $<TARGET_FILE:slab> -mpiexec ${MPIEXEC_EXECUTABLE}
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
-set_tests_properties(SmallSlab PROPERTIES TIMEOUT 10)
+set_tests_properties(SmallSlab PROPERTIES
+  TIMEOUT 10
+  LABELS mpi_hdf5)
 
 set_targ_props(h5mpi cli)
