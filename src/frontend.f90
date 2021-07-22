@@ -1,7 +1,7 @@
 program frontend
 
 use hwloc_ifc, only : get_cpu_count
-use partition, only : max_gcd
+use partition, only : max_gcd, get_simsize
 use cli, only : get_cli
 
 implicit none (type, external)
@@ -12,18 +12,8 @@ character(:), allocatable :: cmd, sizefn
 logical :: exists
 
 argc = command_argument_count()
-if(argc < 5) error stop "must input at least: lx1 lx2 lx3 -exe my.exe"
-call get_command_argument(1, buf, status=ierr)
-if(ierr/=0) error stop "could not read lx1"
-read(buf,*) lx1
 
-call get_command_argument(2, buf, status=ierr)
-if(ierr/=0) error stop "could not read lx2"
-read(buf,*) lx2
-
-call get_command_argument(3, buf, status=ierr)
-if(ierr/=0) error stop "could not read lx3"
-read(buf,*) lx3
+call get_simsize(lx1, lx2, lx3)
 
 !> defaults
 Ncpu = 0

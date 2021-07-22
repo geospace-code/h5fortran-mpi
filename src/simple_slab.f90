@@ -6,6 +6,7 @@ use, intrinsic :: iso_fortran_env, only : int64, real64, stderr=>error_unit
 use mpi
 use hdf5
 use mpi_h5write, only : mpi_h5comm, hdf5_file
+use partition, only : get_simsize
 use cli, only : get_cli
 use perf, only : sysclock2ms
 
@@ -34,7 +35,7 @@ call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
 lx1 = -1
 lx2 = -1
 lx3 = -1
-if(mpi_id == 0) call get_simsize(Nmpi, lx1, lx2, lx3)
+if(mpi_id == 0) call get_simsize(lx1, lx2, lx3, Nmpi)
 
 call mpi_ibcast(lx1, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
 call mpi_ibcast(lx2, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
@@ -111,39 +112,6 @@ if(mpi_id == mpi_root_id) then
 endif
 
 call mpi_finalize(ierr)
-
-
-contains
-
-
-subroutine get_simsize(Nmpi, lx1, lx2, lx3)
-
-character(9) :: buf
-integer, intent(in) :: Nmpi
-integer, intent(out) :: lx1, lx2, lx3
-
-integer :: ierr, argc
-
-argc = command_argument_count()
-if(argc < 5) error stop "must input at least: lx1 lx2 lx3 -exe my.exe"
-
-call get_command_argument(1, buf, status=ierr)
-if(ierr/=0) error stop "could not read lx1"
-read(buf, '(I9)') lx1
-
-call get_command_argument(2, buf, status=ierr)
-if(ierr/=0) error stop "could not read lx2"
-read(buf, '(I9)') lx2
-
-call get_command_argument(3, buf, status=ierr)
-if(ierr/=0) error stop "could not read lx3"
-read(buf, '(I9)') lx3
-
-!> MPI sanity check
-if (Nmpi > lx1) error stop "too many MPI workers"
-if (modulo(lx1, Nmpi) /= 0) error stop "number of MPI workers must evenly divide problem size."
-
-end subroutine get_simsize
 
 
 end program
