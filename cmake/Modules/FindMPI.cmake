@@ -95,7 +95,7 @@ list(TRANSFORM _Lflags STRIP)
 set(_flags ${_Lflags})
 
 # check if compiler absolute path is first element and remove
-if(${_flags} MATCHES "^/")
+if(${raw} MATCHES "^/" AND ${_flags} MATCHES "^/")
   list(REMOVE_AT _flags 0)
 endif()
 
@@ -154,6 +154,11 @@ foreach(_p IN LISTS _vars)
   string(REGEX REPLACE "(^| )${flag} *" "" _p "${_p}")
   list(APPEND _v "/${_p}")
 endforeach()
+
+# check if compiler absolute path is first element and remove
+if(${raw} MATCHES "^/")
+  list(REMOVE_AT _v 0)
+endif()
 
 set(${outvar} ${_v} PARENT_SCOPE)
 
