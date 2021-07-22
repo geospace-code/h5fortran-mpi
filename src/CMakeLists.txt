@@ -22,11 +22,20 @@ add_executable(runner frontend.f90)
 target_link_libraries(runner PRIVATE partition cli pathlib HWLOC::HWLOC_Fortran)
 set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
-add_test(NAME SmallSlab
+set_targ_props(h5mpi cli)
+
+# tests
+
+add_test(NAME Slab16
   COMMAND $<TARGET_FILE:runner> 16 4 8 -exe $<TARGET_FILE:slab> -mpiexec ${MPIEXEC_EXECUTABLE}
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
-set_tests_properties(SmallSlab PROPERTIES
+set_tests_properties(Slab16 PROPERTIES
   TIMEOUT 10
   LABELS mpi_hdf5)
 
-set_targ_props(h5mpi cli)
+  add_test(NAME Slab10000
+  COMMAND $<TARGET_FILE:runner> 10000 4 8 -exe $<TARGET_FILE:slab> -mpiexec ${MPIEXEC_EXECUTABLE}
+  WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+set_tests_properties(Slab10000 PROPERTIES
+  TIMEOUT 180
+  LABELS mpi_hdf5)

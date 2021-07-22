@@ -1,11 +1,11 @@
 # provides CMake imported target HWLOC::HWLOC_Fortran
 include(ExternalProject)
 
-find_package(HWLOC-Fortran CONFIG)
+# find_package(HWLOC-Fortran CONFIG)
 
-if(HWLOC-Fortran_FOUND)
-  return()
-endif()
+# if(HWLOC-Fortran_FOUND)
+#   return()
+# endif()
 
 if(NOT HWLOC-Fortran_ROOT)
   if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
