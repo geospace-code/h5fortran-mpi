@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19...3.21)
+cmake_minimum_required(VERSION 3.20...3.21)
 project(HDF5benchmark LANGUAGES C Fortran)
 
 include(CTest)
@@ -9,6 +9,7 @@ find_package(MPI COMPONENTS C Fortran REQUIRED)
 
 include(cmake/compilers.cmake)
 include(cmake/SetTargProps.cmake)
+include(cmake/hwloc.cmake)
 
 find_package(HDF5 COMPONENTS Fortran parallel REQUIRED)
 

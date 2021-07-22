@@ -16,12 +16,10 @@ add_executable(slab simple_slab.f90 utils/perf.f90)
 target_link_libraries(slab PRIVATE h5mpi partition cli HDF5::HDF5 MPI::MPI_Fortran)
 set_target_properties(slab PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
-add_subdirectory(hwloc)
-
-add_subdirectory(pathlib)
+add_subdirectory(vendor/pathlib)
 
 add_executable(runner frontend.f90)
-target_link_libraries(runner PRIVATE hwloc_ifc partition cli pathlib)
+target_link_libraries(runner PRIVATE partition cli pathlib HWLOC::HWLOC_Fortran)
 set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 add_test(NAME SmallSlab
