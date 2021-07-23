@@ -23,7 +23,6 @@ integer :: Nmpi, mpi_id, mpi_req, Nrun
 integer, parameter :: mpi_root_id = 0
 
 integer(int64) :: tic, toc, tmin
-real(real64) :: file_Mbytes, t_ms, Mbytes_sec
 
 integer(HSIZE_T) :: dims_full(rank(A3))
 
@@ -93,23 +92,36 @@ end do main
 
 !> RESULTS
 
-if(mpi_id == mpi_root_id) then
-  file_Mbytes = real((storage_size(A3) / 8 * product(dims_full)) + &
-                   (storage_size(A3) / 8 * product(dims_full(:2))), real64) / 1024 / 1024
-
-  print '(A,F8.3)', "data size: (megabytes)", file_Mbytes
-
-  t_ms = sysclock2ms(tmin)
-  Mbytes_sec = file_Mbytes/(t_ms/1000)
-
-  print "(A,I0,A,F8.3,A,F10.3,A)", "Nrun = ", Nrun, &
-    " time =", t_ms, " ms/run ", Mbytes_sec, " Mbytes/sec"
-
-  if(Mbytes_sec < 10) write(stderr,*) "write speed seems unusally slow"
-  if(file_Mbytes < 1) write(stderr,*) "benchmark may lose accuracy with small files in general"
-endif
+if(mpi_id == mpi_root_id) call print_timing(storage_size(A3), dims_full, tmin)
 
 call mpi_finalize(ierr)
 
+
+contains
+
+
+subroutine print_timing(bits, dims, tmin)
+
+integer, intent(in) :: bits
+integer(HSIZE_T), intent(in) :: dims(:)
+integer(int64), intent(in) :: tmin
+
+real(real64) :: file_Mbytes, t_ms, Mbytes_sec
+
+file_Mbytes = real((bits / 8 * product(dims)) + &
+                  (bits / 8 * product(dims(:2))), real64) / 1024 / 1024
+
+print '(A,F8.3)', "data size: (megabytes)", file_Mbytes
+
+t_ms = sysclock2ms(tmin)
+Mbytes_sec = file_Mbytes/(t_ms/1000)
+
+print "(A,I0,A,F8.3,A,F10.3,A)", "Nrun = ", Nrun, &
+  " time =", t_ms, " ms/run ", Mbytes_sec, " Mbytes/sec"
+
+if(Mbytes_sec < 10) write(stderr,'(A)') "WARNING: write speed seems unusally slow"
+if(file_Mbytes < 1) write(stderr, '(A)') "WARNING: benchmark may lose accuracy with small files in general"
+
+end subroutine
 
 end program
