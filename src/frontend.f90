@@ -7,7 +7,7 @@ use cli, only : get_cli
 implicit none (type, external)
 
 integer :: lid, lx1, lx2, lx3, Ncpu, ierr, u, Nrun, i, argc
-character(1000) :: buf, exe, mpiexec
+character(1000) :: buf, exe, mpiexec, outfn
 character(:), allocatable :: cmd, sizefn
 logical :: exists
 
@@ -24,8 +24,10 @@ do i = 4, argc
   if(ierr/=0) exit
 
   select case(buf)
-    case("-Nrun")
+  case("-Nrun")
     call get_cli(i, buf, Nrun)
+  case("-o")
+    call get_cli(i, buf, outfn)
   case("-np")
     call get_cli(i, buf, Ncpu)
   case("-exe")
@@ -52,11 +54,12 @@ print '(A,I0)', 'MPI images: ', lid
 !> run MPI-based executable
 !> need to quote executables in case they have spaces in the path.
 !> don't quote "exe" as this makes the CLI invalid syntax--don't have spaces in the exe path.
-write(buf, '(A1,A,A1,1X,A2,1X,I0,1X,A,1X,I0,1X,I0,1X,I0,1X,A5,1X,I0)') &
+write(buf, '(A1,A,A1,1X,A2,1X,I0,1X,A,1X,I0,1X,I0,1X,I0,1X,A5,1X,I0,1x,a2,1x,a)') &
   char(34), trim(mpiexec), char(34), '-n', lid, &
   trim(exe), &
   lx1,lx2,lx3, &
-  "-Nrun", Nrun
+  "-Nrun", Nrun, &
+  "-o", trim(outfn)
 
 !! quotes are for mpiexec path with spaces
 cmd = trim(buf)

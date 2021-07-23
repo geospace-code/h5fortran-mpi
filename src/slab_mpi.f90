@@ -15,8 +15,7 @@ implicit none
 type(hdf5_file) :: h5
 
 real, allocatable :: A2(:,:), A3(:,:,:)
-character(:), allocatable :: outfn
-character(1000) :: argv
+character(1000) :: argv, outfn
 
 integer :: ierr, lx1, lx2, lx3, dx1, i
 integer :: Nmpi, mpi_id, mpi_req, Nrun
@@ -51,8 +50,8 @@ print *, 'MPI worker: ', mpi_id, ' lx1, lx2, lx3 = ', lx1, lx2, lx3
 dims_full = [lx1, lx2, lx3]
 
 !> output HDF5 file to write
-outfn = "out.h5"
 Nrun = 1
+outfn = ""
 
 do i = 1, command_argument_count()
   call get_command_argument(i, argv, status=ierr)
@@ -66,6 +65,8 @@ do i = 1, command_argument_count()
   end select
 end do
 
+if(len_trim(outfn) == 0) error stop "please specify -o filename to write"
+
 !! 1-D decompose in rows (neglect ghost cells)
 dx1 = lx1 / Nmpi
 
@@ -78,7 +79,7 @@ A3 = mpi_id
 tmin = huge(0_int64)
 main : do i = 1, Nrun
   if(mpi_id == mpi_root_id) call system_clock(count=tic)
-  call h5%open("out.h5", action="w")
+  call h5%open(trim(outfn), action="w")
 
   call h5%write("/A2", A2, dims_full(:2))
   call h5%write("/A3", A3, dims_full)
