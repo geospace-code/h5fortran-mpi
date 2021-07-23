@@ -31,8 +31,15 @@ procedure,private :: ph5write2d_r32, ph5write3d_r32
 
 end type hdf5_file
 
+
+type :: mpi_tags
+
+integer :: a2=102, a3=103
+
+end type mpi_tags
+
 private
-public :: mpi_h5comm, hdf5_file
+public :: mpi_h5comm, hdf5_file, mpi_tags
 
 interface !< write.f90
 
@@ -88,7 +95,7 @@ if(ierr/=0) error stop "h5open: could not open HDF5 library"
 !! https://support.hdfgroup.org/HDF5/doc/RM/RM_H5.html#Library-Open
 
 inquire(file=filename, exist=exists)
-if (action(1:1) == "r".and..not.exists) error stop "h5open: file does not exist: " // filename
+if (laction(1:1) == "r".and..not.exists) error stop "h5open: file does not exist: " // filename
 
 if(self%use_mpi) then
   !! collective: setup for MPI access
@@ -99,7 +106,7 @@ else
 endif
 
 !> from h5fortran
-select case(action)
+select case(laction)
 case('r')
   call h5fopen_f(filename, H5F_ACC_RDONLY_F, self%file_id, ierr, access_prp=plist_id)
 case('r+')
@@ -113,7 +120,7 @@ case('rw', 'a')
 case ('w')
   call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ierr, access_prp=plist_id)
 case default
-  error stop 'Unsupported action: ' // action
+  error stop 'Unsupported action: ' // laction
 end select
 
 if(ierr/=0) error stop "h5open/create: could not initialize HDF5 file: " // filename

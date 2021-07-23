@@ -18,6 +18,10 @@ add_executable(slab_mpi slab_mpi.f90)
 target_link_libraries(slab_mpi PRIVATE h5mpi partition cli perf HDF5::HDF5 MPI::MPI_Fortran)
 set_target_properties(slab_mpi PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
+add_executable(slab_mpi_serial slab_mpi_serial.f90)
+target_link_libraries(slab_mpi_serial PRIVATE h5mpi partition cli perf HDF5::HDF5 MPI::MPI_Fortran)
+set_target_properties(slab_mpi_serial PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+
 add_executable(slab_serial slab_serial.f90)
 target_link_libraries(slab_serial PRIVATE h5mpi partition cli perf HDF5::HDF5 MPI::MPI_Fortran)
 set_target_properties(slab_serial PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
