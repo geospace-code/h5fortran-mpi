@@ -38,5 +38,4 @@ if (ierr/=0) error stop "h5dwrite: " // dname // " " // self%filename
 !> wind down
 call h5sclose_f(filespace, ierr)
 call h5dclose_f(dset_id, ierr)
-
-if(plist_id /= 0) call h5pclose_f(plist_id, ierr)
+call h5pclose_f(plist_id, ierr)
