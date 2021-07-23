@@ -1,6 +1,6 @@
 program simple
 !! use hyperslabs with each worker, but have only root write serial HDF5
-!! this should be less efficient than using HDF5 MPI built-in interface.
+!! this is noticably less efficient than using HDF5 MPI built-in interface.
 !! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90
 
 use, intrinsic :: iso_fortran_env, only : int64, real64, stderr=>error_unit
@@ -21,6 +21,7 @@ real, allocatable :: A2(:,:), A3(:,:,:), t2(:,:), t3(:,:,:)
 character(1000) :: argv, outfn
 
 integer :: ierr, lx1, lx2, lx3, dx1, i, j
+integer(HSIZE_T), allocatable, dimension(:) :: d2, d3
 integer :: Nmpi, mpi_id, mpi_req, Nrun
 integer, parameter :: mpi_root_id = 0
 real, parameter :: d0 = 10.  !< dummy value to start from
@@ -110,7 +111,7 @@ else
 endif
 call system_clock(count=toc)
 
-print '(a,i0,a,f7.3)', "MPI worker: ", mpi_id, " time to initialize (milliseconds) ", sysclock2ms(toc-tic)
+if (debug) print '(a,i0,a,f10.3)', "MPI worker: ", mpi_id, " time to initialize (milliseconds) ", sysclock2ms(toc-tic)
 
 !> benchmark loop
 tmin = huge(0_int64)
@@ -141,7 +142,7 @@ main : do j = 1, Nrun
 
   if(mpi_id == mpi_root_id) then
     call system_clock(count=toc)
-    print '(a,f7.3)', "worker => root transfer time (ms)", sysclock2ms(toc-tic)
+    print '(a,f10.3)', "worker => root transfer time (ms)", sysclock2ms(toc-tic)
   endif
 
   if(mpi_id == mpi_root_id) then
@@ -158,6 +159,17 @@ main : do j = 1, Nrun
   endif
 
 end do main
+
+!> sanity check file shape
+
+if(mpi_id == mpi_root_id) then
+  call h5%open(trim(outfn), action="r", mpi=.false.)
+  call h5%shape("/A2", d2)
+  call h5%shape("/A3", d3)
+  call h5%close()
+
+  if(any(d2 /= dims_full(:2)) .or. any(d3 /= dims_full)) error stop "slab_mpi: file shape mismatch"
+endif
 
 !> RESULTS
 

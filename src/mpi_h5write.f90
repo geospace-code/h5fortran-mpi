@@ -4,6 +4,7 @@ use, intrinsic :: iso_fortran_env, only : real32, real64, stderr=>error_unit
 
 use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL
 use hdf5
+use h5lt, only : h5ltget_dataset_info_f, h5ltget_dataset_ndims_f, h5ltpath_valid_f
 
 implicit none
 
@@ -20,7 +21,7 @@ integer :: comp_lvl = 0 !< compression level (1-9)  0: disable compression
 
 contains
 
-procedure, public :: open => ph5open, close => ph5close, flush => hdf_flush
+procedure, public :: open => ph5open, close => ph5close, flush => hdf_flush, shape => hdf_get_shape, exist => hdf_exist
 !! procedures without mapping
 
 generic, public :: write => ph5write2d_r32, ph5write3d_r32
@@ -214,5 +215,49 @@ if (present(dname)) dn = dname
 write(stderr,*) 'ERROR: ' // fn // ':' // dn // ' error code ', ierr
 
 end function check
+
+
+subroutine hdf_get_shape(self, dname, dims, ierr)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+integer(HSIZE_T), intent(inout), allocatable :: dims(:)
+!! intent(out)
+integer, intent(out), optional :: ierr
+
+!! must get rank before info, as "dims" must be allocated first.
+integer(SIZE_T) :: type_size
+integer :: type_class, drank, ier
+
+if(.not. self%exist(dname)) error stop 'h5fortran:get_shape: ' // dname // ' does not exist in ' // self%filename
+
+call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ier)
+
+if (ier == 0) then
+  allocate(dims(drank))
+  call h5ltget_dataset_info_f(self%file_id, dname, dims=dims, &
+    type_class=type_class, type_size=type_size, errcode=ier)
+endif
+
+if (present(ierr)) ierr = ier
+if ((ier /= 0) .and. .not. present(ierr)) error stop
+
+end subroutine hdf_get_shape
+
+
+logical function hdf_exist(self, dname) result(exists)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+
+integer :: ierr
+
+if(.not.self%is_open) error stop 'h5fortran:exist: file handle is not open'
+
+call h5ltpath_valid_f(self%file_id, dname, .true., exists, ierr)
+!! h5lexists_f can false error with groups--just use h5ltpath_valid
+
+if (ierr/=0) error stop 'h5fortran:check_exist: could not determine status of ' // dname // ' in ' // self%filename
+
+
+end function hdf_exist
 
 end module h5mpi

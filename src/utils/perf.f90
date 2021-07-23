@@ -35,7 +35,7 @@ print '(A,F8.3)', "data size: (megabytes)", file_Mbytes
 t_ms = sysclock2ms(tmin)
 Mbytes_sec = file_Mbytes/(t_ms/1000)
 
-print "(A,F8.3,A,F10.3,A)", "time =", t_ms, " ms/run ", Mbytes_sec, " Mbytes/sec"
+print "(A,F10.3,A,F10.3,A)", "time =", t_ms, " ms/run ", Mbytes_sec, " Mbytes/sec"
 
 if(Mbytes_sec < 10) write(stderr,'(A)') "WARNING: write speed seems unusally slow"
 if(file_Mbytes < 1) write(stderr, '(A)') "WARNING: benchmark may lose accuracy with small files in general"
