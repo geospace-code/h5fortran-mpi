@@ -11,10 +11,16 @@ add_library(cli OBJECT utils/cli.f90)
 
 add_library(partition OBJECT partition.f90)
 
+add_library(perf OBJECT utils/perf.f90)
+
 ## demo of OO interface
-add_executable(slab simple_slab.f90 utils/perf.f90)
-target_link_libraries(slab PRIVATE h5mpi partition cli HDF5::HDF5 MPI::MPI_Fortran)
-set_target_properties(slab PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+add_executable(slab_mpi slab_mpi.f90)
+target_link_libraries(slab_mpi PRIVATE h5mpi partition cli perf HDF5::HDF5 MPI::MPI_Fortran)
+set_target_properties(slab_mpi PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+
+add_executable(slab_serial slab_serial.f90)
+target_link_libraries(slab_serial PRIVATE h5mpi partition cli perf HDF5::HDF5 MPI::MPI_Fortran)
+set_target_properties(slab_serial PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 add_subdirectory(vendor/pathlib)
 
@@ -26,16 +32,30 @@ set_targ_props(h5mpi cli)
 
 # tests
 
-add_test(NAME Slab16
-  COMMAND $<TARGET_FILE:runner> 16 4 8 -exe $<TARGET_FILE:slab> -mpiexec ${MPIEXEC_EXECUTABLE}
+add_test(NAME MPI-Slab16
+  COMMAND $<TARGET_FILE:runner> 16 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE}
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
-set_tests_properties(Slab16 PROPERTIES
+set_tests_properties(MPI-Slab16 PROPERTIES
   TIMEOUT 10
   LABELS mpi_hdf5)
 
-  add_test(NAME Slab10000
-  COMMAND $<TARGET_FILE:runner> 10000 4 8 -exe $<TARGET_FILE:slab> -mpiexec ${MPIEXEC_EXECUTABLE}
+add_test(NAME Serial-Slab16
+  COMMAND $<TARGET_FILE:slab_serial> 16 4 8
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
-set_tests_properties(Slab10000 PROPERTIES
+set_tests_properties(Serial-Slab16 PROPERTIES
+  TIMEOUT 10
+  LABELS serial_hdf5)
+
+add_test(NAME MPI-Slab10000
+  COMMAND $<TARGET_FILE:runner> 10000 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE}
+  WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+set_tests_properties(MPI-Slab10000 PROPERTIES
   TIMEOUT 180
   LABELS mpi_hdf5)
+
+add_test(NAME Serial-Slab10000
+  COMMAND $<TARGET_FILE:slab_serial> 10000 4 8
+  WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+set_tests_properties(Serial-Slab10000 PROPERTIES
+  TIMEOUT 180
+  LABELS serial_hdf5)

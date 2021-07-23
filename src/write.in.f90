@@ -1,4 +1,4 @@
-submodule (mpi_h5write) write_smod
+submodule (h5mpi) write_smod
 
 use mpi, only : mpi_comm_rank
 
@@ -15,9 +15,12 @@ integer(HID_T) :: dset_id, filespace, memspace, plist_id
 
 dims_mem = shape(A)
 
-! Each process defines dataset in memory and writes it to the hyperslab in the file.
-call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
-
+if (self%use_mpi) then
+  !! Each process defines dataset in memory and writes it to the hyperslab in the file.
+  call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
+else
+  mpi_id = 0
+endif
 !> chunk choices are arbitrary, but must be the same on all processes
 !> only chunking along first dim
 cnt(1) = dims_mem(1)
@@ -41,9 +44,13 @@ integer(HSIZE_T), dimension(rank(A)) :: cnt, stride, blk, offset, dims_mem
 integer(HID_T) :: dset_id, filespace, memspace, plist_id
 
 dims_mem = shape(A)
-! Each process defines dataset in memory and writes it to the hyperslab in the file.
-call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
 
+if(self%use_mpi) then
+  !! Each process defines dataset in memory and writes it to the hyperslab in the file.
+  call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
+else
+  mpi_id = 0
+endif
 !> chunk choices are arbitrary, but must be the same on all processes
 !> only chunking along first dim
 cnt(1) = dims_mem(1)

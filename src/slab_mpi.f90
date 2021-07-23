@@ -1,14 +1,14 @@
 program simple
-!! a more optimal case is to use hyperslabs with each worker
+!! use hyperslabs with each worker
 !! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90
 
 use, intrinsic :: iso_fortran_env, only : int64, real64, stderr=>error_unit
 use mpi
 use hdf5
-use mpi_h5write, only : mpi_h5comm, hdf5_file
+use h5mpi, only : mpi_h5comm, hdf5_file
 use partition, only : get_simsize
 use cli, only : get_cli
-use perf, only : sysclock2ms
+use perf, only : print_timing
 
 implicit none
 
@@ -92,36 +92,9 @@ end do main
 
 !> RESULTS
 
-if(mpi_id == mpi_root_id) call print_timing(storage_size(A3), dims_full, tmin)
+if(mpi_id == mpi_root_id) call print_timing(storage_size(A3), int(dims_full), tmin)
 
 call mpi_finalize(ierr)
 
-
-contains
-
-
-subroutine print_timing(bits, dims, tmin)
-
-integer, intent(in) :: bits
-integer(HSIZE_T), intent(in) :: dims(:)
-integer(int64), intent(in) :: tmin
-
-real(real64) :: file_Mbytes, t_ms, Mbytes_sec
-
-file_Mbytes = real((bits / 8 * product(dims)) + &
-                  (bits / 8 * product(dims(:2))), real64) / 1024 / 1024
-
-print '(A,F8.3)', "data size: (megabytes)", file_Mbytes
-
-t_ms = sysclock2ms(tmin)
-Mbytes_sec = file_Mbytes/(t_ms/1000)
-
-print "(A,I0,A,F8.3,A,F10.3,A)", "Nrun = ", Nrun, &
-  " time =", t_ms, " ms/run ", Mbytes_sec, " Mbytes/sec"
-
-if(Mbytes_sec < 10) write(stderr,'(A)') "WARNING: write speed seems unusally slow"
-if(file_Mbytes < 1) write(stderr, '(A)') "WARNING: benchmark may lose accuracy with small files in general"
-
-end subroutine
 
 end program

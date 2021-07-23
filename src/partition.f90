@@ -105,7 +105,7 @@ integer :: ierr, argc
 character(9) :: buf
 
 argc = command_argument_count()
-if(argc < 5) error stop "must input at least: lx1 lx2 lx3 -exe my.exe"
+if(argc < 3) error stop "must input at least: lx1 lx2 lx3"
 
 call get_command_argument(1, buf, status=ierr)
 if(ierr/=0) error stop "could not read lx1"

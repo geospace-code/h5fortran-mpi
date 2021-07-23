@@ -20,4 +20,26 @@ sysclock2ms = t * r
 
 end function sysclock2ms
 
+
+subroutine print_timing(bits, dims, tmin)
+integer, intent(in) :: bits, dims(:)
+integer(int64), intent(in) :: tmin
+
+real(real64) :: file_Mbytes, t_ms, Mbytes_sec
+
+file_Mbytes = real((bits / 8 * product(dims)) + &
+                  (bits / 8 * product(dims(:2))), real64) / 1024 / 1024
+
+print '(A,F8.3)', "data size: (megabytes)", file_Mbytes
+
+t_ms = sysclock2ms(tmin)
+Mbytes_sec = file_Mbytes/(t_ms/1000)
+
+print "(A,F8.3,A,F10.3,A)", "time =", t_ms, " ms/run ", Mbytes_sec, " Mbytes/sec"
+
+if(Mbytes_sec < 10) write(stderr,'(A)') "WARNING: write speed seems unusally slow"
+if(file_Mbytes < 1) write(stderr, '(A)') "WARNING: benchmark may lose accuracy with small files in general"
+
+end subroutine
+
 end module perf

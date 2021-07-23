@@ -1,4 +1,4 @@
-module mpi_h5write
+module h5mpi
 
 use, intrinsic :: iso_fortran_env, only : real32, real64, stderr=>error_unit
 
@@ -14,6 +14,7 @@ type :: hdf5_file
 character(:), allocatable :: filename
 integer(HID_T) :: file_id
 logical :: is_open = .false.
+logical :: use_mpi = .true.
 
 integer :: comp_lvl = 0 !< compression level (1-9)  0: disable compression
 
@@ -58,7 +59,7 @@ end interface
 contains
 
 
-subroutine ph5open(self, filename, action)
+subroutine ph5open(self, filename, action, mpi)
 !! collective: open/create file
 !!
 !! PARAMETERS:
@@ -69,6 +70,7 @@ subroutine ph5open(self, filename, action)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: filename
 character(*), intent(in), optional :: action
+logical, intent(in), optional :: mpi
 
 character(len=2) :: laction
 integer :: ierr
@@ -78,6 +80,8 @@ logical :: exists
 laction = "rw"
 if (present(action)) laction = action
 
+if (present(mpi)) self%use_mpi = mpi
+
 call h5open_f(ierr)
 if(ierr/=0) error stop "h5open: could not open HDF5 library"
 !! OK to call repeatedly
@@ -86,9 +90,13 @@ if(ierr/=0) error stop "h5open: could not open HDF5 library"
 inquire(file=filename, exist=exists)
 if (action(1:1) == "r".and..not.exists) error stop "h5open: file does not exist: " // filename
 
-! collective: setup for MPI access
-call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, ierr)
-call h5pset_fapl_mpio_f(plist_id, mpi_h5comm, mpi_h5info, ierr)
+if(self%use_mpi) then
+  !! collective: setup for MPI access
+  call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, ierr)
+  call h5pset_fapl_mpio_f(plist_id, mpi_h5comm, mpi_h5info, ierr)
+else
+  plist_id = H5P_DEFAULT_F
+endif
 
 !> from h5fortran
 select case(action)
@@ -108,7 +116,10 @@ case default
   error stop 'Unsupported action: ' // action
 end select
 
+if(ierr/=0) error stop "h5open/create: could not initialize HDF5 file: " // filename
+
 call h5pclose_f(plist_id, ierr)
+if(ierr/=0) error stop "h5pclode: " // filename
 
 self%filename = filename
 self%is_open = .true.
@@ -197,4 +208,4 @@ write(stderr,*) 'ERROR: ' // fn // ':' // dn // ' error code ', ierr
 
 end function check
 
-end module mpi_h5write
+end module h5mpi
