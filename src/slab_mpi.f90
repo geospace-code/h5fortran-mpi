@@ -35,8 +35,6 @@ if(ierr/=0) error stop "mpi_init"
 call mpi_comm_size(mpi_h5comm, Nmpi, ierr)
 call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
 
-if(mpi_id == mpi_root_id) print '(a,i0,a)', "MPI-HDF5 parallel write. ", Nmpi, " total MPI processes."
-
 Nrun = 1
 outfn = ""
 
@@ -60,6 +58,9 @@ lx1 = -1
 lx2 = -1
 lx3 = -1
 if(mpi_id == mpi_root_id) call get_simsize(lx1, lx2, lx3, Nmpi)
+
+if(mpi_id == mpi_root_id) print '(a,i0,a,i0,1x,i0,1x,i0)', "MPI-HDF5 parallel write. ", Nmpi, " total MPI processes. shape: ", &
+  lx1,lx2,lx3
 
 ! call mpi_ibcast(lx1, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, mpi_req, ierr)
 ! call mpi_ibcast(lx2, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, mpi_req, ierr)
