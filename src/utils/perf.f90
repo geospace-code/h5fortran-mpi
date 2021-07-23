@@ -25,10 +25,12 @@ subroutine print_timing(bits, dims, tmin)
 integer, intent(in) :: bits, dims(:)
 integer(int64), intent(in) :: tmin
 
+integer :: bytes
 real(real64) :: file_Mbytes, t_ms, Mbytes_sec
 
-file_Mbytes = real((bits / 8 * product(dims)) + &
-                  (bits / 8 * product(dims(:2))), real64) / 1024 / 1024
+bytes = bits/8
+
+file_Mbytes = bytes * real(product(dims) + product(dims(:2)), real64) / 1024 / 1024
 
 print '(A,F8.1)', "data size: (megabytes)", file_Mbytes
 
