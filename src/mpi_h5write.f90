@@ -94,7 +94,7 @@ end interface
 contains
 
 
-subroutine ph5open(self, filename, action, mpi, debug)
+subroutine ph5open(self, filename, action, mpi, comp_lvl, debug)
 !! collective: open/create file
 !!
 !! PARAMETERS:
@@ -106,6 +106,7 @@ class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: filename
 character(*), intent(in), optional :: action
 logical, intent(in), optional :: mpi
+integer, intent(in), optional :: comp_lvl
 logical, intent(in), optional :: debug
 
 character(len=2) :: laction
@@ -121,6 +122,13 @@ if (present(mpi)) self%use_mpi = mpi
 if(present(debug)) self%debug = debug
 
 call get_hdf5_config(self%parallel_compression)
+if(self%parallel_compression) then
+  if(present(comp_lvl)) then
+    self%comp_lvl = comp_lvl
+  else
+    self%comp_lvl = 3
+  endif
+endif
 
 call h5open_f(ierr)
 if(ierr/=0) error stop "h5open: could not open HDF5 library"
@@ -129,7 +137,7 @@ if(ierr/=0) error stop "h5open: could not open HDF5 library"
 
 !> get library version
 call h5get_libversion_f(self%libversion(1), self%libversion(2), self%libversion(3), ierr)
-if (self%debug) print '(A,3I3)', 'HDF5 version: ',self%libversion
+if (self%debug) print '(a,i0,a1,i0,a1,i0)', 'HDF5 version: ',self%libversion(1),'.',self%libversion(2),'.',self%libversion(3)
 if (check(ierr, 'ERROR:h5fortran: HDF5 library get version')) error stop
 if ((self%libversion(2) == 10 .and. self%libversion(3) < 2) .or. self%libversion(2) < 10) error stop &
   "HDF5 >= 1.10.2 required for MPI parallel HDF5. " // &

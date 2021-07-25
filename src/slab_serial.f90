@@ -58,7 +58,7 @@ A3 = 1
 tmin = huge(0_int64)
 main : do i = 1, Nrun
   call system_clock(count=tic)
-  call h5%open(trim(outfn), action="w", mpi=.false.)
+  call h5%open(trim(outfn), action="w", mpi=.false., comp_lvl=3)
 
   call h5%write("/A2", A2, dims_full(:2))
   call h5%write("/A3", A3, dims_full)

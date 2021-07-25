@@ -92,7 +92,7 @@ tmin = huge(0_int64)
 
 main : do j = 1, Nrun
   if(mpi_id == mpi_root_id) call system_clock(count=tic)
-  call h5%open(trim(outfn), action="w", mpi=.true., debug=debug)
+  call h5%open(trim(outfn), action="w", mpi=.true., comp_lvl=3, debug=debug)
 
   call h5%write("/A2", A2, dims_full(:2))
   call h5%write("/A3", A3, dims_full)
