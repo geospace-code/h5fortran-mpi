@@ -278,21 +278,24 @@ return 0;
 )
 endif()
 
-message(CHECK_START "Checking MPI API level")
-try_run(mpi_run_code mpi_build_code
-  ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/build
-  ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/get_mpi_version.c
-  CMAKE_FLAGS -DINCLUDE_DIRECTORIES=${MPI_C_INCLUDE_DIR}
-  LINK_OPTIONS ${MPI_C_LINK_FLAGS}
-  LINK_LIBRARIES ${MPI_C_LIBRARY}
-  RUN_OUTPUT_VARIABLE MPI_VERSION
-)
-string(STRIP "${MPI_VERSION}" MPI_VERSION)
-if(mpi_build_code AND mpi_run_code EQUAL 0)
-  message(CHECK_PASS "${MPI_VERSION}")
-else()
-  message(CHECK_FAIL "MPI API not detected")
-  return()
+if(NOT MPI_VERSION)
+  message(CHECK_START "Checking MPI API level")
+  try_run(mpi_run_code mpi_build_code
+    ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/build
+    ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/get_mpi_version.c
+    CMAKE_FLAGS -DINCLUDE_DIRECTORIES=${MPI_C_INCLUDE_DIR}
+    LINK_OPTIONS ${MPI_C_LINK_FLAGS}
+    LINK_LIBRARIES ${MPI_C_LIBRARY}
+    RUN_OUTPUT_VARIABLE MPI_VERSION
+  )
+  string(STRIP "${MPI_VERSION}" MPI_VERSION)
+  if(mpi_build_code AND mpi_run_code EQUAL 0)
+    message(CHECK_PASS "${MPI_VERSION}")
+  else()
+    message(CHECK_FAIL "MPI API not detected")
+    return()
+  endif()
+  set(MPI_VERSION ${MPI_VERSION} CACHE STRING "MPI API level")
 endif()
 
 check_c_source_compiles("
@@ -312,7 +315,6 @@ endif()
 set(MPI_C_INCLUDE_DIR ${MPI_C_INCLUDE_DIR} PARENT_SCOPE)
 set(MPI_C_LIBRARY ${MPI_C_LIBRARY} PARENT_SCOPE)
 set(MPI_C_LINK_FLAGS ${MPI_C_LINK_FLAGS} PARENT_SCOPE)
-set(MPI_VERSION ${MPI_VERSION} PARENT_SCOPE)
 set(MPI_C_FOUND true PARENT_SCOPE)
 
 endfunction(find_c)
