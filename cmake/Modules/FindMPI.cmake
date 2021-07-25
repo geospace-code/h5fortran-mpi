@@ -278,6 +278,7 @@ return 0;
 )
 endif()
 
+message(CHECK_START "Checking MPI API level")
 try_run(mpi_run_code mpi_build_code
   ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/build
   ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/get_mpi_version.c
@@ -287,6 +288,12 @@ try_run(mpi_run_code mpi_build_code
   RUN_OUTPUT_VARIABLE MPI_VERSION
 )
 string(STRIP "${MPI_VERSION}" MPI_VERSION)
+if(mpi_build_code AND mpi_run_code EQUAL 0)
+  message(CHECK_PASS "${MPI_VERSION}")
+else()
+  message(CHECK_FAIL "MPI API not detected")
+  return()
+endif()
 
 check_c_source_compiles("
 #include <mpi.h>
