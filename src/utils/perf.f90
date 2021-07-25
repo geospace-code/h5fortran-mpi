@@ -27,7 +27,7 @@ integer(int64), intent(in) :: tmin
 real, intent(in) :: file_bytes
 
 integer :: bytes
-real :: data_MB, file_MB, t_ms, Mbytes_sec
+real :: data_MB, file_MB, t_ms, data_MBsec, file_MBsec
 
 bytes = bits/8
 
@@ -38,11 +38,12 @@ print '(A,F8.1)', "data size: (megabytes)", data_MB
 print '(A,F8.1)', "file size: (megabytes)", file_MB
 
 t_ms = sysclock2ms(tmin)
-Mbytes_sec = data_MB/(t_ms/1000)
+data_MBsec = data_MB/(t_ms/1000)
+file_MBsec = file_MB/(t_ms/1000)
 
-print "(A,F10.1,A,F10.1,A)", "time =", t_ms, " ms/run ", Mbytes_sec, " Mbytes/sec"
+print "(A,F10.1,A,F10.1,a,F10.1,a)", "time =", t_ms, " ms/run ", data_MBsec, " data MB/sec. ", file_MBsec, " data MB/sec."
 
-if(Mbytes_sec < 10) write(stderr,'(A)') "WARNING: write speed seems unusally slow"
+if(file_MBsec < 10) write(stderr,'(A)') "WARNING: write speed seems unusally slow"
 if(file_MB < 1) write(stderr, '(A)') "WARNING: benchmark may lose accuracy with small files in general"
 
 end subroutine
