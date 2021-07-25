@@ -28,7 +28,7 @@ else()
 endif()
 configure_file(hdf5_config.in.f90 hdf5_config.f90 @ONLY)
 
-add_library(h5mpi OBJECT mpi_h5write.f90 write.f90
+add_library(h5mpi OBJECT h5fortran_parallel.f90 write.f90
   ${CMAKE_CURRENT_BINARY_DIR}/writer.f90 ${CMAKE_CURRENT_BINARY_DIR}/hdf5_config.f90)
 target_link_libraries(h5mpi PRIVATE HDF5::HDF5 MPI::MPI_Fortran)
 
