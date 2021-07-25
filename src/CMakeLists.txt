@@ -1,10 +1,28 @@
 
 ## object-oriented HDF5 interface
 file(READ writer_template.f90 writer_template)
-configure_file(write.in.f90 write.f90)
+configure_file(writer.in.f90 writer.f90)
 set_directory_properties(PROPERTIES CMAKE_CONFIGURE_DEPENDS writer_template.f90)
 
-add_library(h5mpi OBJECT mpi_h5write.f90 ${CMAKE_CURRENT_BINARY_DIR}/write.f90)
+# see if HDF5 was configured for parallel compression
+cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
+find_file(hdf5_settings_file
+  NAMES libhdf5.settings
+  HINTS ${HDF5_LIBRARY_DIR}
+  NO_DEFAULT_PATH
+  REQUIRED)
+
+file(READ ${hdf5_settings_file} hdf5_settings)
+string(REGEX MATCH "Parallel Filtered Dataset Writes:[ ]*([a-zA-Z]+)" hdf5_parallel_compression_match ${hdf5_settings})
+if(${CMAKE_MATCH_1})
+  set(hdf5_parallel_compression .true.)
+else()
+  set(hdf5_parallel_compression .false.)
+endif()
+configure_file(hdf5_config.in.f90 hdf5_config.f90 @ONLY)
+
+add_library(h5mpi OBJECT mpi_h5write.f90 write.f90
+  ${CMAKE_CURRENT_BINARY_DIR}/writer.f90 ${CMAKE_CURRENT_BINARY_DIR}/hdf5_config.f90)
 target_link_libraries(h5mpi PRIVATE HDF5::HDF5 MPI::MPI_Fortran)
 
 add_library(cli OBJECT utils/cli.f90)

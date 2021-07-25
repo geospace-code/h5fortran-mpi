@@ -16,12 +16,20 @@ character(:), allocatable :: filename
 integer(HID_T) :: file_id
 logical :: is_open = .false.
 logical :: use_mpi = .true.
+logical :: debug = .false.
+logical :: parallel_compression = .false.
 
-integer :: comp_lvl = 0 !< compression level (1-9)  0: disable compression
+integer :: comp_lvl = 0
+!! compression level (1-9)  0: disable compression
+!! compression with MPI requires MPI-3 and HDF5 >= 1.10.2
+
+integer :: libversion(3)  !< major, minor, rel
 
 contains
 
-procedure, public :: open => ph5open, close => ph5close, flush => hdf_flush, shape => hdf_get_shape, exist => hdf_exist
+procedure, public :: open => ph5open, close => ph5close, &
+  flush => hdf_flush, shape => hdf_get_shape, exist => hdf_exist, &
+  create => hdf_create
 !! procedures without mapping
 
 generic, public :: write => ph5write2d_r32, ph5write3d_r32
@@ -40,9 +48,28 @@ integer :: a2=102, a3=103
 end type mpi_tags
 
 private
-public :: mpi_h5comm, hdf5_file, mpi_tags
+public :: mpi_h5comm, hdf5_file, mpi_tags, &
+check, hdf_wrapup
 
 interface !< write.f90
+module subroutine hdf_create(self, dname, dtype, dims, dims_file, filespace, memspace, dset_id, plist_id, chunk_size)
+class(hdf5_file), intent(inout) :: self
+character(*), intent(in) :: dname
+integer(HID_T), intent(in) :: dtype
+integer(HSIZE_T), intent(in) :: dims(:), dims_file(:)
+integer(HID_T), intent(out), optional :: filespace, memspace, dset_id, plist_id
+integer, intent(in), optional :: chunk_size(:)
+end subroutine hdf_create
+end interface
+
+interface !< hdf5_config.f90
+module subroutine get_hdf5_config(parallel_compression)
+logical, intent(out) :: parallel_compression
+end subroutine get_hdf5_config
+end interface
+
+
+interface !< writer.f90
 
 module subroutine ph5write2d_r32(self, dname, A, dims_file)
 !! A is the subset of the array to write to dataset "dname" from this process
@@ -67,7 +94,7 @@ end interface
 contains
 
 
-subroutine ph5open(self, filename, action, mpi)
+subroutine ph5open(self, filename, action, mpi, debug)
 !! collective: open/create file
 !!
 !! PARAMETERS:
@@ -79,6 +106,7 @@ class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: filename
 character(*), intent(in), optional :: action
 logical, intent(in), optional :: mpi
+logical, intent(in), optional :: debug
 
 character(len=2) :: laction
 integer :: ierr
@@ -90,10 +118,22 @@ if (present(action)) laction = action
 
 if (present(mpi)) self%use_mpi = mpi
 
+if(present(debug)) self%debug = debug
+
+call get_hdf5_config(self%parallel_compression)
+
 call h5open_f(ierr)
 if(ierr/=0) error stop "h5open: could not open HDF5 library"
 !! OK to call repeatedly
 !! https://support.hdfgroup.org/HDF5/doc/RM/RM_H5.html#Library-Open
+
+!> get library version
+call h5get_libversion_f(self%libversion(1), self%libversion(2), self%libversion(3), ierr)
+if (self%debug) print '(A,3I3)', 'HDF5 version: ',self%libversion
+if (check(ierr, 'ERROR:h5fortran: HDF5 library get version')) error stop
+if ((self%libversion(2) == 10 .and. self%libversion(3) < 2) .or. self%libversion(2) < 10) error stop &
+  "HDF5 >= 1.10.2 required for MPI parallel HDF5. " // &
+  "https://www.hdfgroup.org/2018/03/release-of-hdf5-1-10-2-newsletter-160/"
 
 inquire(file=filename, exist=exists)
 if (laction(1:1) == "r".and..not.exists) error stop "h5open: file does not exist: " // filename
@@ -259,5 +299,22 @@ if (ierr/=0) error stop 'h5fortran:check_exist: could not determine status of ' 
 
 
 end function hdf_exist
+
+
+subroutine hdf_wrapup(filespace, memspace, dset_id, plist_id)
+
+integer(HID_T), intent(in) :: filespace, memspace, dset_id, plist_id
+
+integer :: ierr
+
+call h5sclose_f(filespace, ierr)
+if (memspace /= H5S_ALL_F) call h5sclose_f(memspace, ierr)
+
+call h5dclose_f(dset_id, ierr)
+call h5pclose_f(plist_id, ierr)
+if(ierr/=0) error stop "closing dataset/space/property"
+
+
+end subroutine hdf_wrapup
 
 end module h5mpi

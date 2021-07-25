@@ -149,7 +149,7 @@ main : do j = 1, Nrun
 
   if(mpi_id == mpi_root_id) then
     !! Root: serial write HDF5 file
-    call h5%open(trim(outfn), action="w", mpi=.false.)
+    call h5%open(trim(outfn), action="w", mpi=.false., debug=debug)
 
     call h5%write("/A2", A2, dims_full(:2))
     call h5%write("/A3", A3, dims_full)
