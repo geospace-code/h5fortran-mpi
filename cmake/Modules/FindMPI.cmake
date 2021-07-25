@@ -259,6 +259,35 @@ set(CMAKE_REQUIRED_INCLUDES ${MPI_C_INCLUDE_DIR})
 set(CMAKE_REQUIRED_LIBRARIES ${MPI_C_LIBRARY})
 list(APPEND CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
+if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/get_mpi_version.c)
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/get_mpi_version.c
+[=[
+#include <mpi.h>
+#include <stdio.h>
+
+int main(void) {
+int version, subversion;
+
+int ierr = MPI_Get_version(&version, &subversion);
+if (ierr != 0) return 1;
+printf("%d.%d\n", version, subversion);
+
+return 0;
+}
+]=]
+)
+endif()
+
+try_run(mpi_run_code mpi_build_code
+  ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/build
+  ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/get_mpi_version.c
+  CMAKE_FLAGS -DINCLUDE_DIRECTORIES=${MPI_C_INCLUDE_DIR}
+  LINK_OPTIONS ${MPI_C_LINK_FLAGS}
+  LINK_LIBRARIES ${MPI_C_LIBRARY}
+  RUN_OUTPUT_VARIABLE MPI_VERSION
+)
+string(STRIP "${MPI_VERSION}" MPI_VERSION)
+
 check_c_source_compiles("
 #include <mpi.h>
 #ifndef NULL
@@ -276,6 +305,7 @@ endif()
 set(MPI_C_INCLUDE_DIR ${MPI_C_INCLUDE_DIR} PARENT_SCOPE)
 set(MPI_C_LIBRARY ${MPI_C_LIBRARY} PARENT_SCOPE)
 set(MPI_C_LINK_FLAGS ${MPI_C_LINK_FLAGS} PARENT_SCOPE)
+set(MPI_VERSION ${MPI_VERSION} PARENT_SCOPE)
 set(MPI_C_FOUND true PARENT_SCOPE)
 
 endfunction(find_c)
@@ -556,9 +586,6 @@ find_program(MPIEXEC_EXECUTABLE
 )
 
 # like factory FindMPI, always find MPI_C
-if(NOT C IN_LIST MPI_FIND_COMPONENTS)
-  list(APPEND MPI_FIND_COMPONENTS C)
-endif()
 find_c()
 
 if(CXX IN_LIST MPI_FIND_COMPONENTS)
@@ -572,6 +599,7 @@ endif()
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(MPI
   REQUIRED_VARS MPIEXEC_EXECUTABLE
+  VERSION_VAR MPI_VERSION
   HANDLE_COMPONENTS)
 
 if(MPI_C_FOUND)
