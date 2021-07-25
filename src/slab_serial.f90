@@ -72,6 +72,6 @@ end do main
 
 !> RESULTS
 
-call print_timing(storage_size(A3), int(dims_full), tmin)
+call print_timing(storage_size(A3), int(dims_full), tmin, real(h5%filesize()))
 
 end program

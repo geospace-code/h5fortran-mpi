@@ -15,7 +15,7 @@ type :: hdf5_file
 character(:), allocatable :: filename
 integer(HID_T) :: file_id
 logical :: is_open = .false.
-logical :: use_mpi = .true.
+logical :: use_mpi = .false.
 logical :: debug = .false.
 logical :: parallel_compression = .false.
 
@@ -29,7 +29,7 @@ contains
 
 procedure, public :: open => ph5open, close => ph5close, &
   flush => hdf_flush, shape => hdf_get_shape, exist => hdf_exist, &
-  create => hdf_create
+  create => hdf_create, filesize => hdf_filesize
 !! procedures without mapping
 
 generic, public :: write => ph5write2d_r32, ph5write3d_r32
@@ -322,7 +322,29 @@ call h5dclose_f(dset_id, ierr)
 call h5pclose_f(plist_id, ierr)
 if(ierr/=0) error stop "closing dataset/space/property"
 
-
 end subroutine hdf_wrapup
+
+
+integer(HSIZE_T) function hdf_filesize(self)
+!! returns the size of the HDF5 file in bytes
+class(hdf5_file), intent(inout) :: self
+
+integer :: ierr
+
+logical :: close_self
+
+close_self = .false.
+
+if (.not. self%is_open) then
+  close_self = .true.
+  call self%open(self%filename, action="r", mpi=.false.)
+endif
+call h5fget_filesize_f(self%file_id, hdf_filesize, ierr)
+if(ierr/=0) error stop "could not get file size " // self%filename
+
+if(close_self) call self%close()
+
+end function hdf_filesize
+
 
 end module h5mpi
