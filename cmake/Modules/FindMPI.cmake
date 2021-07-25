@@ -664,6 +664,22 @@ if(MPI_FOUND)
   set(MPIEXEC_NUMPROC_FLAG "-n"  CACHE STRING "Flag used by MPI to specify the number of processes for mpiexec; the next option will be the number of processes.")
   cmake_host_system_information(RESULT _n QUERY NUMBER_OF_PHYSICAL_CORES)
   set(MPIEXEC_MAX_NUMPROCS "${_n}" CACHE STRING "Maximum number of processors available to run MPI applications.")
+
+  message(VERBOSE "FindMPI results:
+    MPI_C_COMPILER: ${MPI_C_COMPILER}
+    MPI_C_LIBRARIES: ${MPI_C_LIBRARIES}
+    MPI_C_INCLUDE_DIRS: ${MPI_C_INCLUDE_DIRS}
+    MPI_C_LINK_FLAGS: ${MPI_C_LINK_FLAGS}
+
+    MPI_Fortran_COMPILER: ${MPI_Fortran_COMPILER}
+    MPI_Fortran_LIBRARIES: ${MPI_Fortran_LIBRARIES}
+    MPI_Fortran_INCLUDE_DIRS: ${MPI_Fortran_INCLUDE_DIRS}
+    MPI_Fortran_LINK_FLAGS: ${MPI_Fortran_LINK_FLAGS}
+
+    MPIEXEC_EXECUTABLE: ${MPIEXEC_EXECUTABLE}
+    MPIEXEC_MAX_NUMPROCS: ${MPIEXEC_MAX_NUMPROCS}
+    MPI_VERSION: ${MPI_VERSION}
+    ")
 endif()
 
 mark_as_advanced(MPI_Fortran_LIBRARY MPI_Fortran_INCLUDE_DIR MPI_C_LIBRARY MPI_C_INCLUDE_DIR
