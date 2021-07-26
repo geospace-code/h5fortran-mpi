@@ -32,10 +32,12 @@ procedure, public :: open => ph5open, close => ph5close, &
   create => hdf_create, filesize => hdf_filesize
 !! procedures without mapping
 
-generic, public :: write => ph5write2d_r32, ph5write3d_r32
+generic, public :: write => ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, &
+  ph5write2d_r64, ph5write3d_r64, ph5write4d_r64
 !! mapped procedures
 
-procedure,private :: ph5write2d_r32, ph5write3d_r32
+procedure,private :: ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, &
+  ph5write2d_r64, ph5write3d_r64, ph5write4d_r64
 !! mapped procedures must be declared again like this
 
 end type hdf5_file
