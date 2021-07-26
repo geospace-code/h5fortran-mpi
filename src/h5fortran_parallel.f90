@@ -99,6 +99,20 @@ real(real64), intent(in) :: A(:,:,:)
 integer(HSIZE_T), intent(in) :: dims_file(3)
 end subroutine ph5write3d_r64
 
+module subroutine ph5write4d_r32(self, dname, A, dims_file)
+class(hdf5_file), intent(inout) :: self
+character(*), intent(in) :: dname
+real(real32), intent(in) :: A(:,:,:,:)
+integer(HSIZE_T), intent(in) :: dims_file(4)
+end subroutine ph5write4d_r32
+
+module subroutine ph5write4d_r64(self, dname, A, dims_file)
+class(hdf5_file), intent(inout) :: self
+character(*), intent(in) :: dname
+real(real64), intent(in) :: A(:,:,:,:)
+integer(HSIZE_T), intent(in) :: dims_file(4)
+end subroutine ph5write4d_r64
+
 end interface
 
 contains
