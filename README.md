@@ -25,6 +25,15 @@ Alternatively, some Linux distros do have a parallel HDF5 package:
 * Ubuntu: `apt install libhdf5-openmpi-dev`
 * CentOS: `yum install hdf5-openmpi-devel`
 
+## Windows
+
+At least through HDF5 1.10.7 and 1.21.1, parallel HDF5 writes *with compression* are not supported on Windows, with GCC or Intel compiler.
+This is despite the Intel compiler having MPI-3 API.
+This appears to be an undocumented limitation on Windows of HDF5.
+
+Windows users may instead use Windows Subsystem for Linux and install `libhdf5-openmpi-dev` in Ubuntu.
+Or simply use uncompressed parallel HDF5, but compression is important enough that WSL may be the best general solution for Windows users.
+
 ## Build this project
 
 Once you have a HDF5 parallel library, build this project like:
