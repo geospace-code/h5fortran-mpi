@@ -25,7 +25,11 @@ Alternatively, some Linux distros do have a parallel HDF5 package:
 * Ubuntu: `apt install libhdf5-openmpi-dev`
 * CentOS: `yum install hdf5-openmpi-devel`
 
-## Windows
+## Compressed parallel HDF5
+
+Compression is useful in general to save significant disk space and speed up write/read, but requires HDF5 >= 1.10.2 and MPI-3.
+
+### Windows
 
 At least through HDF5 1.10.7 and 1.21.1, parallel HDF5 writes *with compression* are not supported on Windows, with GCC or Intel compiler.
 This is despite the Intel compiler having MPI-3 API.
