@@ -10,8 +10,6 @@ implicit none
 
 integer, parameter :: mpi_h5comm = MPI_COMM_WORLD, mpi_h5info = MPI_INFO_NULL
 
-intrinsic :: rank  !< Intel 2021.3 still a bug
-
 type :: hdf5_file
 
 character(:), allocatable :: filename
@@ -79,7 +77,7 @@ module subroutine ph5write2d_r32(self, dname, A, dims_file)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 real(real32), intent(in) :: A(:,:)
-integer(HSIZE_T), intent(in) :: dims_file(rank(A))  !< full disk shape of A (not just per worker)
+integer(HSIZE_T), intent(in) :: dims_file(2)  !< full disk shape of A (not just per worker)
 end subroutine ph5write2d_r32
 
 module subroutine ph5write3d_r32(self, dname, A, dims_file)
@@ -88,7 +86,7 @@ module subroutine ph5write3d_r32(self, dname, A, dims_file)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 real(real32), intent(in) :: A(:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(rank(A))  !< full disk shape of A (not just per worker)
+integer(HSIZE_T), intent(in) :: dims_file(3)  !< full disk shape of A (not just per worker)
 end subroutine ph5write3d_r32
 
 end interface
