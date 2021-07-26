@@ -1,6 +1,8 @@
 
 ## object-oriented HDF5 interface
-file(READ writer_template.f90 writer_template)
+file(READ writer_template_r32.f90 writer_template_r32)
+file(READ writer_template_r64.f90 writer_template_r64)
+
 configure_file(writer.in.f90 writer.f90)
 set_directory_properties(PROPERTIES CMAKE_CONFIGURE_DEPENDS writer_template.f90)
 
