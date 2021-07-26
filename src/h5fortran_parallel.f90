@@ -10,6 +10,8 @@ implicit none
 
 integer, parameter :: mpi_h5comm = MPI_COMM_WORLD, mpi_h5info = MPI_INFO_NULL
 
+intrinsic :: rank  !< Intel 2021.3 still a bug
+
 type :: hdf5_file
 
 character(:), allocatable :: filename
