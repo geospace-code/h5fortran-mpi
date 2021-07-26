@@ -175,7 +175,9 @@ endif
 
 !> RESULTS
 
-if(mpi_id == mpi_root_id) call print_timing(storage_size(A3), int(dims_full), tmin, real(h5%filesize()))
+if(mpi_id == mpi_root_id) then
+  call print_timing(storage_size(A3), int(dims_full), tmin, real(h5%filesize()))
+endif
 
 if (debug) print '(a,i0)', "mpi finalize: worker: ", mpi_id
 call mpi_finalize(ierr)
