@@ -7,6 +7,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 
 find_package(MPI COMPONENTS C Fortran REQUIRED)
 
+include(cmake/options.cmake)
 include(cmake/compilers.cmake)
 include(cmake/SetTargProps.cmake)
 include(cmake/hwloc.cmake)
