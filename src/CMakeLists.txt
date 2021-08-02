@@ -12,7 +12,7 @@ cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
 find_file(hdf5_settings_file
   NAMES libhdf5.settings
   HINTS ${HDF5_DIR}
-  PATH_SUFFIXES lib share/hdf5 share/hdf5-mpi
+  PATH_SUFFIXES lib share share/hdf5 share/hdf5-mpi
   NO_DEFAULT_PATH
   REQUIRED)
 
