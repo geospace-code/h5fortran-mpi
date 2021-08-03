@@ -193,7 +193,7 @@ else()
 endif()
 
 if(NOT MPI_C_COMPILER)
-  pkg_search_module(pc_mpi_c ompi-c)
+  pkg_search_module(pc_mpi_c ompi-c ompi mpich)
 endif()
 
 if(CMAKE_C_COMPILER_ID MATCHES "^Intel")
@@ -210,8 +210,8 @@ find_program(MPI_C_COMPILER
   PATH_SUFFIXES ${_binsuf}
   )
 if(MPI_C_COMPILER)
-  get_filename_component(_wrap_hint ${MPI_C_COMPILER} DIRECTORY)
-  get_filename_component(_wrap_hint ${_wrap_hint} DIRECTORY)
+  get_filename_component(mpi_root ${MPI_C_COMPILER} DIRECTORY)
+  get_filename_component(mpi_root ${mpi_root} DIRECTORY)
 
   get_flags(${MPI_C_COMPILER} c_raw)
   if(c_raw)
@@ -234,7 +234,7 @@ foreach(n ${names})
 
   find_library(MPI_C_${n}_LIBRARY
     NAMES ${n}
-    HINTS ${lib_dirs} ${_wrap_hint} ${pc_mpi_c_LIBRARY_DIRS} ${pc_mpi_c_LIBDIR} ${_hints}
+    HINTS ${lib_dirs} ${mpi_root} ${pc_mpi_c_LIBRARY_DIRS} ${pc_mpi_c_LIBDIR} ${_hints}
     PATH_SUFFIXES ${_lsuf}
   )
   if(MPI_C_${n}_LIBRARY)
@@ -248,14 +248,15 @@ endif()
 
 find_path(MPI_C_INCLUDE_DIR
   NAMES mpi.h
-  HINTS ${inc_dirs} ${_wrap_hint} ${pc_mpi_c_INCLUDE_DIRS} ${_hints} ${_hints_inc}
-  PATH_SUFFIXES openmpi-x86_64 mpich-x86_64
+  HINTS ${inc_dirs} ${mpi_root} ${pc_mpi_c_INCLUDE_DIRS} ${_hints} ${_hints_inc}
+  PATH_SUFFIXES ${mpi_incsuf}
 )
 if(NOT MPI_C_INCLUDE_DIR)
   return()
 endif()
 
 set(CMAKE_REQUIRED_INCLUDES ${MPI_C_INCLUDE_DIR})
+set(CMAKE_REQUIRED_LINK_OPTIONS ${MPI_C_LINK_FLAGS})
 set(CMAKE_REQUIRED_LIBRARIES ${MPI_C_LIBRARY})
 list(APPEND CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
@@ -292,7 +293,10 @@ if(NOT MPI_VERSION)
   if(mpi_build_code AND mpi_run_code EQUAL 0)
     message(CHECK_PASS "${MPI_VERSION}")
   else()
-    message(CHECK_FAIL "MPI API not detected")
+    message(CHECK_FAIL "MPI API not detected with:
+MPI_C_LIBRARY: ${MPI_C_LIBRARY}
+MPI_C_INCLUDE_DIR: ${MPI_C_INCLUDE_DIR}
+MPI_C_LINK_FLAGS: ${MPI_C_LINK_FLAGS}")
     return()
   endif()
   set(MPI_VERSION ${MPI_VERSION} CACHE STRING "MPI API level")
@@ -345,7 +349,7 @@ else()
 endif()
 
 if(NOT MPI_CXX_COMPILER)
-  pkg_search_module(pc_mpi_cxx ompi-cxx)
+  pkg_search_module(pc_mpi_cxx ompi-cxx ompi mpich)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "^Intel")
@@ -362,8 +366,8 @@ find_program(MPI_CXX_COMPILER
   PATH_SUFFIXES ${_binsuf}
   )
 if(MPI_CXX_COMPILER)
-  get_filename_component(_wrap_hint ${MPI_CXX_COMPILER} DIRECTORY)
-  get_filename_component(_wrap_hint ${_wrap_hint} DIRECTORY)
+  get_filename_component(mpi_root ${MPI_CXX_COMPILER} DIRECTORY)
+  get_filename_component(mpi_root ${mpi_root} DIRECTORY)
 
   get_flags(${MPI_CXX_COMPILER} cxx_raw)
   if(cxx_raw)
@@ -386,7 +390,7 @@ foreach(n ${names})
 
   find_library(MPI_CXX_${n}_LIBRARY
     NAMES ${n}
-    HINTS ${lib_dirs} ${_wrap_hint} ${pc_mpi_cxx_LIBRARY_DIRS} ${pc_mpi_cxx_LIBDIR} ${_hints}
+    HINTS ${lib_dirs} ${mpi_root} ${pc_mpi_cxx_LIBRARY_DIRS} ${pc_mpi_cxx_LIBDIR} ${_hints}
     PATH_SUFFIXES ${_lsuf}
   )
   if(MPI_CXX_${n}_LIBRARY)
@@ -400,14 +404,15 @@ endif()
 
 find_path(MPI_CXX_INCLUDE_DIR
   NAMES mpi.h
-  HINTS ${inc_dirs} ${_wrap_hint} ${pc_mpi_cxx_INCLUDE_DIRS} ${_hints} ${_hints_inc}
-  PATH_SUFFIXES openmpi-x86_64 mpich-x86_64
+  HINTS ${inc_dirs} ${mpi_root} ${pc_mpi_cxx_INCLUDE_DIRS} ${_hints} ${_hints_inc}
+  PATH_SUFFIXES ${mpi_incsuf}
 )
 if(NOT MPI_CXX_INCLUDE_DIR)
   return()
 endif()
 
 set(CMAKE_REQUIRED_INCLUDES ${MPI_CXX_INCLUDE_DIR})
+set(CMAKE_REQUIRED_LINK_OPTIONS ${MPI_CXX_LINK_FLAGS})
 set(CMAKE_REQUIRED_LIBRARIES ${MPI_CXX_LIBRARY})
 list(APPEND CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
@@ -459,7 +464,7 @@ else()
 endif()
 
 if(NOT MPI_Fortran_COMPILER)
-  pkg_search_module(pc_mpi_f ompi-fort)
+  pkg_search_module(pc_mpi_f ompi-fort ompi mpich)
 endif()
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
@@ -476,8 +481,8 @@ find_program(MPI_Fortran_COMPILER
   PATH_SUFFIXES ${_binsuf}
   )
 if(MPI_Fortran_COMPILER)
-  get_filename_component(_wrap_hint ${MPI_Fortran_COMPILER} DIRECTORY)
-  get_filename_component(_wrap_hint ${_wrap_hint} DIRECTORY)
+  get_filename_component(mpi_root ${MPI_Fortran_COMPILER} DIRECTORY)
+  get_filename_component(mpi_root ${mpi_root} DIRECTORY)
 
   get_flags(${MPI_Fortran_COMPILER} f_raw)
   if(f_raw)
@@ -500,7 +505,7 @@ foreach(n ${names})
 
   find_library(MPI_Fortran_${n}_LIBRARY
     NAMES ${n}
-    HINTS ${lib_dirs} ${_wrap_hint} ${pc_mpi_f_LIBRARY_DIRS} ${pc_mpi_f_LIBDIR} ${_hints}
+    HINTS ${lib_dirs} ${mpi_root} ${pc_mpi_f_LIBRARY_DIRS} ${pc_mpi_f_LIBDIR} ${_hints}
     PATH_SUFFIXES ${_lsuf}
   )
   if(MPI_Fortran_${n}_LIBRARY)
@@ -519,7 +524,7 @@ endif()
 
 find_path(MPI_Fortran_INCLUDE_DIR
   NAMES mpi.mod
-  HINTS ${inc_dirs} ${_wrap_hint} ${pc_mpi_f_INCLUDE_DIRS} ${_hints} ${_hints_inc}
+  HINTS ${inc_dirs} ${mpi_root} ${pc_mpi_f_INCLUDE_DIRS} ${_hints} ${_hints_inc}
   PATH_SUFFIXES lib ${_msuf}
   # yes, openmpi puts .mod files into lib/
 )
@@ -530,7 +535,7 @@ endif()
 if(WIN32 AND NOT CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
   find_path(MPI_Fortran_INCLUDE_EXTRA
     NAMES mpifptr.h
-    HINTS ${inc_dirs} ${_wrap_hint} ${pc_mpi_f_INCLUDE_DIRS} ${_hints} ${_hints_inc}
+    HINTS ${inc_dirs} ${mpi_root} ${pc_mpi_f_INCLUDE_DIRS} ${_hints} ${_hints_inc}
     PATH_SUFFIXES x64
   )
 
@@ -540,6 +545,7 @@ if(WIN32 AND NOT CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
 endif()
 
 set(CMAKE_REQUIRED_INCLUDES ${MPI_Fortran_INCLUDE_DIR})
+set(CMAKE_REQUIRED_LINK_OPTIONS ${MPI_Fortran_LINK_FLAGS})
 set(CMAKE_REQUIRED_LIBRARIES ${MPI_Fortran_LIBRARY})
 list(APPEND CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
@@ -587,13 +593,31 @@ if(WIN32 AND NOT CMAKE_C_COMPILER_ID MATCHES "^Intel")
 endif()
 
 set(_lsuf release openmpi/lib mpich/lib)
-set(_binpref /usr/lib64)
 set(_binsuf bin openmpi/bin mpich/bin)
+
+if(UNIX)
+  set(_binpref /usr/lib64)
+else()
+  set(_binpref $ENV{MINGWROOT} $ENV{MSMPI_BIN})
+endif()
+
+if(UNIX)
+  execute_process(COMMAND uname -m
+    OUTPUT_VARIABLE arch
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    TIMEOUT 5)
+
+  if(arch STREQUAL x86_64)
+    set(mpi_incsuf openmpi-x86_64 mpich-x86_64)
+  elseif(arch STREQUAL aarch64)
+    set(mpi_incsuf openmpi-aarch64 mpich-aarch64)
+  endif()
+endif(UNIX)
 
 # must have MPIexec to be worthwhile (de facto standard is mpiexec)
 find_program(MPIEXEC_EXECUTABLE
   NAMES mpiexec mpirun orterun
-  HINTS ${_hints} $ENV{MSMPI_BIN}
+  HINTS ${_hints}
   PATHS ${_binpref}
   PATH_SUFFIXES ${_binsuf}
 )
