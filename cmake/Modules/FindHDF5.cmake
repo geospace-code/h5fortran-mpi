@@ -55,6 +55,37 @@ Targets
 include(CheckSymbolExists)
 include(CheckSourceCompiles)
 
+function(get_flags exec outvar)
+
+execute_process(COMMAND ${exec} -show
+OUTPUT_STRIP_TRAILING_WHITESPACE
+OUTPUT_VARIABLE ret
+RESULT_VARIABLE code
+TIMEOUT 10
+)
+
+if(code EQUAL 0)
+  set(${outvar} ${ret} PARENT_SCOPE)
+endif()
+
+endfunction(get_flags)
+
+
+function(pop_flag raw flag outvar)
+# this gives the argument to flags to get their paths like -I or -l or -L
+
+set(_v)
+string(REGEX MATCHALL "(^| )${flag} *([^\" ]+|\"[^\"]+\")" _vars "${raw}")
+foreach(_p IN LISTS _vars)
+  string(REGEX REPLACE "(^| )${flag} *" "" _p "${_p}")
+  list(APPEND _v "${_p}")
+endforeach()
+
+set(${outvar} ${_v} PARENT_SCOPE)
+
+endfunction(pop_flag)
+
+
 function(detect_config)
 
 if(Fortran IN_LIST HDF5_FIND_COMPONENTS AND NOT HDF5_Fortran_FOUND)
@@ -158,29 +189,39 @@ function(find_hdf5_fortran)
 # CMake won't look for lib prefix automatically.
 set(_names hdf5_fortran libhdf5_fortran)
 set(_hl_names hdf5_hl_fortran hdf5hl_fortran libhdf5_hl_fortran libhdf5hl_fortran)
-set(wrapper_names h5fc h5fc-64)
+
 if(parallel IN_LIST HDF5_FIND_COMPONENTS)
-  list(PREPEND _names hdf5_openmpi_fortran hdf5_mpich_fortran)
-  list(PREPEND _hl_names hdf5_openmpihl_fortran hdf5_mpichhl_fortran)
-  set(wrapper_names h5pfc h5pfc.openmpi h5pfc.mpich)
+  set(wrapper_names h5pfc)
+else()
+  set(wrapper_names h5fc h5fc-64)
 endif()
 
 find_program(HDF5_Fortran_COMPILER_EXECUTABLE
   NAMES ${wrapper_names}
   PATHS ${_binpref}
-  PATH_SUFFIXES ${_binsuf}
+  PATH_SUFFIXES ${hdf5_binsuf}
 )
+
+if(HDF5_Fortran_COMPILER_EXECUTABLE)
+  get_flags(${HDF5_Fortran_COMPILER_EXECUTABLE} f_raw)
+  pop_flag(${f_raw} -L lib_dirs)
+  pop_flag(${f_raw} -I inc_dirs)
+  if(NOT inc_dirs AND parallel IN_LIST HDF5_FIND_COMPONENTS)
+    get_flags(${MPI_Fortran_COMPILER} f_raw)
+    pop_flag(${f_raw} -I inc_dirs)
+  endif()
+endif()
 
 find_library(HDF5_Fortran_LIBRARY
   NAMES ${_names}
-  HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
+  HINTS ${lib_dirs} ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "HDF5 Fortran API")
 
 find_library(HDF5_Fortran_HL_LIBRARY
   NAMES ${_hl_names}
-  HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
+  HINTS ${lib_dirs} ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "HDF5 Fortran HL high-level API")
@@ -188,26 +229,26 @@ find_library(HDF5_Fortran_HL_LIBRARY
 # not all platforms have this stub
 find_library(HDF5_Fortran_HL_stub
   NAMES hdf5_hl_f90cstub libhdf5_hl_f90cstub
-  HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
+  HINTS ${lib_dirs} ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "Fortran C HL interface, not all HDF5 implementations have/need this")
 
 find_library(HDF5_Fortran_stub
   NAMES hdf5_f90cstub libhdf5_f90cstub
-  HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
+  HINTS ${lib_dirs} ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "Fortran C interface, not all HDF5 implementations have/need this")
 
 set(HDF5_Fortran_LIBRARIES ${HDF5_Fortran_HL_LIBRARY} ${HDF5_Fortran_LIBRARY})
 if(HDF5_Fortran_HL_stub AND HDF5_Fortran_stub)
-list(APPEND HDF5_Fortran_LIBRARIES ${HDF5_Fortran_HL_stub} ${HDF5_Fortran_stub})
+  list(APPEND HDF5_Fortran_LIBRARIES ${HDF5_Fortran_HL_stub} ${HDF5_Fortran_stub})
 endif()
 
 find_path(HDF5_Fortran_INCLUDE_DIR
   NAMES hdf5.mod
-  HINTS ${pc_hdf5_INCLUDE_DIRS}
+  HINTS ${inc_dirs} ${pc_hdf5_INCLUDE_DIRS}
   PATH_SUFFIXES ${_msuf}
   PATHS ${_binpref}
   DOC "HDF5 Fortran modules")
@@ -227,26 +268,32 @@ function(find_hdf5_cxx)
 find_program(HDF5_CXX_COMPILER_EXECUTABLE
   NAMES h5c++ h5c++-64
   PATHS ${_binpref}
-  PATH_SUFFIXES ${_binsuf}
+  PATH_SUFFIXES ${hdf5_binsuf}
 )
+
+if(HDF5_CXX_COMPILER_EXECUTABLE)
+  get_flags(${HDF5_CXX_COMPILER_EXECUTABLE} cxx_raw)
+  pop_flag(${cxx_raw} -L lib_dirs)
+  pop_flag(${cxx_raw} -I inc_dirs)
+endif()
 
 find_library(HDF5_CXX_LIBRARY
   NAMES hdf5_cpp libhdf5_cpp
-  HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
+  HINTS ${lib_dirs} ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "HDF5 C++ API")
 
 find_library(HDF5_CXX_HL_LIBRARY
   NAMES hdf5_hl_cpp libhdf5_hl_cpp
-  HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
+  HINTS ${lib_dirs} ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "HDF5 C++ high-level API")
 
 find_path(HDF5_CXX_INCLUDE_DIR
   NAMES hdf5.h
-  HINTS ${pc_hdf5_INCLUDE_DIRS}
+  HINTS ${inc_dirs} ${pc_hdf5_INCLUDE_DIRS}
   PATH_SUFFIXES ${_psuf}
   DOC "HDF5 C header")
 
@@ -264,36 +311,46 @@ function(find_hdf5_c)
 
 set(_names hdf5 libhdf5)
 set(_hl_names hdf5_hl libhdf5_hl)
-set(wrapper_names h5cc h5cc-64)
+
 if(parallel IN_LIST HDF5_FIND_COMPONENTS)
-  list(PREPEND _names hdf5_openmpi hdf5_mpich)
-  list(PREPEND _hl_names hdf5_openmpi_hl hdf5_mpich_hl)
-  set(wrapper_names h5pcc h5pcc.openmpi h5pcc.mpich)
+  set(wrapper_names h5pcc)
+else()
+  set(wrapper_names h5cc h5cc-64)
 endif()
 
 find_program(HDF5_C_COMPILER_EXECUTABLE
   NAMES ${wrapper_names}
   PATHS ${_binpref}
-  PATH_SUFFIXES ${_binsuf}
+  PATH_SUFFIXES ${hdf5_binsuf}
 )
+
+if(HDF5_C_COMPILER_EXECUTABLE)
+  get_flags(${HDF5_C_COMPILER_EXECUTABLE} c_raw)
+  pop_flag(${c_raw} -L lib_dirs)
+  pop_flag(${c_raw} -I inc_dirs)
+  if(NOT inc_dirs AND parallel IN_LIST HDF5_FIND_COMPONENTS)
+    get_flags(${MPI_C_COMPILER} c_raw)
+    pop_flag(${c_raw} -I inc_dirs)
+  endif()
+endif()
 
 find_library(HDF5_C_LIBRARY
   NAMES ${_names}
-  HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
+  HINTS ${lib_dirs} ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "HDF5 C library (necessary for all languages)")
 
 find_library(HDF5_C_HL_LIBRARY
   NAMES ${_hl_names}
-  HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
+  HINTS ${lib_dirs} ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "HDF5 C high level interface")
 
 find_path(HDF5_C_INCLUDE_DIR
   NAMES hdf5.h
-  HINTS ${pc_hdf5_INCLUDE_DIRS}
+  HINTS ${inc_dirs} ${pc_hdf5_INCLUDE_DIRS}
   PATH_SUFFIXES ${_psuf}
   DOC "HDF5 C header")
 
@@ -414,10 +471,14 @@ endfunction(check_hdf5_link)
 
 set(CMAKE_REQUIRED_LIBRARIES)
 
+if(NOT HDF5_ROOT AND DEFINED ENV{HDF5_ROOT})
+  set(HDF5_ROOT $ENV{HDF5_ROOT})
+endif()
+
 # we don't use pkg-config names because some distros pkg-config for HDF5 is broken
 # however at least the paths are often correct
 find_package(PkgConfig)
-if(NOT HDF5_FOUND)
+if(NOT HDF5_ROOT AND NOT HDF5_FOUND)
   if(parallel IN_LIST HDF5_FIND_COMPONENTS)
     pkg_search_module(pc_hdf5 hdf5-openmpi hdf5-mpich hdf5)
   else()
@@ -426,27 +487,26 @@ if(NOT HDF5_FOUND)
 endif()
 
 set(_lsuf hdf5)
-if(parallel IN_LIST HDF5_FIND_COMPONENTS)
-  list(PREPEND _lsuf openmpi/lib mpich/lib hdf5/openmpi hdf5/mpich)
-else()
+if(NOT parallel IN_LIST HDF5_FIND_COMPONENTS)
   list(PREPEND _lsuf hdf5/serial)
 endif()
 
-set(_psuf static ${_lsuf})
-if(parallel IN_LIST HDF5_FIND_COMPONENTS)
-  list(PREPEND _psuf openmpi-x86_64 mpich-x86_64)
-endif()
+set(_psuf static)
 
-set(_msuf ${_psuf})
+set(_msuf static)
 if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
   list(APPEND _msuf gfortran/modules)
-  if(parallel IN_LIST HDF5_FIND_COMPONENTS)
+  if(NOT HDF5_ROOT AND parallel IN_LIST HDF5_FIND_COMPONENTS)
     list(PREPEND _msuf gfortran/modules/openmpi gfortran/modules/mpich)
   endif()
 endif()
 
 set(_binpref /usr/lib64)
-set(_binsuf bin openmpi/bin mpich/bin)
+
+set(hdf5_binsuf)
+if(NOT HDF5_ROOT AND parallel IN_LIST HDF5_FIND_COMPONENTS)
+  set(hdf5_binsuf openmpi/bin mpich/bin)
+endif()
 # Not immediately clear the benefits of this, as we'd have to foreach()
 # a priori names, kind of like we already do with find_library()
 # find_package(hdf5 CONFIG)

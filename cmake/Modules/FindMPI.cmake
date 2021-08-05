@@ -75,11 +75,10 @@ OUTPUT_VARIABLE ret
 RESULT_VARIABLE code
 TIMEOUT 10
 )
-if(NOT code EQUAL 0)
-  return()
-endif()
 
-set(${outvar} ${ret} PARENT_SCOPE)
+if(code EQUAL 0)
+  set(${outvar} ${ret} PARENT_SCOPE)
+endif()
 
 endfunction(get_flags)
 
@@ -569,7 +568,7 @@ set(_hints_inc)
 find_package(PkgConfig)
 find_package(Threads)
 
-if(NOT MPI_ROOT AND ENV{MPI_ROOT})
+if(NOT MPI_ROOT AND DEFINED ENV{MPI_ROOT})
   set(MPI_ROOT $ENV{MPI_ROOT})
 endif()
 
