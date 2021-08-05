@@ -53,8 +53,7 @@ Targets
 #]=======================================================================]
 
 include(CheckSymbolExists)
-include(CheckCSourceCompiles)
-include(CheckFortranSourceCompiles)
+include(CheckSourceCompiles)
 
 function(detect_config)
 
@@ -115,9 +114,9 @@ if( "${_def}" MATCHES
 endif()
 
 # avoid picking up incompatible zlib over the desired zlib
-get_filename_component(_hint ${HDF5_C_LIBRARY} DIRECTORY)
+cmake_path(GET HDF5_C_INCLUDE_DIR PARENT_PATH zlib_dir)
 if(NOT ZLIB_ROOT)
-  set(ZLIB_ROOT "${HDF5_ROOT};${_hint}/..;${_hint}/../..")
+  set(ZLIB_ROOT "${HDF5_ROOT};${zlib_dir}")
 endif()
 if(NOT SZIP_ROOT)
   set(SZIP_ROOT "${ZLIB_ROOT}")
@@ -185,9 +184,6 @@ find_library(HDF5_Fortran_HL_LIBRARY
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "HDF5 Fortran HL high-level API")
-if(NOT (HDF5_Fortran_LIBRARY AND HDF5_Fortran_HL_LIBRARY))
-  return()
-endif()
 
 # not all platforms have this stub
 find_library(HDF5_Fortran_HL_stub
@@ -196,6 +192,7 @@ find_library(HDF5_Fortran_HL_stub
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "Fortran C HL interface, not all HDF5 implementations have/need this")
+
 find_library(HDF5_Fortran_stub
   NAMES hdf5_f90cstub libhdf5_f90cstub
   HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
@@ -214,16 +211,13 @@ find_path(HDF5_Fortran_INCLUDE_DIR
   PATH_SUFFIXES ${_msuf}
   PATHS ${_binpref}
   DOC "HDF5 Fortran modules")
-# CentOS: /usr/lib64/gfortran/modules/hdf5.mod
 
-if(NOT HDF5_Fortran_INCLUDE_DIR)
-  return()
+if(HDF5_Fortran_LIBRARY AND HDF5_Fortran_HL_LIBRARY AND HDF5_Fortran_INCLUDE_DIR)
+  set(HDF5_Fortran_LIBRARIES ${HDF5_Fortran_LIBRARIES} PARENT_SCOPE)
+  set(HDF5_Fortran_INCLUDE_DIR ${HDF5_Fortran_INCLUDE_DIR} PARENT_SCOPE)
+  set(HDF5_Fortran_FOUND true PARENT_SCOPE)
+  set(HDF5_HL_FOUND true PARENT_SCOPE)
 endif()
-
-set(HDF5_Fortran_LIBRARIES ${HDF5_Fortran_LIBRARIES} PARENT_SCOPE)
-set(HDF5_Fortran_INCLUDE_DIR ${HDF5_Fortran_INCLUDE_DIR} PARENT_SCOPE)
-set(HDF5_Fortran_FOUND true PARENT_SCOPE)
-set(HDF5_HL_FOUND true PARENT_SCOPE)
 
 endfunction(find_hdf5_fortran)
 
@@ -242,15 +236,13 @@ find_library(HDF5_CXX_LIBRARY
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "HDF5 C++ API")
+
 find_library(HDF5_CXX_HL_LIBRARY
   NAMES hdf5_hl_cpp libhdf5_hl_cpp
   HINTS ${pc_hdf5_LIBRARY_DIRS} ${pc_hdf5_LIBDIR}
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "HDF5 C++ high-level API")
-if(NOT (HDF5_CXX_LIBRARY AND HDF5_CXX_HL_LIBRARY))
-  return()
-endif()
 
 find_path(HDF5_CXX_INCLUDE_DIR
   NAMES hdf5.h
@@ -258,10 +250,12 @@ find_path(HDF5_CXX_INCLUDE_DIR
   PATH_SUFFIXES ${_psuf}
   DOC "HDF5 C header")
 
-set(HDF5_CXX_LIBRARIES ${HDF5_CXX_HL_LIBRARY} ${HDF5_CXX_LIBRARY} PARENT_SCOPE)
-set(HDF5_CXX_INCLUDE_DIR ${HDF5_CXX_INCLUDE_DIR} PARENT_SCOPE)
-set(HDF5_CXX_FOUND true PARENT_SCOPE)
-set(HDF5_HL_FOUND true PARENT_SCOPE)
+if(HDF5_CXX_LIBRARY AND HDF5_CXX_HL_LIBRARY AND HDF5_CXX_INCLUDE_DIR)
+  set(HDF5_CXX_LIBRARIES ${HDF5_CXX_HL_LIBRARY} ${HDF5_CXX_LIBRARY} PARENT_SCOPE)
+  set(HDF5_CXX_INCLUDE_DIR ${HDF5_CXX_INCLUDE_DIR} PARENT_SCOPE)
+  set(HDF5_CXX_FOUND true PARENT_SCOPE)
+  set(HDF5_HL_FOUND true PARENT_SCOPE)
+endif()
 
 endfunction(find_hdf5_cxx)
 
@@ -296,23 +290,19 @@ find_library(HDF5_C_HL_LIBRARY
   PATH_SUFFIXES ${_lsuf}
   NAMES_PER_DIR
   DOC "HDF5 C high level interface")
-if(NOT (HDF5_C_HL_LIBRARY AND HDF5_C_LIBRARY))
-  return()
-endif()
 
 find_path(HDF5_C_INCLUDE_DIR
   NAMES hdf5.h
   HINTS ${pc_hdf5_INCLUDE_DIRS}
   PATH_SUFFIXES ${_psuf}
   DOC "HDF5 C header")
-if(NOT HDF5_C_INCLUDE_DIR)
-  return()
-endif()
 
-set(HDF5_C_LIBRARIES ${HDF5_C_HL_LIBRARY} ${HDF5_C_LIBRARY} PARENT_SCOPE)
-set(HDF5_C_INCLUDE_DIR ${HDF5_C_INCLUDE_DIR} PARENT_SCOPE)
-set(HDF5_C_FOUND true PARENT_SCOPE)
-set(HDF5_HL_FOUND true PARENT_SCOPE)
+if(HDF5_C_HL_LIBRARY AND HDF5_C_LIBRARY AND HDF5_C_INCLUDE_DIR)
+  set(HDF5_C_LIBRARIES ${HDF5_C_HL_LIBRARY} ${HDF5_C_LIBRARY} PARENT_SCOPE)
+  set(HDF5_C_INCLUDE_DIR ${HDF5_C_INCLUDE_DIR} PARENT_SCOPE)
+  set(HDF5_C_FOUND true PARENT_SCOPE)
+  set(HDF5_HL_FOUND true PARENT_SCOPE)
+endif()
 
 endfunction(find_hdf5_c)
 
@@ -363,12 +353,11 @@ else()
   ]=])
 endif(HDF5_parallel_FOUND)
 
-check_c_source_compiles("${src}" HDF5_C_links)
+check_source_compiles(C "${src}" HDF5_C_links)
 
 if(NOT HDF5_C_links)
   return()
 endif()
-
 
 
 if(HDF5_Fortran_FOUND)
@@ -409,14 +398,13 @@ else()
   end program")
 endif()
 
-check_fortran_source_compiles(${src} HDF5_Fortran_links SRC_EXT f90)
+check_source_compiles(Fortran ${src} HDF5_Fortran_links SRC_EXT f90)
 
 if(NOT HDF5_Fortran_links)
   return()
 endif()
 
 endif(HDF5_Fortran_FOUND)
-
 
 set(HDF5_links true PARENT_SCOPE)
 
