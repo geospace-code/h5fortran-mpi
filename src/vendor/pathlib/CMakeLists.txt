@@ -1,12 +1,8 @@
 set_directory_properties(PROPERTIES LABELS pathlib)
 
-add_library(pathlib OBJECT pathlib.f90)
-
-if(WIN32)
-  target_sources(pathlib PRIVATE pathlib_windows.f90)
-else()
-  target_sources(pathlib PRIVATE pathlib_unix.f90)
-endif()
+add_library(pathlib OBJECT pathlib.f90
+$<IF:$<BOOL:${WIN32}>,pathlib_windows.f90,pathlib_unix.f90>
+)
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   target_sources(pathlib PRIVATE pathlib_intel.f90)
