@@ -10,11 +10,12 @@ set_directory_properties(PROPERTIES CMAKE_CONFIGURE_DEPENDS writer_template.f90)
 cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
 cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
 find_file(hdf5_settings_file
-  NAMES libhdf5.settings
-  HINTS ${HDF5_LIBRARY_DIR} ${HDF5_DIR}
-  PATH_SUFFIXES lib share share/hdf5 share/hdf5-mpi
-  NO_DEFAULT_PATH
-  REQUIRED)
+NAMES libhdf5.settings
+HINTS ${HDF5_LIBRARY_DIR} ${HDF5_DIR}
+PATH_SUFFIXES lib share share/hdf5 share/hdf5-mpi
+NO_DEFAULT_PATH
+REQUIRED
+)
 
 set(hdf5_parallel_compression .false.)
 message(CHECK_START "Checking if HDF5 configured for parallel compression")
@@ -56,10 +57,8 @@ add_executable(slab_serial slab_serial.f90)
 target_link_libraries(slab_serial PRIVATE h5mpi partition cli perf HDF5::HDF5 MPI::MPI_Fortran)
 set_target_properties(slab_serial PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
-add_subdirectory(vendor/pathlib)
-
 add_executable(runner frontend.f90)
-target_link_libraries(runner PRIVATE partition cli pathlib HWLOC::HWLOC_Fortran)
+target_link_libraries(runner PRIVATE partition cli HWLOC::HWLOC_Fortran)
 set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 set_targ_props(h5mpi cli)
