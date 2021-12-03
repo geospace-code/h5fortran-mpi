@@ -1,6 +1,8 @@
 # hdf5-benchmark
 
-benchmarking speed of HDF5 writes from MPI parallel workers
+benchmarking speed of HDF5 writes from MPI parallel workers.
+Once the program is built as in the following sections, run benchmarks in the [scripts](./scripts) directory.
+
 
 ## Build HDF5 Parallel library
 
@@ -12,7 +14,7 @@ To build the HDF5 parallel library, regardless of what OS or compiler you're usi
 ```sh
 git clone https://github.com/geospace-code/h5fortran
 cd h5fortran/scripts
-cmake -B build -DCMAKE_INSTALL_PREFIX=~/libs_par
+cmake -B build -DCMAKE_INSTALL_PREFIX=~/lib_par
 cmake --build build
 ```
 
@@ -43,7 +45,7 @@ Or simply use uncompressed parallel HDF5, but compression is important enough th
 Once you have a HDF5 parallel library, build this project like:
 
 ```sh
-cmake -B build -DHDF5_ROOT=~/libs_par
+cmake -B build -DHDF5_ROOT=~/lib_par
 cmake --build build
 ```
 

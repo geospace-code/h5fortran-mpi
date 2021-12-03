@@ -3,7 +3,7 @@ program simple
 !! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90
 
 use, intrinsic :: iso_fortran_env, only : int64, real64, stderr=>error_unit
-use hdf5
+use hdf5, only : HSIZE_T
 use h5mpi, only : hdf5_file
 use partition, only : get_simsize
 use cli, only : get_cli
@@ -20,7 +20,8 @@ character(1000) :: argv, outfn
 integer :: ierr, lx1, lx2, lx3, i
 integer :: Nrun
 
-integer(int64) :: tic, toc, tmin
+integer(int64) :: tic, toc
+integer(int64), allocatable :: t_elapsed(:)
 
 integer(HSIZE_T) :: dims_full(rank(A3))
 
@@ -48,15 +49,18 @@ end do
 
 if(len_trim(outfn) == 0) error stop "please specify -o filename to write"
 
-
+allocate(t_elapsed(Nrun))
 allocate(A2(lx1, lx2), A3(lx1, lx2, lx3))
 !> dummy data
 A2 = 1
 A3 = 1
 
-!> benchmark loop
-tmin = huge(0_int64)
+!! benchmark loop
+!! due to filesystem caching, minimum time isn't appropriate
+!! better to use mean/median/variance etc.
+
 main : do i = 1, Nrun
+
   call system_clock(count=tic)
   call h5%open(trim(outfn), action="w", mpi=.false., comp_lvl=3)
 
@@ -66,12 +70,12 @@ main : do i = 1, Nrun
   call h5%close()
 
   call system_clock(count=toc)
-  tmin = min(tmin, toc-tic)
+  t_elapsed(i) = toc-tic
 
 end do main
 
 !> RESULTS
 
-call print_timing(storage_size(A3), int(dims_full), tmin, real(h5%filesize()))
+call print_timing(storage_size(A3), int(dims_full), t_elapsed, real(h5%filesize()))
 
 end program
