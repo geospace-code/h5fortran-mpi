@@ -64,29 +64,37 @@ set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINAR
 # tests
 
 add_test(NAME MPI-Slab16
-  COMMAND $<TARGET_FILE:runner> 16 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -o out16mpi.h5
-  WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+COMMAND $<TARGET_FILE:runner> 16 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -o out16mpi.h5
+WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+)
 set_tests_properties(MPI-Slab16 PROPERTIES
-  TIMEOUT 10
-  LABELS mpi_hdf5)
+TIMEOUT 10
+LABELS mpi_hdf5
+)
 
 add_test(NAME Serial-Slab16
-  COMMAND $<TARGET_FILE:slab_serial> 16 4 8 -o out16serial.h5
-  WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+COMMAND $<TARGET_FILE:slab_serial> 16 4 8 -o out16serial.h5
+WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+)
 set_tests_properties(Serial-Slab16 PROPERTIES
-  TIMEOUT 10
-  LABELS serial_hdf5)
+TIMEOUT 10
+LABELS serial_hdf5
+)
 
 add_test(NAME MPI-Slab10000
-  COMMAND $<TARGET_FILE:runner> 10000 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -o out10000mpi.h5
-  WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+COMMAND $<TARGET_FILE:runner> 10000 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -o out10000mpi.h5
+WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+)
 set_tests_properties(MPI-Slab10000 PROPERTIES
-  TIMEOUT 180
-  LABELS mpi_hdf5)
+TIMEOUT 180
+LABELS mpi_hdf5
+)
 
 add_test(NAME Serial-Slab10000
-  COMMAND $<TARGET_FILE:slab_serial> 10000 4 8 -o out10000serial.h5
-  WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+COMMAND $<TARGET_FILE:slab_serial> 10000 4 8 -o out10000serial.h5
+WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+)
 set_tests_properties(Serial-Slab10000 PROPERTIES
-  TIMEOUT 180
-  LABELS serial_hdf5)
+TIMEOUT 180
+LABELS serial_hdf5
+)
