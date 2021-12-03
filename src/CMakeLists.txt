@@ -61,8 +61,6 @@ add_executable(runner frontend.f90)
 target_link_libraries(runner PRIVATE partition cli HWLOC::HWLOC_Fortran)
 set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
-set_targ_props(h5mpi cli)
-
 # tests
 
 add_test(NAME MPI-Slab16

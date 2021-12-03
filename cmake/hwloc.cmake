@@ -1,40 +1,48 @@
 # provides CMake imported target HWLOC::HWLOC_Fortran
 include(ExternalProject)
 
-# find_package(HWLOC-Fortran CONFIG)
+find_package(HWLOCfortran CONFIG QUIET)
 
-# if(HWLOC-Fortran_FOUND)
-#   return()
-# endif()
-
-if(NOT HWLOC-Fortran_ROOT)
-  if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(HWLOC-Fortran_ROOT ${PROJECT_BINARY_DIR} CACHE PATH "default ROOT")
-  else()
-    set(HWLOC-Fortran_ROOT ${CMAKE_INSTALL_PREFIX})
-  endif()
+if(HWLOCfortran_FOUND)
+  message(STATUS "HWLOCfortran found: ${HWLOCfortran_DIR}")
+  return()
 endif()
 
-set(HWLOC-Fortran_LIBRARIES ${HWLOC-Fortran_ROOT}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}hwloc_ifc${CMAKE_STATIC_LIBRARY_SUFFIX})
+if(NOT HWLOCfortran_ROOT)
+  set(HWLOCfortran_ROOT ${CMAKE_INSTALL_PREFIX})
+endif()
 
-ExternalProject_Add(HWLOC-Fortran
-GIT_REPOSITORY "https://github.com/scivision/hwloc-fortran.git"
-GIT_TAG "v1.0.2"
-CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${HWLOC-Fortran_ROOT} -DBUILD_SHARED_LIBS:BOOL=false -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING:BOOL=false
-BUILD_BYPRODUCTS ${HWLOC-Fortran_LIBRARIES}
+if(BUILD_SHARED_LIBS)
+  set(HWLOCfortran_LIBRARIES ${HWLOCfortran_ROOT}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}hwloc_ifc${CMAKE_SHARED_LIBRARY_SUFFIX})
+else()
+  set(HWLOCfortran_LIBRARIES ${HWLOCfortran_ROOT}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}hwloc_ifc${CMAKE_STATIC_LIBRARY_SUFFIX})
+endif()
+
+set(HWLOCfortran_args
+--install-prefix=${HWLOCfortran_ROOT}
+-DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+-DCMAKE_BUILD_TYPE=Release
+-DBUILD_TESTING:BOOL=false
+)
+
+ExternalProject_Add(HWLOCfortran
+GIT_REPOSITORY ${HWLOCfortran_git}
+GIT_TAG ${HWLOCfortran_tag}
+CMAKE_ARGS ${HWLOCfortran_args}
+BUILD_BYPRODUCTS ${HWLOCfortran_LIBRARIES}
 INACTIVITY_TIMEOUT 15
 CONFIGURE_HANDLED_BY_BUILD ON
 )
 
-file(MAKE_DIRECTORY ${HWLOC-Fortran_ROOT}/include)
+file(MAKE_DIRECTORY ${HWLOCfortran_ROOT}/include)
 
 add_library(HWLOC::HWLOC_Fortran INTERFACE IMPORTED)
-target_link_libraries(HWLOC::HWLOC_Fortran INTERFACE "${HWLOC-Fortran_LIBRARIES}")
-target_include_directories(HWLOC::HWLOC_Fortran INTERFACE ${HWLOC-Fortran_ROOT}/include)
+target_link_libraries(HWLOC::HWLOC_Fortran INTERFACE "${HWLOCfortran_LIBRARIES}")
+target_include_directories(HWLOC::HWLOC_Fortran INTERFACE ${HWLOCfortran_ROOT}/include)
 
 find_package(HWLOC)
 if(HWLOC_FOUND)
   target_link_libraries(HWLOC::HWLOC_Fortran INTERFACE HWLOC::HWLOC)
 endif()
 
-add_dependencies(HWLOC::HWLOC_Fortran HWLOC-Fortran)
+add_dependencies(HWLOC::HWLOC_Fortran HWLOCfortran)

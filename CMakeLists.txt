@@ -9,7 +9,8 @@ find_package(MPI COMPONENTS C Fortran REQUIRED)
 
 include(cmake/options.cmake)
 include(cmake/compilers.cmake)
-include(cmake/SetTargProps.cmake)
+include(cmake/libraries.cmake)
+
 include(cmake/hwloc.cmake)
 
 find_package(HDF5 COMPONENTS Fortran parallel REQUIRED)
