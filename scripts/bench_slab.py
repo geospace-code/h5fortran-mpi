@@ -41,13 +41,26 @@ tic = time.monotonic()
 subprocess.check_call([serial_exe] + args, timeout=600)
 toc = time.monotonic() - tic
 print(f"serial slab: {toc:.3f} seconds")
+# %% Runner frontend uses HWLOC to compute physical core count
+runner_exe = shutil.which("runner", path=bin_dir)
+if not runner_exe:
+    raise FileNotFoundError(f"runner not found in {bin_dir}")
 # %% MPI transfer to root (inefficient relative to HDF5-MPI)
 mpi_serial_exe = shutil.which("slab_mpi_serial", path=bin_dir)
 if not mpi_serial_exe:
     raise FileNotFoundError(f"slab_mpi_serial not found in {bin_dir}")
-args = list(map(str, P.n)) + ["-o", "out.h5"] + Nrun_opt
+args = list(map(str, P.n)) + ["-exe", mpi_serial_exe, "-o", "out.h5"] + Nrun_opt
 
 tic = time.monotonic()
-subprocess.check_call([mpi_serial_exe] + args, timeout=600)
+subprocess.check_call([runner_exe] + args, timeout=600)
 toc = time.monotonic() - tic
 print(f"MPI transfer slab: {toc:.3f} seconds")
+# %% HDF5-MPI layer (most efficient general I/O approach for parallel computation)
+hdf5_mpi_exe = shutil.which("slab_mpi", path=bin_dir)
+if not hdf5_mpi_exe:
+    raise FileNotFoundError(f"slab_mpi not found in {bin_dir}")
+args = list(map(str, P.n)) + ["-exe", hdf5_mpi_exe, "-o", "out.h5"] + Nrun_opt
+tic = time.monotonic()
+subprocess.check_call([runner_exe] + args, timeout=600)
+toc = time.monotonic() - tic
+print(f"HDF5-MPI slab: {toc:.3f} seconds")
