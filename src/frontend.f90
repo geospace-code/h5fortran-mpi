@@ -7,7 +7,7 @@ use cli, only : get_cli
 implicit none (type, external)
 
 integer :: lid, lx1, lx2, lx3, Ncpu, ierr, u, Nrun, i, argc
-character(1000) :: buf, exe, mpiexec, outfn
+character(2000) :: buf, exe, mpiexec, outfn
 character(:), allocatable :: cmd, sizefn
 logical :: exists
 
@@ -18,6 +18,9 @@ call get_simsize(lx1, lx2, lx3)
 !> defaults
 Ncpu = 0
 Nrun = 1
+mpiexec = ""
+exe = ""
+outfn = ""
 
 do i = 4, argc
   call get_command_argument(i, buf, status=ierr)
@@ -40,6 +43,7 @@ do i = 4, argc
 end do
 
 if(len_trim(mpiexec)==0) mpiexec = "mpiexec"
+if(len_trim(outfn)==0) error stop "must specify -o <output file>"
 
 if(len_trim(exe)==0) error stop "please specify MPI program to run with option:  -exe myprog.exe"
 inquire(file=exe, exist=exists)
