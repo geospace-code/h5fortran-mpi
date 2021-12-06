@@ -20,6 +20,8 @@ character(1000) :: argv, outfn
 integer :: ierr, lx1, lx2, lx3, i
 integer :: Nrun
 
+logical :: debug = .false.
+
 integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
 
@@ -44,6 +46,8 @@ do i = 1, command_argument_count()
     call get_cli(i, argv, outfn)
   case("-Nrun")
     call get_cli(i, argv, Nrun)
+  case("-d")
+    debug = .true.
   end select
 end do
 

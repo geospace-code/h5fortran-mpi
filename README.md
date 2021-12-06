@@ -1,8 +1,11 @@
 # hdf5-benchmark
 
 benchmarking speed of HDF5 writes from MPI parallel workers.
-Once the program is built as in the following sections, run benchmarks in the [scripts](./scripts) directory.
+Once the program is built as in the following sections, run benchmarks in the [scripts](./scripts) directory like:
 
+```sh
+python bench_slab.py
+```
 
 ## Build HDF5 Parallel library
 

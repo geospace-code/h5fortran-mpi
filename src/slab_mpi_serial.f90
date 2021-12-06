@@ -28,7 +28,8 @@ real, parameter :: d0 = 10.  !< dummy value to start from
 
 logical :: debug = .false.
 
-integer(int64) :: tic, toc, tmin
+integer(int64) :: tic, toc
+integer(int64), allocatable :: t_elapsed(:)
 
 integer(HSIZE_T) :: dims_full(rank(A3))
 
@@ -62,9 +63,10 @@ lx2 = -1
 lx3 = -1
 if(mpi_id == mpi_root_id) call get_simsize(lx1, lx2, lx3, Nmpi)
 
-if(mpi_id == mpi_root_id) print '(a,i0,a,i0,1x,i0,1x,i0)', "MPI serial write. ", Nmpi, " total MPI processes. shape: ", &
+if(mpi_id == mpi_root_id) then
+  print '(a,i0,a,i0,1x,i0,1x,i0)', "MPI-root write. ", Nmpi, " total MPI processes. shape: ", &
   lx1, lx2, lx3
-
+endif
 
 ! call mpi_ibcast(lx1, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, mpi_req, ierr)
 ! call mpi_ibcast(lx2, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, mpi_req, ierr)
@@ -94,6 +96,8 @@ else
   allocate(A2(dx1, lx2), A3(dx1, lx2, lx3))
 endif
 
+allocate(t_elapsed(Nrun))
+
 !> dummy data from root to workers
 call system_clock(count=tic)
 if(mpi_id == mpi_root_id) then
@@ -116,7 +120,6 @@ call system_clock(count=toc)
 if (debug) print '(a,i0,a,f10.3)', "MPI worker: ", mpi_id, " time to initialize (milliseconds) ", sysclock2ms(toc-tic)
 
 !> benchmark loop
-tmin = huge(0_int64)
 
 main : do j = 1, Nrun
   if(mpi_id == mpi_root_id) call system_clock(count=tic)
@@ -157,7 +160,7 @@ main : do j = 1, Nrun
     call h5%close()
 
     call system_clock(count=toc)
-    tmin = min(tmin, toc-tic)
+    t_elapsed(j) = toc-tic
   endif
 
 end do main
@@ -176,7 +179,7 @@ endif
 !> RESULTS
 
 if(mpi_id == mpi_root_id) then
-  call print_timing(storage_size(A3), int(dims_full), tmin, real(h5%filesize()))
+  call print_timing(storage_size(A3), int(dims_full), t_elapsed, real(h5%filesize()))
 endif
 
 if (debug) print '(a,i0)', "mpi finalize: worker: ", mpi_id

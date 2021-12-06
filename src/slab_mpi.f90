@@ -1,5 +1,6 @@
 program simple
 !! use hyperslabs with each worker
+!! use HDF5-MPI layer for best efficiency
 !! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90
 
 use, intrinsic :: iso_fortran_env, only : int64, real64, stderr=>error_unit
@@ -8,7 +9,7 @@ use hdf5, only : HSIZE_T
 use h5mpi, only : mpi_h5comm, hdf5_file
 use partition, only : get_simsize
 use cli, only : get_cli
-use perf, only : print_timing
+use perf, only : print_timing, sysclock2ms
 
 implicit none
 
@@ -17,7 +18,7 @@ type(hdf5_file) :: h5
 real, allocatable :: A2(:,:), A3(:,:,:)
 character(1000) :: argv, outfn
 
-integer :: ierr, lx1, lx2, lx3, dx1, i, j
+integer :: ierr, lx1, lx2, lx3, dx1, i
 integer(HSIZE_T), allocatable, dimension(:) :: d2, d3
 integer :: Nmpi, mpi_id, mpi_req, Nrun
 integer, parameter :: mpi_root_id = 0
@@ -25,7 +26,8 @@ real, parameter :: d0 = 10.  !< dummy value to start from
 
 logical :: debug = .false.
 
-integer(int64) :: tic, toc, tmin
+integer(int64) :: tic, toc
+integer(int64), allocatable :: t_elapsed(:)
 
 integer(HSIZE_T) :: dims_full(rank(A3))
 
@@ -59,8 +61,10 @@ lx2 = -1
 lx3 = -1
 if(mpi_id == mpi_root_id) call get_simsize(lx1, lx2, lx3, Nmpi)
 
-if(mpi_id == mpi_root_id) print '(a,i0,a,i0,1x,i0,1x,i0)', "MPI-HDF5 parallel write. ", Nmpi, " total MPI processes. shape: ", &
-  lx1,lx2,lx3
+if(mpi_id == mpi_root_id) then
+  print '(a,i0,a,i0,1x,i0,1x,i0)', "MPI-HDF5 parallel write. ", Nmpi, " total MPI processes. shape: ", &
+  lx1, lx2, lx3
+endif
 
 ! call mpi_ibcast(lx1, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, mpi_req, ierr)
 ! call mpi_ibcast(lx2, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, mpi_req, ierr)
@@ -88,9 +92,8 @@ A2 = mpi_id
 A3 = mpi_id
 
 !> benchmark loop
-tmin = huge(0_int64)
 
-main : do j = 1, Nrun
+main : do i = 1, Nrun
   if(mpi_id == mpi_root_id) call system_clock(count=tic)
   call h5%open(trim(outfn), action="w", mpi=.true., comp_lvl=3, debug=debug)
 
@@ -100,7 +103,7 @@ main : do j = 1, Nrun
   call h5%close()
   if(mpi_id == mpi_root_id) then
     call system_clock(count=toc)
-    tmin = min(tmin, toc-tic)
+    t_elapsed(i) = toc-tic
   endif
 
 end do main
@@ -119,7 +122,7 @@ endif
 !> RESULTS
 
 if(mpi_id == mpi_root_id) then
-  call print_timing(storage_size(A3), int(dims_full), tmin, real(h5%filesize()))
+  call print_timing(storage_size(A3), int(dims_full), t_elapsed, real(h5%filesize()))
 endif
 
 if (debug) print '(a,i0)', "mpi finalize: worker: ", mpi_id
