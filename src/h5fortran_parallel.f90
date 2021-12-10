@@ -148,13 +148,7 @@ if (present(mpi)) self%use_mpi = mpi
 if(present(debug)) self%debug = debug
 
 call get_hdf5_config(self%parallel_compression)
-if(self%parallel_compression) then
-  if(present(comp_lvl)) then
-    self%comp_lvl = comp_lvl
-  else
-    self%comp_lvl = 3
-  endif
-endif
+if(self%parallel_compression .and. present(comp_lvl)) self%comp_lvl = comp_lvl
 
 call h5open_f(ierr)
 if(ierr/=0) error stop "h5open: could not open HDF5 library"
