@@ -4,7 +4,8 @@ file(READ writer_template_r32.f90 writer_template_r32)
 file(READ writer_template_r64.f90 writer_template_r64)
 
 configure_file(writer.in.f90 writer.f90)
-set_directory_properties(PROPERTIES CMAKE_CONFIGURE_DEPENDS writer_template.f90)
+set_directory_properties(PROPERTIES CMAKE_CONFIGURE_DEPENDS "writer_template_r32.f90;writer_template_r64.f90")
+
 
 # see if HDF5 was configured for parallel compression
 cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
