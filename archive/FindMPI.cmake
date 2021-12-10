@@ -366,7 +366,7 @@ else()
   set(mpi_libname mpi_cxx mpi)
 endif()
 
-if(NOT (HDF5_ROOT OR DEFINED MPI_CXX_COMPILER))
+if(NOT (HDF5_ROOT OR DEFINED MPI_CXX_COMPILER OR DEFINED ENV{I_MPI_ROOT}))
   pkg_search_module(pc_mpi_cxx ompi-cxx ompi mpich)
 endif()
 
@@ -469,7 +469,7 @@ else()
   mpi)
 endif()
 
-if(NOT (HDF5_ROOT OR DEFINED MPI_Fortran_COMPILER))
+if(NOT (HDF5_ROOT OR DEFINED MPI_Fortran_COMPILER OR DEFINED ENV{I_MPI_ROOT}))
   pkg_search_module(pc_mpi_f ompi-fort ompi mpich)
 endif()
 
@@ -608,7 +608,7 @@ else()
   set(_binpref $ENV{MINGWROOT} $ENV{MSMPI_BIN})
 endif()
 
-if(NOT (HDF5_ROOT OR DEFINED MPI_C_COMPILER))
+if(NOT (HDF5_ROOT OR DEFINED MPI_C_COMPILER OR DEFINED ENV{I_MPI_ROOT}))
   pkg_search_module(pc_mpi_c ompi-c ompi mpich)
 endif()
 
