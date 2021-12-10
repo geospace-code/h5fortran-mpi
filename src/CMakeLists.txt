@@ -60,7 +60,7 @@ target_link_libraries(slab_serial PRIVATE h5mpi partition cli perf HDF5::HDF5 MP
 set_target_properties(slab_serial PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 add_executable(runner frontend.f90)
-target_link_libraries(runner PRIVATE partition cli HWLOCfortran::hwloc_ifc)
+target_link_libraries(runner PRIVATE partition cli HWLOCfortran::hwloc_ifc HWLOC::HWLOC)
 set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 # tests
