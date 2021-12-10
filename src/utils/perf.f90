@@ -28,9 +28,8 @@ integer(int64), intent(in) :: t_elapsed(:)
 real, intent(in) :: file_bytes
 
 integer :: bytes,N
-real :: data_MB, file_MB, mean_MBsec, var_MBsec, std_MBsec, file_MBsec
+real :: data_MB, file_MB, mean_MBsec, var_MBsec, std_MBsec
 real, dimension(size(t_elapsed)) :: t_ms, data_MBsec
-real :: t_ms_mean
 
 N = size(t_ms)
 
@@ -48,7 +47,6 @@ var_MBsec = sum((data_MBsec - mean_MBsec)**2) / (N - 1)
 std_MBsec = sqrt(var_MBsec)
 
 file_MB = file_bytes / 1024 / 1024
-file_MBsec = file_MB/(t_ms_mean/1000)
 print '(f19.3,1x,f23.3,1x,f10.3,1x,f10.3)', mean_MBsec, std_MBsec, data_MB, file_MB
 
 print *, "TRACE: t_ms", t_ms, data_MBsec
