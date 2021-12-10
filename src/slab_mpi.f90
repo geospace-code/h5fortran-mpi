@@ -63,6 +63,8 @@ end do
 
 if(len_trim(outfn) == 0) error stop "please specify -o filename to write"
 
+allocate(t_elapsed(Nrun))
+
 lx1 = -1
 lx2 = -1
 lx3 = -1
