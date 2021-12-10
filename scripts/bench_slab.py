@@ -18,7 +18,7 @@ p.add_argument(
 p.add_argument("-Nrun", help="number of test runs", type=int, default=10)
 P = p.parse_args()
 
-bin_dir = P.binary_dir
+bin_dir = Path(P.binary_dir).resolve()
 if not bin_dir.is_dir():
     raise NotADirectoryError(
         f"{bin_dir} is not a directory. Please build HDF5 benchmarks with cmake as per Readme."
