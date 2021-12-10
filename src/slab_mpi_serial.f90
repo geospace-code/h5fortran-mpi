@@ -109,8 +109,8 @@ allocate(t_elapsed(Nrun))
 call system_clock(count=tic)
 if(mpi_id == mpi_root_id) then
   do i = 1, Nmpi-1
-    t2 = d0 + i
-    t3 = d0 + i
+    t2(:,:) = d0 + i
+    t3(:,:,:) = d0 + i
     call mpi_send(t2, dx1*lx2, MPI_REAL, i, mt%a2, mpi_h5comm, ierr)
     call mpi_send(t3, dx1*lx2*lx3, MPI_REAL, i, mt%a3, mpi_h5comm, ierr)
     if (ierr /= 0) error stop "initialize: root => worker: mpi_send"

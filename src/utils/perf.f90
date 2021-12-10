@@ -15,8 +15,8 @@ integer(int64) :: rate
 real ::  r
 
 call system_clock(count_rate=rate)
-r = 1000. / rate
-sysclock2ms = t * r
+r = 1000. / real(rate)
+sysclock2ms = real(t) * r
 
 end function sysclock2ms
 
