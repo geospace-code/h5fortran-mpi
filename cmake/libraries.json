@@ -1,6 +1,20 @@
 {
-"HWLOCfortran": {
+  "hwloc": {
+    "2.6.0": {
+        "source": {
+        "url": "https://download.open-mpi.org/release/hwloc/v2.6/hwloc-2.6.0.tar.gz",
+        "sha256": "9aa7e768ed4fd429f488466a311ef2191054ea96ea1a68657bc06ffbb745e59f"
+        }
+    },
+    "2.7.0": {
+        "windows": {
+        "url": "https://download.open-mpi.org/release/hwloc/v2.7/hwloc-2.7.0rc1.tar.bz2",
+        "sha256": "a11d57ef2645011d1026d06133ab5f5d12d861df9ea670cb85103acae33aa2af"
+        }
+    }
+  },
+  "HWLOCfortran": {
     "git": "https://github.com/scivision/hwloc-fortran.git",
     "tag": "v1.2.1"
-}
+  }
 }

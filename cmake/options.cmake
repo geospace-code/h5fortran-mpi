@@ -1,3 +1,4 @@
+option(autobuild "autobuild HWLOC" true)
 option(dev "Development mode")
 
 

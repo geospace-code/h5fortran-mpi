@@ -16,7 +16,7 @@ include(cmake/options.cmake)
 include(cmake/compilers.cmake)
 include(cmake/libraries.cmake)
 
-include(cmake/hwloc.cmake)
+include(cmake/hwloc-fortran.cmake)
 
 find_package(HDF5 COMPONENTS Fortran parallel REQUIRED)
 

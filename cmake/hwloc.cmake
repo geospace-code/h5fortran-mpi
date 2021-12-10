@@ -1,48 +1,83 @@
-# provides CMake imported target HWLOCfortran::hwloc_ifc
 include(ExternalProject)
 
-find_package(HWLOCfortran CONFIG QUIET)
+set(hwloc_external true CACHE BOOL "autobuild HWLOC")
 
-if(HWLOCfortran_FOUND)
-  message(STATUS "HWLOCfortran found: ${HWLOCfortran_DIR}")
-  return()
+if(NOT HWLOC_VERSION)
+  if(WIN32)
+    set(HWLOC_VERSION 2.7.0)
+  else()
+    set(HWLOC_VERSION 2.6.0)
+  endif()
 endif()
 
-if(NOT HWLOCfortran_ROOT)
-  set(HWLOCfortran_ROOT ${CMAKE_INSTALL_PREFIX})
+# need to be sure _ROOT isn't empty, DEFINED is not enough
+if(NOT HWLOC_ROOT)
+  set(HWLOC_ROOT ${CMAKE_INSTALL_PREFIX})
 endif()
 
 if(BUILD_SHARED_LIBS)
-  set(HWLOCfortran_LIBRARIES ${HWLOCfortran_ROOT}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}hwloc_ifc${CMAKE_SHARED_LIBRARY_SUFFIX})
+  set(HWLOC_LIBRARIES ${HWLOC_ROOT}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}hwloc${CMAKE_SHARED_LIBRARY_SUFFIX})
+  set(hwloc_args --disable-static --enable-shared)
 else()
-  set(HWLOCfortran_LIBRARIES ${HWLOCfortran_ROOT}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}hwloc_ifc${CMAKE_STATIC_LIBRARY_SUFFIX})
+  set(HWLOC_LIBRARIES ${HWLOC_ROOT}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}hwloc${CMAKE_STATIC_LIBRARY_SUFFIX})
+  set(hwloc_args --disable-shared --enable-static)
+endif()
+set(HWLOC_INCLUDE_DIRS ${HWLOC_ROOT}/include)
+
+
+# --- read JSON meta
+
+file(READ ${CMAKE_CURRENT_LIST_DIR}/libraries.json _libj)
+if(WIN32)
+  set(key windows)
+else()
+  set(key source)
+endif()
+string(JSON hwloc_url GET ${_libj} hwloc ${HWLOC_VERSION} ${key} url)
+string(JSON hwloc_sha256 GET ${_libj} hwloc ${HWLOC_VERSION} ${key} sha256)
+
+if(WIN32)
+  ExternalProject_Add(HWLOC
+  URL ${hwloc_url}
+  URL_HASH SHA256=${hwloc_sha256}
+  SOURCE_SUBDIR contrib/windows-cmake
+  CMAKE_ARGS --install-prefix=${HWLOC_ROOT} -DCMAKE_BUILD_TYPE=Release -DHWLOC_ENABLE_TESTING:BOOL=off
+  BUILD_BYPRODUCTS ${HWLOC_LIBRARIES}
+  INACTIVITY_TIMEOUT 15
+  )
+else()
+  find_package(Autotools REQUIRED)
+
+  find_package(LibXml2)
+  if(NOT LibXml2_FOUND)
+    list(APPEND hwloc_args --disable-libxml2)
+  endif()
+
+  ExternalProject_Add(HWLOC
+  URL ${hwloc_url}
+  URL_HASH SHA256=${hwloc_sha256}
+  BUILD_BYPRODUCTS ${HWLOC_LIBRARIES}
+  CONFIGURE_HANDLED_BY_BUILD ON
+  INACTIVITY_TIMEOUT 15
+  CONFIGURE_COMMAND ${PROJECT_BINARY_DIR}/HWLOC-prefix/src/HWLOC/configure --prefix=${HWLOC_ROOT} ${hwloc_args}
+  BUILD_COMMAND ${MAKE_EXECUTABLE} -j
+  INSTALL_COMMAND ${MAKE_EXECUTABLE} install
+  TEST_COMMAND ""
+  )
 endif()
 
-set(HWLOCfortran_args
---install-prefix=${HWLOCfortran_ROOT}
--DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
--DCMAKE_BUILD_TYPE=Release
--DBUILD_TESTING:BOOL=false
-)
+file(MAKE_DIRECTORY ${HWLOC_INCLUDE_DIRS})
+# avoid race condition
 
-ExternalProject_Add(HWLOCfortran
-GIT_REPOSITORY ${HWLOCfortran_git}
-GIT_TAG ${HWLOCfortran_tag}
-CMAKE_ARGS ${HWLOCfortran_args}
-BUILD_BYPRODUCTS ${HWLOCfortran_LIBRARIES}
-INACTIVITY_TIMEOUT 15
-CONFIGURE_HANDLED_BY_BUILD ON
-)
-
-file(MAKE_DIRECTORY ${HWLOCfortran_ROOT}/include)
-
-add_library(HWLOCfortran::hwloc_ifc INTERFACE IMPORTED)
-target_link_libraries(HWLOCfortran::hwloc_ifc INTERFACE "${HWLOCfortran_LIBRARIES}")
-target_include_directories(HWLOCfortran::hwloc_ifc INTERFACE ${HWLOCfortran_ROOT}/include)
-
-find_package(HWLOC)
-if(HWLOC_FOUND)
-  target_link_libraries(HWLOCfortran::hwloc_ifc INTERFACE HWLOC::HWLOC)
+# this GLOBAL is required to be visible via other project's FetchContent
+add_library(HWLOC::HWLOC INTERFACE IMPORTED GLOBAL)
+target_include_directories(HWLOC::HWLOC INTERFACE "${HWLOC_INCLUDE_DIRS}")
+target_link_libraries(HWLOC::HWLOC INTERFACE "${HWLOC_LIBRARIES}")
+if(APPLE)
+  target_link_libraries(HWLOC::HWLOC INTERFACE "-framework Foundation" "-framework IOKit" "-framework OpenCL")
+endif()
+if(LibXml2_FOUND)
+  target_link_libraries(HWLOC::HWLOC INTERFACE LibXml2::LibXml2)
 endif()
 
-add_dependencies(HWLOCfortran::hwloc_ifc HWLOCfortran)
+add_dependencies(HWLOC::HWLOC HWLOC)
