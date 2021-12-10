@@ -40,9 +40,4 @@ add_library(HWLOCfortran::hwloc_ifc INTERFACE IMPORTED)
 target_link_libraries(HWLOCfortran::hwloc_ifc INTERFACE "${HWLOCfortran_LIBRARIES}")
 target_include_directories(HWLOCfortran::hwloc_ifc INTERFACE ${HWLOCfortran_ROOT}/include)
 
-find_package(HWLOC)
-if(HWLOC_FOUND)
-  target_link_libraries(HWLOCfortran::hwloc_ifc INTERFACE HWLOC::HWLOC)
-endif()
-
 add_dependencies(HWLOCfortran::hwloc_ifc HWLOCfortran)
