@@ -18,7 +18,7 @@ real(real64), allocatable :: D2(:,:), D3(:,:,:)
 
 character(1000) :: argv, outfn
 
-integer :: ierr, lx1, lx2, lx3, i, real_bits
+integer :: ierr, lx1, lx2, lx3, i, real_bits, comp_lvl
 integer :: Nrun
 
 logical :: debug = .false.
@@ -38,6 +38,7 @@ dims_full = [lx1, lx2, lx3]
 Nrun = 1
 outfn = ""
 real_bits = 32
+comp_lvl = 0
 
 do i = 1, command_argument_count()
   call get_command_argument(i, argv, status=ierr)
@@ -50,6 +51,8 @@ do i = 1, command_argument_count()
     call get_cli(i, argv, Nrun)
   case("-realbits")
     call get_cli(i, argv, real_bits)
+  case ("-comp")
+    call get_cli(i, argv, comp_lvl)
   case("-d")
     debug = .true.
   end select
@@ -77,7 +80,7 @@ endif
 main : do i = 1, Nrun
 
   call system_clock(count=tic)
-  call h5%open(trim(outfn), action="w", mpi=.false., comp_lvl=3)
+  call h5%open(trim(outfn), action="w", mpi=.false., comp_lvl=comp_lvl, debug=debug)
 
   if(real_bits == 32) then
     call h5%write("/A2", S2, dims_full(:2))

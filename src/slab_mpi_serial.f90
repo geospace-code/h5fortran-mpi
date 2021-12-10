@@ -20,7 +20,7 @@ type(hdf5_file) :: h5
 real, allocatable :: A2(:,:), A3(:,:,:), t2(:,:), t3(:,:,:)
 character(1000) :: argv, outfn
 
-integer :: ierr, lx1, lx2, lx3, dx1, i, j
+integer :: ierr, lx1, lx2, lx3, dx1, i, j, comp_lvl, real_bits
 integer(HSIZE_T), allocatable, dimension(:) :: d2, d3
 integer :: Nmpi, mpi_id, mpi_req, Nrun
 integer, parameter :: mpi_root_id = 0
@@ -41,6 +41,7 @@ call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
 
 Nrun = 1
 outfn = ""
+comp_lvl = 0
 
 do i = 1, command_argument_count()
   call get_command_argument(i, argv, status=ierr)
@@ -51,6 +52,10 @@ do i = 1, command_argument_count()
     call get_cli(i, argv, outfn)
   case("-Nrun")
     call get_cli(i, argv, Nrun)
+  case("-realbits")
+    call get_cli(i, argv, real_bits)
+  case ("-comp")
+    call get_cli(i, argv, comp_lvl)
   case("-d")
     debug = .true.
   end select
@@ -152,7 +157,7 @@ main : do j = 1, Nrun
 
   if(mpi_id == mpi_root_id) then
     !! Root: serial write HDF5 file
-    call h5%open(trim(outfn), action="w", mpi=.false., comp_lvl=3, debug=debug)
+    call h5%open(trim(outfn), action="w", mpi=.false., comp_lvl=comp_lvl, debug=debug)
 
     call h5%write("/A2", A2, dims_full(:2))
     call h5%write("/A3", A3, dims_full)
