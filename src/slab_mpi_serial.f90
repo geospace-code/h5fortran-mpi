@@ -4,7 +4,7 @@ program simple
 !! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90
 
 use, intrinsic :: iso_fortran_env, only : int64, real64, stderr=>error_unit
-use mpi
+use mpi, only : mpi_comm_rank, mpi_comm_size, mpi_integer, mpi_real, mpi_status_ignore
 use hdf5, only : HSIZE_T
 use h5mpi, only : mpi_h5comm, hdf5_file, mpi_tags
 use partition, only : get_simsize
@@ -12,6 +12,8 @@ use cli, only : get_cli
 use perf, only : print_timing, sysclock2ms
 
 implicit none
+
+external :: mpi_bcast, mpi_init, mpi_finalize, mpi_send, mpi_recv
 
 type(mpi_tags) :: mt
 
@@ -22,7 +24,7 @@ character(1000) :: argv, outfn
 
 integer :: ierr, lx1, lx2, lx3, dx1, i, j, comp_lvl, real_bits
 integer(HSIZE_T), allocatable, dimension(:) :: d2, d3
-integer :: Nmpi, mpi_id, mpi_req, Nrun
+integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
 real, parameter :: d0 = 10.  !< dummy value to start from
 

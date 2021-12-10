@@ -6,9 +6,9 @@ use cli, only : get_cli
 
 implicit none (type, external)
 
-integer :: lid, lx1, lx2, lx3, Ncpu, ierr, u, Nrun, i, argc
+integer :: lid, lx1, lx2, lx3, Ncpu, ierr, Nrun, i, argc
 character(2000) :: buf, exe, mpiexec, outfn
-character(:), allocatable :: cmd, sizefn
+character(:), allocatable :: cmd
 logical :: exists
 
 argc = command_argument_count()

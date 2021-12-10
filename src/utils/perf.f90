@@ -27,10 +27,10 @@ integer, intent(in) :: bits, dims(:)
 integer(int64), intent(in) :: t_elapsed(:)
 real, intent(in) :: file_bytes
 
-integer :: bytes, i,N
+integer :: bytes,N
 real :: data_MB, file_MB, mean_MBsec, var_MBsec, std_MBsec, file_MBsec
 real, dimension(size(t_elapsed)) :: t_ms, data_MBsec
-real :: t_ms_mean, t_ms_variance
+real :: t_ms_mean
 
 N = size(t_ms)
 
