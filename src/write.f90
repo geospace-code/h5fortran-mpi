@@ -47,11 +47,11 @@ if (size(dims) >= 2) then
 endif
 
 !> create dataspace
-call h5screate_simple_f(size(dims_file), dims_file, filespace, ierr)
+call h5screate_simple_f(rank=size(dims_file), dims=dims_file, space_id=filespace, hdferr=ierr)
 if (ierr/=0) error stop "h5screate_simple:filespace " // dname // " " // self%filename
 
 if(self%use_mpi) then
-  call h5screate_simple_f(size(dims), dims, memspace, ierr)
+  call h5screate_simple_f(rank=size(dims), dims=dims, space_id=memspace, hdferr=ierr)
   if (ierr/=0) error stop "h5screate_simple:memspace " // dname // " " // self%filename
 else
   memspace = H5S_ALL_F
