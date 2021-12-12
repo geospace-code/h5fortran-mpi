@@ -20,8 +20,8 @@ if(ierr /= 0 .or. buf(1:1) == "-" .or. len_trim(buf) == 0) error stop trim(name)
 
 select type (value)
 type is (character(*))
+  if(len_trim(buf) == 0) error stop trim(name) // " needs an argument (character)"
   value = trim(buf)
-  if(len_trim(value) == 0) error stop trim(name) // " needs an argument (character)"
 type is (integer)
   read(buf, "(I6)") value
 class default
