@@ -3,11 +3,7 @@ include(ExternalProject)
 set(hwloc_external true CACHE BOOL "autobuild HWLOC")
 
 if(NOT HWLOC_VERSION)
-  if(WIN32)
-    set(HWLOC_VERSION 2.7.0)
-  else()
-    set(HWLOC_VERSION 2.6.0)
-  endif()
+  set(HWLOC_VERSION 2.7.0)
 endif()
 
 # need to be sure _ROOT isn't empty, DEFINED is not enough
@@ -28,13 +24,8 @@ set(HWLOC_INCLUDE_DIRS ${HWLOC_ROOT}/include)
 # --- read JSON meta
 
 file(READ ${CMAKE_CURRENT_LIST_DIR}/libraries.json _libj)
-if(WIN32)
-  set(key windows)
-else()
-  set(key source)
-endif()
-string(JSON hwloc_url GET ${_libj} hwloc ${HWLOC_VERSION} ${key} url)
-string(JSON hwloc_sha256 GET ${_libj} hwloc ${HWLOC_VERSION} ${key} sha256)
+string(JSON hwloc_url GET ${_libj} hwloc ${HWLOC_VERSION} url)
+string(JSON hwloc_sha256 GET ${_libj} hwloc ${HWLOC_VERSION} sha256)
 
 if(WIN32)
   ExternalProject_Add(HWLOC
