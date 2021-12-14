@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
+"""
+3D array float write benchmark
+
+Note: A reasonable minimum file size is necessary to get useful results, say
+50-100 MB or more file size.
+Too-small files bias results unfairly against fixed MPI overhead, whereas real-world
+MPI problems of interest are likely to be larger.
+"""
 
 from __future__ import annotations
 import typing as T
-from pprint import pprint
 import time
 import subprocess
 import shutil
@@ -23,7 +30,7 @@ def cli() -> dict[str, T.Any]:
         default=R / "../build",
     )
     p.add_argument(
-        "-n", help="total size of slab", type=int, nargs=3, default=[10000, 4, 8]
+        "-n", help="total size of slab", type=int, nargs=3, default=[10000, 32, 64]
     )
     p.add_argument("-Nrun", help="number of test runs", type=int, default=10)
     P = p.parse_args()
@@ -107,4 +114,7 @@ if __name__ == "__main__":
     # %% HDF5-MPI layer (most efficient general I/O approach for parallel computation)
     t["mpi_hdf5"] = mpi_runner("slab_mpi", P["bin_dir"], P["Nrun"], P["lx"])
 
-    pprint(t)
+    print("-----------------------")
+    print("slab benchmark results:")
+    for k, v in t.items():
+        print(f"{k}: {v:0.2f} sec")

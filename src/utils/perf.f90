@@ -49,7 +49,8 @@ std_MBsec = sqrt(var_MBsec)
 file_MB = file_bytes / 1024 / 1024
 print '(f19.3,1x,f23.3,1x,f10.3,1x,f10.3)', mean_MBsec, std_MBsec, data_MB, file_MB
 
-print *, "TRACE: t_ms", t_ms, data_MBsec
+print "(A, 100f7.1)", "TRACE: time (ms)", t_ms
+print "(A, 100f7.1)", "TRACE: MB/sec", data_MBsec
 
 if(mean_MBsec < 10) write(stderr,'(a)') "WARNING: write speed seems unusually slow."
 if(data_MB < 1) write(stderr, '(a)') "WARNING: benchmark loses accuracy with small files."
