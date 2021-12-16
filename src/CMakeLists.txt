@@ -45,7 +45,7 @@ add_library(cli OBJECT utils/cli.f90)
 
 add_library(partition OBJECT partition.f90)
 
-add_library(perf OBJECT utils/perf.f90)
+add_library(perf OBJECT utils/perf.f90 utils/median.f90)
 
 ## demo of OO interface
 add_executable(slab_mpi slab_mpi.f90)
@@ -66,8 +66,10 @@ set_target_properties(runner PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINAR
 
 # tests
 
+set(Nrun 3)
+
 add_test(NAME MPI-Slab16
-COMMAND runner 16 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun 2 -o out16mpi.h5
+COMMAND runner 16 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o out16mpi.h5
 WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 )
 set_tests_properties(MPI-Slab16 PROPERTIES
@@ -77,7 +79,7 @@ RUN_SERIAL true
 )
 
 add_test(NAME Serial-Slab16
-COMMAND slab_serial 16 4 8 -Nrun 2 -o out16serial.h5
+COMMAND slab_serial 16 4 8 -Nrun ${Nrun} -o out16serial.h5
 WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 )
 set_tests_properties(Serial-Slab16 PROPERTIES
@@ -87,7 +89,7 @@ RUN_SERIAL true
 )
 
 add_test(NAME MPI-Slab10000
-COMMAND runner 10000 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun 2 -o out10000mpi.h5
+COMMAND runner 10000 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o out10000mpi.h5
 WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 )
 set_tests_properties(MPI-Slab10000 PROPERTIES
@@ -97,7 +99,7 @@ RUN_SERIAL true
 )
 
 add_test(NAME Serial-Slab10000
-COMMAND slab_serial 10000 4 8 -Nrun 2 -o out10000serial.h5
+COMMAND slab_serial 10000 4 8 -Nrun ${Nrun} -o out10000serial.h5
 WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 )
 set_tests_properties(Serial-Slab10000 PROPERTIES
