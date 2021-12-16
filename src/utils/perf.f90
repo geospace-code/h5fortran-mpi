@@ -36,7 +36,8 @@ N = size(t_ms)
 
 t_ms = sysclock2ms(t_elapsed)
 
-print '(a19,2x,a23,2x,a9,2x,a9)', 'mean write (MB/sec)', 'median write (MB/sec)', 'stdev write (MB/sec)', 'data (MB)','file (MB)'
+print '(a15,2x,a15,1x,a15,2x,a9,2x,a9)', &
+  'mean (MB/sec)', 'median (MB/sec)', 'stdev (MB/sec)', 'data (MB)','file (MB)'
 
 bytes = bits/8
 data_MB = bytes * real(product(dims) + product(dims(:2))) / 1024 / 1024
@@ -49,7 +50,7 @@ std_MBsec = sqrt(var_MBsec)
 median_MBsec = median(data_MBsec)
 
 file_MB = file_bytes / 1024 / 1024
-print '(f17.1,1x,f17.1,1x,f23.3,1x,f10.3,1x,f10.3)', mean_MBsec, median_MBsec, std_MBsec, data_MB, file_MB
+print '(f15.1,2x,f15.1,1x,f15.3,1x,f9.1,1x,f9.1)', mean_MBsec, median_MBsec, std_MBsec, data_MB, file_MB
 
 print "(A, 100f7.1)", "TRACE: time (ms)", t_ms
 print "(A, 100f7.1)", "TRACE: MB/sec", data_MBsec
