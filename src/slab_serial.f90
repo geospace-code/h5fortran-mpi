@@ -8,6 +8,7 @@ use h5mpi, only : hdf5_file
 use partition, only : get_simsize
 use cli, only : get_cli
 use perf, only : print_timing
+use kernel, only : gaussian2d
 
 implicit none
 
@@ -63,12 +64,14 @@ if(len_trim(outfn) == 0) error stop "please specify -o filename to write"
 allocate(t_elapsed(Nrun))
 if(real_bits == 32) then
   allocate(S2(lx1, lx2), S3(lx1, lx2, lx3))
-  S2 = 1
-  S3 = 1
+  S2(1:lx1, 1:lx2) = gaussian2d(lx1, lx2, 1.)
+  call random_number(S3)
+  S3(1:lx1, 1:lx2, 1:lx3) = 0.1*S3 + spread(gaussian2d(lx1, lx2, 1.), 3, lx3)
 elseif(real_bits==64) then
   allocate(D2(lx1, lx2), D3(lx1, lx2, lx3))
-  S2 = 1
-  S3 = 1
+  S2(1:lx1, 1:lx2) = gaussian2d(lx1, lx2, 1.)
+  call random_number(S3)
+  S3(1:lx1, 1:lx2, 1:lx3) = 0.1*S3 + spread(gaussian2d(lx1, lx2, 1.), 3, lx3)
 else
   error stop "unknown real_bits: expect 32 or 64"
 endif

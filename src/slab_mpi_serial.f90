@@ -10,6 +10,7 @@ use h5mpi, only : mpi_h5comm, hdf5_file, mpi_tags
 use partition, only : get_simsize
 use cli, only : get_cli
 use perf, only : print_timing, sysclock2ms
+use kernel, only : gaussian2d
 
 implicit none
 
@@ -26,7 +27,6 @@ integer :: ierr, lx1, lx2, lx3, dx1, i, j, comp_lvl, real_bits
 integer(HSIZE_T), allocatable, dimension(:) :: d2, d3
 integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
-real, parameter :: d0 = 10.  !< dummy value to start from
 
 logical :: debug = .false.
 
@@ -109,8 +109,10 @@ allocate(t_elapsed(Nrun))
 call system_clock(count=tic)
 if(mpi_id == mpi_root_id) then
   do i = 1, Nmpi-1
-    t2(:,:) = d0 + i
-    t3(:,:,:) = d0 + i
+    t2 = gaussian2d(dx1, lx2, 1.)
+    call random_number(t3)
+    t3(1:dx1, 1:lx2, 1:lx3) = 0.01*t3 + spread(gaussian2d(dx1, lx2, 1.), 3, lx3)
+
     call mpi_send(t2, dx1*lx2, MPI_REAL, i, mt%a2, mpi_h5comm, ierr)
     call mpi_send(t3, dx1*lx2*lx3, MPI_REAL, i, mt%a3, mpi_h5comm, ierr)
     if (ierr /= 0) error stop "initialize: root => worker: mpi_send"
@@ -133,8 +135,8 @@ main : do j = 1, Nrun
   !! root receives data from workers
   if(mpi_id == mpi_root_id) then
     !! root's own subarray
-    A2(1:dx1, :) = d0
-    A3(1:dx1, :, :) = d0
+    A2(1:dx1, :) = t2
+    A3(1:dx1, :, :) = t3
     !! worker subarrays
     do i = 1, Nmpi-1
       call mpi_recv(t2, dx1*lx2, MPI_REAL, i, mt%a2, mpi_h5comm, MPI_STATUS_IGNORE, ierr)

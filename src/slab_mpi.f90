@@ -10,6 +10,7 @@ use h5mpi, only : mpi_h5comm, hdf5_file
 use partition, only : get_simsize
 use cli, only : get_cli
 use perf, only : print_timing, sysclock2ms
+use kernel, only : gaussian2d
 
 implicit none
 
@@ -24,7 +25,6 @@ integer :: ierr, lx1, lx2, lx3, dx1, i, comp_lvl, real_bits
 integer(HSIZE_T), allocatable, dimension(:) :: d2, d3
 integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
-real, parameter :: d0 = 10.  !< dummy value to start from
 
 logical :: debug = .false.
 
@@ -97,8 +97,9 @@ dx1 = lx1 / Nmpi
 
 allocate(A2(dx1, lx2), A3(dx1, lx2, lx3))
 !> dummy data
-A2 = mpi_id
-A3 = mpi_id
+A2 = gaussian2d(dx1, lx2, 1.)
+call random_number(A3)
+A3 = 0.01*A3 + spread(gaussian2d(dx1, lx2, 1.), 3, lx3)
 
 !> benchmark loop
 
