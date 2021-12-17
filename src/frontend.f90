@@ -1,5 +1,6 @@
 program frontend
 
+use, intrinsic :: iso_fortran_env, only: compiler_version
 use hwloc_ifc, only : get_cpu_count
 use partition, only : max_gcd, get_simsize
 use cli, only : get_cli
@@ -12,8 +13,6 @@ character(:), allocatable :: cmd
 logical :: exists
 
 argc = command_argument_count()
-
-call get_simsize(lx1, lx2, lx3)
 
 !> defaults
 comp_lvl = 0
@@ -38,12 +37,17 @@ do i = 4, argc
     call get_cli(i, buf, exe)
   case ("-comp")
     call get_cli(i, buf, comp_lvl)
+  case ("-compiler")
+    print '(A)', compiler_version()
+    stop
   case("-mpiexec")
     call get_cli(i, buf, mpiexec)
     inquire(file=mpiexec, exist=exists)
     if(.not. exists) error stop trim(mpiexec) // " is not a file."
   end select
 end do
+
+call get_simsize(lx1, lx2, lx3)
 
 if(len_trim(mpiexec)==0) mpiexec = "mpiexec"
 if(len_trim(outfn)==0) error stop "must specify -o <output file>"

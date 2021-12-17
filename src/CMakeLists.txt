@@ -62,7 +62,7 @@ target_link_libraries(slab_serial PRIVATE h5mpi partition cli perf kernel HDF5::
 add_executable(runner frontend.f90)
 target_link_libraries(runner PRIVATE partition cli HWLOCfortran::hwloc_ifc)
 
-add_executable(tell_cpu_count utils/count_cpu.f90)
+add_executable(tell_cpu_count utils/tell_cpu_count.f90)
 target_link_libraries(tell_cpu_count PRIVATE partition cli HWLOCfortran::hwloc_ifc)
 
 # tests

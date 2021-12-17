@@ -178,6 +178,9 @@ if __name__ == "__main__":
             "slab_mpi", P["bin_dir"], P["Nrun"], P["lx"], comp_lvl=c, np=P["np"]
         )
 
+    runner_exe = shutil.which("runner", path=P["bin_dir"])
+    compiler = subprocess.check_output([runner_exe] + ["0", "0", "0", "-compiler"], text=True)
+
     fig, ax = plot_time(t)
-    ax.set_title(f"Slab Benchmark: size: {P['lx']}  Ncpu: {cpu_count}")
+    ax.set_title(f"Slab Benchmark: size: {P['lx']}  Ncpu: {cpu_count}\n{compiler}")
     fig.savefig("slab_time.png", dpi=150)
