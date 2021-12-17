@@ -16,6 +16,9 @@ import shutil
 import argparse
 from pathlib import Path
 
+import pandas as pd
+from matplotlib.pyplot import figure, show
+
 R = Path(__file__).parent.resolve()
 
 TIMEOUT = 600
@@ -131,29 +134,46 @@ def mpi_runner(
     return time.monotonic() - tic
 
 
+def plot_time(t: pd.DataFrame):
+    """plot benchmarks"""
+
+    fig = figure()
+    ax = fig.gca()
+
+    for c in t.columns:
+        t[c].plot(ax=ax, label=c)
+
+    ax.set_xlabel("Compression Level")
+    ax.set_ylabel("Wallclock Time (seconds)")
+    ax.legend(loc="best")
+
+
 if __name__ == "__main__":
-    t = {}
+
     P = cli()
-    for comp in (0, 1, 3, 5, 7, 9):
+
+    t = pd.DataFrame(
+        index=[0, 1, 3, 5, 7, 9], columns=["serial", "mpi_root", "mpi_hdf5"]
+    )
+
+    for c in t.index:
         # %% Serial (no MPI at all)
-        t[f"serial_comp{comp}"] = serial_runner(
-            "slab_serial", P["bin_dir"], P["Nrun"], P["lx"], comp_lvl=comp, np=P["np"]
+        t["serial"][c] = serial_runner(
+            "slab_serial", P["bin_dir"], P["Nrun"], P["lx"], comp_lvl=c, np=P["np"]
         )
         # %% MPI transfer to root (inefficient relative to HDF5-MPI)
-        t[f"mpi_root_comp{comp}"] = mpi_runner(
+        t["mpi_root"][c] = mpi_runner(
             "slab_mpi_serial",
             P["bin_dir"],
             P["Nrun"],
             P["lx"],
-            comp_lvl=comp,
+            comp_lvl=c,
             np=P["np"],
         )
         # %% HDF5-MPI layer (most efficient general I/O approach for parallel computation)
-        t[f"mpi_hdf5_comp{comp}"] = mpi_runner(
-            "slab_mpi", P["bin_dir"], P["Nrun"], P["lx"], comp_lvl=comp, np=P["np"]
+        t["mpi_hdf5"][c] = mpi_runner(
+            "slab_mpi", P["bin_dir"], P["Nrun"], P["lx"], comp_lvl=c, np=P["np"]
         )
 
-    print("-----------------------")
-    print("slab benchmark results:")
-    for k, v in t.items():
-        print(f"{k}: {v:0.2f} sec")
+    plot_time(t)
+    show()
