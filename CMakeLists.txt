@@ -10,6 +10,8 @@ include(CTest)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+
 find_package(MPI COMPONENTS C Fortran REQUIRED)
 
 include(cmake/options.cmake)

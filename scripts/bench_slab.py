@@ -154,6 +154,11 @@ if __name__ == "__main__":
 
     t = pd.DataFrame(index=[0, 1, 3, 5, 7, 9], columns=["serial", "mpi_root", "mpi_hdf5"])
 
+    tell_cpu = shutil.which("tell_cpu_count", path=P["bin_dir"])
+    if not tell_cpu:
+        raise FileNotFoundError(f"tell_cpu_count not found in {P['bin_dir']}")
+    cpu_count = int(subprocess.check_output([tell_cpu] + list(map(str, P["lx"])), text=True))
+
     for c in t.index:
         # %% Serial (no MPI at all)
         t["serial"][c] = serial_runner(
@@ -174,4 +179,5 @@ if __name__ == "__main__":
         )
 
     fig, ax = plot_time(t)
-    fig.savefig("slab_time.png")
+    ax.set_title(f"Slab Benchmark: size: {P['lx']}  Ncpu: {cpu_count}")
+    fig.savefig("slab_time.png", dpi=150)
