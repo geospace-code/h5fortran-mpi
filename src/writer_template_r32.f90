@@ -1,13 +1,13 @@
 integer :: ierr
-integer(HID_T) :: filespace, memspace, dset_id, plist_id
+integer(HID_T) :: filespace, memspace, dset_id, xfer_id
 
 call hdf_create(self, dname, dtype=H5T_NATIVE_REAL, dims=shape(A, HSIZE_T), dims_file=dims_file, &
-  filespace=filespace, memspace=memspace, dset_id=dset_id, plist_id=plist_id)
+  filespace=filespace, memspace=memspace, dset_id=dset_id, xfer_id=xfer_id)
 
 call h5dwrite_f(dset_id, H5T_NATIVE_REAL, A, dims_file, ierr, &
   file_space_id=filespace, &
   mem_space_id=memspace, &
-  xfer_prp=plist_id)
+  xfer_prp=xfer_id)
 if (ierr/=0) error stop "h5dwrite: " // dname // " " // self%filename
 
-call hdf_wrapup(filespace, memspace, dset_id, plist_id)
+call hdf_wrapup(filespace, memspace, dset_id, xfer_id)

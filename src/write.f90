@@ -13,8 +13,10 @@ integer(HSIZE_T), dimension(size(dims)) :: cnt, stride, blk, offset
 
 logical :: exists
 integer :: ierr, mpi_id
+integer(HID_T) :: plist_id
 
 plist_id = H5P_DEFAULT_F
+xfer_id = H5P_DEFAULT_F
 
 if(.not.self%is_open) error stop 'h5fortran:write: file handle is not open: ' // self%filename
 
@@ -60,6 +62,8 @@ endif
 !> create dataset
 call h5dcreate_f(self%file_id, dname, dtype, space_id=filespace, dset_id=dset_id, hdferr=ierr, dcpl_id=plist_id)
 if (ierr/=0) error stop "h5dcreate: " // dname // " " // self%filename
+call h5pclose_f(plist_id, ierr)
+if (check(ierr, self%filename, dname)) error stop "h5fortran:h5pclose: " // dname
 
 if(self%use_mpi) then
   !> Select hyperslab in the file.
@@ -72,11 +76,11 @@ if(self%use_mpi) then
   if (ierr/=0) error stop "h5sselect_hyperslab: " // dname // " " // self%filename
 
   !! Create property list for collective dataset write
-  call h5pcreate_f(H5P_DATASET_XFER_F, plist_id, ierr)
-  call h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_COLLECTIVE_F, ierr)
+  call h5pcreate_f(H5P_DATASET_XFER_F, xfer_id, ierr)
+  call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_COLLECTIVE_F, ierr)
 
   ! For independent write use
-  ! call h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_INDEPENDENT_F, ierr)
+  ! call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_INDEPENDENT_F, ierr)
 endif
 
 end procedure hdf_create

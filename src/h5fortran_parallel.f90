@@ -54,12 +54,12 @@ public :: mpi_h5comm, hdf5_file, mpi_tags, &
 check, hdf_wrapup
 
 interface !< write.f90
-module subroutine hdf_create(self, dname, dtype, dims, dims_file, filespace, memspace, dset_id, plist_id, chunk_size)
+module subroutine hdf_create(self, dname, dtype, dims, dims_file, filespace, memspace, dset_id, xfer_id, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 integer(HID_T), intent(in) :: dtype
 integer(HSIZE_T), intent(in) :: dims(:), dims_file(:)
-integer(HID_T), intent(out), optional :: filespace, memspace, dset_id, plist_id
+integer(HID_T), intent(out), optional :: filespace, memspace, dset_id, xfer_id
 integer, intent(in), optional :: chunk_size(:)
 end subroutine hdf_create
 end interface
