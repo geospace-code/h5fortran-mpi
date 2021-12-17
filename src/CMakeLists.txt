@@ -46,6 +46,7 @@ add_library(cli OBJECT utils/cli.f90)
 add_library(partition OBJECT partition.f90)
 
 add_library(perf OBJECT utils/perf.f90 utils/median.f90)
+target_link_libraries(perf PRIVATE h5mpi HDF5::HDF5 MPI::MPI_Fortran)
 
 add_library(kernel OBJECT utils/kernel.f90)
 
