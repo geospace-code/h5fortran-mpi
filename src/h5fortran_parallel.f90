@@ -32,12 +32,14 @@ procedure, public :: open => ph5open, close => ph5close, &
   create => hdf_create, filesize => hdf_filesize
 !! procedures without mapping
 
-generic, public :: write => ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, &
-  ph5write2d_r64, ph5write3d_r64, ph5write4d_r64
+generic, public :: write => hdf_write_scalar_r32,hdf_write_scalar_r64, &
+ph5write1d_r32, ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, &
+ph5write1d_r64, ph5write2d_r64, ph5write3d_r64, ph5write4d_r64
 !! mapped procedures
 
-procedure,private :: ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, &
-  ph5write2d_r64, ph5write3d_r64, ph5write4d_r64
+procedure,private :: hdf_write_scalar_r32,hdf_write_scalar_r64, &
+ph5write1d_r32, ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, &
+ph5write1d_r64, ph5write2d_r64, ph5write3d_r64, ph5write4d_r64
 !! mapped procedures must be declared again like this
 
 end type hdf5_file
@@ -72,6 +74,33 @@ end interface
 
 
 interface !< writer.f90
+
+module subroutine hdf_write_scalar_r32(self, dname, A)
+class(hdf5_file), intent(inout) :: self
+character(*), intent(in) :: dname
+real(real32), intent(in) :: A
+end subroutine hdf_write_scalar_r32
+
+module subroutine hdf_write_scalar_r64(self, dname, A)
+class(hdf5_file), intent(inout) :: self
+character(*), intent(in) :: dname
+real(real64), intent(in) :: A
+end subroutine hdf_write_scalar_r64
+
+
+module subroutine ph5write1d_r32(self, dname, A, dims_file)
+class(hdf5_file), intent(inout) :: self
+character(*), intent(in) :: dname
+real(real32), intent(in) :: A(:)
+integer(HSIZE_T), intent(in) :: dims_file(1)  !< full disk shape of A (not just per worker)
+end subroutine ph5write1d_r32
+
+module subroutine ph5write1d_r64(self, dname, A, dims_file)
+class(hdf5_file), intent(inout) :: self
+character(*), intent(in) :: dname
+real(real64), intent(in) :: A(:)
+integer(HSIZE_T), intent(in) :: dims_file(1)
+end subroutine ph5write1d_r64
 
 module subroutine ph5write2d_r32(self, dname, A, dims_file)
 class(hdf5_file), intent(inout) :: self
