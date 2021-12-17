@@ -134,7 +134,7 @@ def mpi_runner(
 if __name__ == "__main__":
     t = {}
     P = cli()
-    for comp in (0, 1, 3, 5):
+    for comp in (0, 1, 3, 5, 7, 9):
         # %% Serial (no MPI at all)
         t[f"serial_comp{comp}"] = serial_runner(
             "slab_serial", P["bin_dir"], P["Nrun"], P["lx"], comp_lvl=comp, np=P["np"]
