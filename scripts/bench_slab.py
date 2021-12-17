@@ -17,7 +17,7 @@ import argparse
 from pathlib import Path
 
 import pandas as pd
-from matplotlib.pyplot import figure, show
+from matplotlib.figure import Figure
 
 R = Path(__file__).parent.resolve()
 
@@ -32,9 +32,7 @@ def cli() -> dict[str, T.Any]:
         help="Path to the binary directory",
         default=R / "../build",
     )
-    p.add_argument(
-        "-n", help="total size of slab", type=int, nargs=3, default=[10000, 32, 64]
-    )
+    p.add_argument("-n", help="total size of slab", type=int, nargs=3, default=[10000, 32, 64])
     p.add_argument("-Nrun", help="number of test runs", type=int, default=5)
     p.add_argument("-np", help="number of MPI processes", type=int)
     P = p.parse_args()
@@ -137,7 +135,7 @@ def mpi_runner(
 def plot_time(t: pd.DataFrame):
     """plot benchmarks"""
 
-    fig = figure()
+    fig = Figure()
     ax = fig.gca()
 
     for c in t.columns:
@@ -147,14 +145,14 @@ def plot_time(t: pd.DataFrame):
     ax.set_ylabel("Wallclock Time (seconds)")
     ax.legend(loc="best")
 
+    return fig, ax
+
 
 if __name__ == "__main__":
 
     P = cli()
 
-    t = pd.DataFrame(
-        index=[0, 1, 3, 5, 7, 9], columns=["serial", "mpi_root", "mpi_hdf5"]
-    )
+    t = pd.DataFrame(index=[0, 1, 3, 5, 7, 9], columns=["serial", "mpi_root", "mpi_hdf5"])
 
     for c in t.index:
         # %% Serial (no MPI at all)
@@ -175,5 +173,5 @@ if __name__ == "__main__":
             "slab_mpi", P["bin_dir"], P["Nrun"], P["lx"], comp_lvl=c, np=P["np"]
         )
 
-    plot_time(t)
-    show()
+    fig, ax = plot_time(t)
+    fig.savefig("slab_time.png")
