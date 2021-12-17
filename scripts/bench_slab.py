@@ -32,7 +32,7 @@ def cli() -> dict[str, T.Any]:
     p.add_argument(
         "-n", help="total size of slab", type=int, nargs=3, default=[10000, 32, 64]
     )
-    p.add_argument("-Nrun", help="number of test runs", type=int, default=10)
+    p.add_argument("-Nrun", help="number of test runs", type=int, default=5)
     p.add_argument("-np", help="number of MPI processes", type=int)
     P = p.parse_args()
 
@@ -55,7 +55,12 @@ def cli() -> dict[str, T.Any]:
 
 
 def serial_runner(
-    exe_name: str, bin_dir: Path, Nrun: int, lx: tuple[int, int, int], np: int = None
+    exe_name: str,
+    bin_dir: Path,
+    Nrun: int,
+    lx: tuple[int, int, int],
+    comp_lvl: int,
+    np: int = None,
 ) -> float:
     """
     Serial without MPI
@@ -65,7 +70,14 @@ def serial_runner(
     if not exe:
         raise FileNotFoundError(f"{exe_name} not found in {bin_dir}")
 
-    args = list(map(str, lx)) + ["-o", "out.h5", "-Nrun", str(Nrun)]
+    args = list(map(str, lx)) + [
+        "-o",
+        "out.h5",
+        "-Nrun",
+        str(Nrun),
+        "-comp",
+        str(comp_lvl),
+    ]
     if np:
         args += ["-np", str(np)]
 
@@ -76,7 +88,12 @@ def serial_runner(
 
 
 def mpi_runner(
-    exe_name: str, bin_dir: Path, Nrun: int, lx: tuple[int, int, int], np: int = None
+    exe_name: str,
+    bin_dir: Path,
+    Nrun: int,
+    lx: tuple[int, int, int],
+    comp_lvl: int,
+    np: int = None,
 ) -> float:
     """
     Runner frontend uses HWLOC to compute physical core count
@@ -101,6 +118,8 @@ def mpi_runner(
         mpiexec,
         "-Nrun",
         str(Nrun),
+        "-comp",
+        str(comp_lvl),
     ]
 
     if np:
@@ -115,16 +134,24 @@ def mpi_runner(
 if __name__ == "__main__":
     t = {}
     P = cli()
-    # %% Serial (no MPI at all)
-    t["serial"] = serial_runner(
-        "slab_serial", P["bin_dir"], P["Nrun"], P["lx"], np=P["np"]
-    )
-    # %% MPI transfer to root (inefficient relative to HDF5-MPI)
-    t["mpi_root"] = mpi_runner(
-        "slab_mpi_serial", P["bin_dir"], P["Nrun"], P["lx"], np=P["np"]
-    )
-    # %% HDF5-MPI layer (most efficient general I/O approach for parallel computation)
-    t["mpi_hdf5"] = mpi_runner("slab_mpi", P["bin_dir"], P["Nrun"], P["lx"], np=P["np"])
+    for comp in (0, 1, 3, 5):
+        # %% Serial (no MPI at all)
+        t[f"serial_comp{comp}"] = serial_runner(
+            "slab_serial", P["bin_dir"], P["Nrun"], P["lx"], comp_lvl=comp, np=P["np"]
+        )
+        # %% MPI transfer to root (inefficient relative to HDF5-MPI)
+        t[f"mpi_root_comp{comp}"] = mpi_runner(
+            "slab_mpi_serial",
+            P["bin_dir"],
+            P["Nrun"],
+            P["lx"],
+            comp_lvl=comp,
+            np=P["np"],
+        )
+        # %% HDF5-MPI layer (most efficient general I/O approach for parallel computation)
+        t[f"mpi_hdf5_comp{comp}"] = mpi_runner(
+            "slab_mpi", P["bin_dir"], P["Nrun"], P["lx"], comp_lvl=comp, np=P["np"]
+        )
 
     print("-----------------------")
     print("slab benchmark results:")
