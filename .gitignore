@@ -1,6 +1,9 @@
 build*/
 *.h5
 CMakeUserPresets.json
+*.png
+*.eps
+data/
 
 # Prerequisites
 *.d

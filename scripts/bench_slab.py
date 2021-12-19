@@ -9,50 +9,18 @@ MPI problems of interest are likely to be larger.
 """
 
 from __future__ import annotations
-import typing as T
 import time
 import subprocess
 import shutil
-import argparse
 from pathlib import Path
 
 import pandas as pd
-from matplotlib.figure import Figure
 
-R = Path(__file__).parent.resolve()
+from bench_plot import plot_time
+from utils import cpu_count, cli
+
 
 TIMEOUT = 600
-
-
-def cli() -> dict[str, T.Any]:
-    p = argparse.ArgumentParser(description="Benchmark slab")
-    p.add_argument(
-        "-B",
-        "--binary_dir",
-        help="Path to the binary directory",
-        default=R / "../build",
-    )
-    p.add_argument("-n", help="total size of slab", type=int, nargs=3, default=[10000, 32, 64])
-    p.add_argument("-Nrun", help="number of test runs", type=int, default=5)
-    p.add_argument("-np", help="number of MPI processes", type=int)
-    P = p.parse_args()
-
-    bin_dir = Path(P.binary_dir).resolve()
-    if not bin_dir.is_dir():
-        raise NotADirectoryError(
-            f"{bin_dir} is not a directory. Please build HDF5 benchmarks with cmake as per Readme."
-        )
-
-    print(f"Slab size: {P.n}")
-
-    params = {
-        "bin_dir": bin_dir,
-        "Nrun": P.Nrun,
-        "lx": P.n,
-        "np": P.np,
-    }
-
-    return params
 
 
 def serial_runner(
@@ -61,6 +29,7 @@ def serial_runner(
     Nrun: int,
     lx: tuple[int, int, int],
     comp_lvl: int,
+    outfn: Path,
     np: int = None,
 ) -> float:
     """
@@ -73,7 +42,7 @@ def serial_runner(
 
     args = list(map(str, lx)) + [
         "-o",
-        "out.h5",
+        str(outfn),
         "-Nrun",
         str(Nrun),
         "-comp",
@@ -94,6 +63,7 @@ def mpi_runner(
     Nrun: int,
     lx: tuple[int, int, int],
     comp_lvl: int,
+    outfn: Path,
     np: int = None,
 ) -> float:
     """
@@ -114,7 +84,7 @@ def mpi_runner(
         "-exe",
         exe,
         "-o",
-        "out.h5",
+        str(outfn),
         "-mpiexec",
         mpiexec,
         "-Nrun",
@@ -132,55 +102,60 @@ def mpi_runner(
     return time.monotonic() - tic
 
 
-def plot_time(t: pd.DataFrame):
-    """plot benchmarks"""
-
-    fig = Figure()
-    ax = fig.gca()
-
-    for c in t.columns:
-        t[c].plot(ax=ax, label=c)
-
-    ax.set_xlabel("Compression Level")
-    ax.set_ylabel("Wallclock Time (seconds)")
-    ax.legend(loc="best")
-
-    return fig, ax
-
-
 if __name__ == "__main__":
 
     P = cli()
 
     t = pd.DataFrame(index=[0, 1, 3, 5, 7, 9], columns=["serial", "mpi_root", "mpi_hdf5"])
 
-    tell_cpu = shutil.which("tell_cpu_count", path=P["bin_dir"])
-    if not tell_cpu:
-        raise FileNotFoundError(f"tell_cpu_count not found in {P['bin_dir']}")
-    cpu_count = int(subprocess.check_output([tell_cpu] + list(map(str, P["lx"])), text=True))
-
     for c in t.index:
+        tail = f"{P['lx'][0]}_{P['lx'][1]}_{P['lx'][2]}_comp{c}"
         # %% Serial (no MPI at all)
+        serialfn = P["data_dir"] / f"serial_{tail}.h5"
         t["serial"][c] = serial_runner(
-            "slab_serial", P["bin_dir"], P["Nrun"], P["lx"], comp_lvl=c, np=P["np"]
+            "slab_serial",
+            P["bin_dir"],
+            P["Nrun"],
+            P["lx"],
+            outfn=serialfn,
+            comp_lvl=c,
+            np=P["np"],
         )
+        if not P["keep"]:
+            serialfn.unlink()
+
         # %% MPI transfer to root (inefficient relative to HDF5-MPI)
+        mpirootfn = P["data_dir"] / f"mpi_root_{tail}.h5"
         t["mpi_root"][c] = mpi_runner(
             "slab_mpi_serial",
             P["bin_dir"],
             P["Nrun"],
             P["lx"],
+            outfn=mpirootfn,
             comp_lvl=c,
             np=P["np"],
         )
+        if not P["keep"]:
+            mpirootfn.unlink()
+
         # %% HDF5-MPI layer (most efficient general I/O approach for parallel computation)
+        mpih5fn = P["data_dir"] / f"mpi_hdf5_{tail}.h5"
         t["mpi_hdf5"][c] = mpi_runner(
-            "slab_mpi", P["bin_dir"], P["Nrun"], P["lx"], comp_lvl=c, np=P["np"]
+            "slab_mpi",
+            P["bin_dir"],
+            P["Nrun"],
+            P["lx"],
+            outfn=mpih5fn,
+            comp_lvl=c,
+            np=P["np"],
         )
+        if not P["keep"]:
+            mpih5fn.unlink()
 
     runner_exe = shutil.which("runner", path=P["bin_dir"])
     compiler = subprocess.check_output([runner_exe] + ["0", "0", "0", "-compiler"], text=True)
 
     fig, ax = plot_time(t)
-    ax.set_title(f"Slab Benchmark: size: {P['lx']}  Ncpu: {cpu_count}\n{compiler}")
+    Ncpu = cpu_count(P["bin_dir"], P["lx"])
+    ax.set_title(f"Slab Benchmark: size: {P['lx']}  Ncpu: {Ncpu}\n{compiler}")
     fig.savefig("slab_time.png", dpi=150)
