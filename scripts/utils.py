@@ -25,7 +25,7 @@ def cli() -> dict[str, T.Any]:
         default=R / "../build",
     )
     p.add_argument("-o", "--datadir", help="data directory", default=R / "data")
-    p.add_argument("-n", help="total size of slab", type=int, nargs=3, default=[10000, 32, 64])
+    p.add_argument("-n", help="total size of slab", type=int, nargs=3, default=[8192, 32, 64])
     p.add_argument("-Nrun", help="number of test runs", type=int, default=5)
     p.add_argument("-np", help="number of MPI processes", type=int)
     p.add_argument("-k", "--keep", help="keep output files", action="store_true")

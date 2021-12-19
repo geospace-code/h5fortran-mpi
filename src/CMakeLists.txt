@@ -87,21 +87,21 @@ LABELS serial_hdf5
 RUN_SERIAL true
 )
 
-add_test(NAME MPI-Slab10000
-COMMAND runner 10000 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o out10000mpi.h5
+add_test(NAME MPI-Slab-8192
+COMMAND runner 8192 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o out8192mpi.h5
 WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 )
-set_tests_properties(MPI-Slab10000 PROPERTIES
+set_tests_properties(MPI-Slab-8192 PROPERTIES
 TIMEOUT 180
 LABELS mpi_hdf5
 RUN_SERIAL true
 )
 
-add_test(NAME Serial-Slab10000
-COMMAND slab_serial 10000 4 8 -Nrun ${Nrun} -o out10000serial.h5
+add_test(NAME Serial-Slab-8192
+COMMAND slab_serial 8192 4 8 -Nrun ${Nrun} -o out8192serial.h5
 WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 )
-set_tests_properties(Serial-Slab10000 PROPERTIES
+set_tests_properties(Serial-Slab-8192 PROPERTIES
 TIMEOUT 180
 LABELS serial_hdf5
 RUN_SERIAL true

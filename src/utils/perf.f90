@@ -58,7 +58,7 @@ file_MB = file_bytes / 1024 / 1024
 print '(f15.1,1x,f15.3,1x,f9.1,1x,f9.1)', median_MBsec, std_MBsec, data_MB, file_MB
 
 if(mean_MBsec < 10) write(stderr,'(a)') "WARNING: write speed seems unusually slow."
-if(data_MB < 1) write(stderr, '(a)') "WARNING: benchmark loses accuracy with small files."
+if(data_MB < 5) write(stderr, '(a)') "WARNING: benchmark loses accuracy with small files."
 
 if(.not.present(outfn)) return
 
