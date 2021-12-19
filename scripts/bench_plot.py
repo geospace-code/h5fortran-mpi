@@ -7,7 +7,7 @@ import platform
 import pandas as pd
 from matplotlib.figure import Figure
 
-from utils import cpu_count, cli
+from utils import cli
 
 
 def plot_datarate(dr: pd.DataFrame):
@@ -50,7 +50,9 @@ def title_meta(lx: tuple[int, int, int], bin_dir: Path) -> str:
         raise FileNotFoundError(f"runner not found in {bin_dir}")
     compiler = subprocess.check_output([runner_exe, "-compiler"], text=True).strip()
 
-    Ncpu = cpu_count(P["bin_dir"], P["lx"])
+    Ncpu = subprocess.check_output(
+        [runner_exe, "-lx"] + list(map(str, lx)) + ["-tell_cpu"], text=True
+    ).strip()
 
     if platform.system() == "Linux":
         os = platform.system()

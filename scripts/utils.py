@@ -1,19 +1,9 @@
 from __future__ import annotations
 import typing as T
 import argparse
-import shutil
-import subprocess
 from pathlib import Path
 
 R = Path(__file__).parent.resolve()
-
-
-def cpu_count(bin_dir: Path, lx: tuple[int, int, int]) -> int:
-    """physical CPU core count via HWLOC"""
-    tell_cpu = shutil.which("tell_cpu_count", path=bin_dir)
-    if not tell_cpu:
-        raise FileNotFoundError(f"tell_cpu_count not found in {bin_dir}")
-    return int(subprocess.check_output([tell_cpu] + list(map(str, lx)), text=True))
 
 
 def cli() -> dict[str, T.Any]:
