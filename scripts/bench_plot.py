@@ -47,7 +47,7 @@ def title_meta(lx: tuple[int, int, int], bin_dir: Path) -> str:
     runner_exe = shutil.which("runner", path=bin_dir)
     if not runner_exe:
         raise FileNotFoundError(f"runner not found in {bin_dir}")
-    compiler = subprocess.check_output([runner_exe] + ["0", "0", "0", "-compiler"], text=True)
+    compiler = subprocess.check_output([runner_exe, "-compiler"], text=True)
 
     Ncpu = cpu_count(P["bin_dir"], P["lx"])
 

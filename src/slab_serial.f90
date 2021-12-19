@@ -5,8 +5,7 @@ program simple
 use, intrinsic :: iso_fortran_env, only : int64, real32, real64, stderr=>error_unit
 use hdf5, only : HSIZE_T
 use h5mpi, only : hdf5_file
-use partition, only : get_simsize
-use cli, only : get_cli
+use cli, only : get_cli, get_simsize
 use perf, only : print_timing
 use kernel, only : gaussian2d
 

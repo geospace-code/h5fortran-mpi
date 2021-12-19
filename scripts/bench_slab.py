@@ -40,7 +40,7 @@ def serial_runner(
     if not exe:
         raise FileNotFoundError(f"{exe_name} not found in {bin_dir}")
 
-    args = list(map(str, lx)) + [
+    args = ["-lx"] + list(map(str, lx)) + [
         "-o",
         str(outfn),
         "-Nrun",
@@ -80,7 +80,7 @@ def mpi_runner(
     mpiexec = shutil.which("mpiexec")
     if not mpiexec:
         raise FileNotFoundError("mpiexec not found")
-    args = list(map(str, lx)) + [
+    args = ["-lx"] + list(map(str, lx)) + [
         "-exe",
         exe,
         "-o",
@@ -153,7 +153,7 @@ if __name__ == "__main__":
             mpih5fn.unlink()
 
     runner_exe = shutil.which("runner", path=P["bin_dir"])
-    compiler = subprocess.check_output([runner_exe] + ["0", "0", "0", "-compiler"], text=True)
+    compiler = subprocess.check_output([runner_exe, "-compiler"], text=True)
 
     fig, ax = plot_time(t)
     Ncpu = cpu_count(P["bin_dir"], P["lx"])

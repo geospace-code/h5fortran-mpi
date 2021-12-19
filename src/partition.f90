@@ -47,7 +47,7 @@ integer function max_gcd(L, M)
 integer, intent(in) :: L,M
 integer :: i
 
-if (M < 1) error stop "autogrid:max_gcd CPU count must be at least one"
+if (M < 1) error stop "max_gcd: CPU count must be at least one"
 
 max_gcd = 1
 do i = M, 2, -1
@@ -68,7 +68,7 @@ integer function max_gcd2(lx2, lx3, M)
 integer, intent(in) :: lx2, lx3, M
 integer :: f2, f3, i,j, t2, t3
 
-if (M < 1) error stop "autogrid:max_gcd2 CPU count must be at least one"
+if (M < 1) error stop "max_gcd2: CPU count must be at least one"
 
 max_gcd2 = 1
 t2 = 1
@@ -95,36 +95,5 @@ end do x2
 
 end function max_gcd2
 
-
-subroutine get_simsize(lx1, lx2, lx3, Nmpi)
-
-integer, intent(out) :: lx1, lx2, lx3
-integer, intent(in), optional :: Nmpi
-
-integer :: ierr, argc
-character(9) :: buf
-
-argc = command_argument_count()
-if(argc < 3) error stop "must input at least: lx1 lx2 lx3"
-
-call get_command_argument(1, buf, status=ierr)
-if(ierr/=0) error stop "could not read lx1"
-read(buf, '(I9)') lx1
-
-call get_command_argument(2, buf, status=ierr)
-if(ierr/=0) error stop "could not read lx2"
-read(buf, '(I9)') lx2
-
-call get_command_argument(3, buf, status=ierr)
-if(ierr/=0) error stop "could not read lx3"
-read(buf, '(I9)') lx3
-
-if(.not.present(Nmpi)) return
-
-!> MPI sanity check
-if (Nmpi > lx1) error stop "too many MPI workers"
-if (modulo(lx1, Nmpi) /= 0) error stop "number of MPI workers must evenly divide problem size."
-
-end subroutine get_simsize
 
 end module partition
