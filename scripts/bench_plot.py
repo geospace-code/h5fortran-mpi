@@ -2,6 +2,7 @@ from pathlib import Path
 import h5py
 import shutil
 import subprocess
+import platform
 
 import pandas as pd
 from matplotlib.figure import Figure
@@ -47,11 +48,18 @@ def title_meta(lx: tuple[int, int, int], bin_dir: Path) -> str:
     runner_exe = shutil.which("runner", path=bin_dir)
     if not runner_exe:
         raise FileNotFoundError(f"runner not found in {bin_dir}")
-    compiler = subprocess.check_output([runner_exe, "-compiler"], text=True)
+    compiler = subprocess.check_output([runner_exe, "-compiler"], text=True).strip()
 
     Ncpu = cpu_count(P["bin_dir"], P["lx"])
 
-    ttxt = f"size: {lx}  Ncpu: {Ncpu}\n{compiler}"
+    if platform.system() == "Linux":
+        os = platform.system()
+    elif platform.system() == "Darwin":
+        os = platform.platform(terse=True)
+    else:
+        os = platform.platform(terse=True)
+
+    ttxt = f"size: {lx}  Ncpu: {Ncpu}\n{compiler} {os}"
 
     return ttxt
 

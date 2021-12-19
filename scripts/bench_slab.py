@@ -40,14 +40,18 @@ def serial_runner(
     if not exe:
         raise FileNotFoundError(f"{exe_name} not found in {bin_dir}")
 
-    args = ["-lx"] + list(map(str, lx)) + [
-        "-o",
-        str(outfn),
-        "-Nrun",
-        str(Nrun),
-        "-comp",
-        str(comp_lvl),
-    ]
+    args = (
+        ["-lx"]
+        + list(map(str, lx))
+        + [
+            "-o",
+            str(outfn),
+            "-Nrun",
+            str(Nrun),
+            "-comp",
+            str(comp_lvl),
+        ]
+    )
     if np:
         args += ["-np", str(np)]
 
@@ -80,18 +84,22 @@ def mpi_runner(
     mpiexec = shutil.which("mpiexec")
     if not mpiexec:
         raise FileNotFoundError("mpiexec not found")
-    args = ["-lx"] + list(map(str, lx)) + [
-        "-exe",
-        exe,
-        "-o",
-        str(outfn),
-        "-mpiexec",
-        mpiexec,
-        "-Nrun",
-        str(Nrun),
-        "-comp",
-        str(comp_lvl),
-    ]
+    args = (
+        ["-lx"]
+        + list(map(str, lx))
+        + [
+            "-exe",
+            exe,
+            "-o",
+            str(outfn),
+            "-mpiexec",
+            mpiexec,
+            "-Nrun",
+            str(Nrun),
+            "-comp",
+            str(comp_lvl),
+        ]
+    )
 
     if np:
         args += ["-np", str(np)]
