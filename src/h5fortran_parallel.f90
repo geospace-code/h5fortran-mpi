@@ -35,7 +35,7 @@ procedure, public :: open => ph5open, close => ph5close, &
 generic, public :: write => h5write_scalar_r32,h5write_scalar_r64, &
 ph5write1d_r32, ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, &
 ph5write1d_r64, ph5write2d_r64, ph5write3d_r64, ph5write4d_r64
-generic, public :: read => h5read_scalar_r32, h5read_scalar_r64, &
+generic, public :: read => h5read_scalar, &
 ph5read_1d
 
 !! mapped procedures
@@ -43,7 +43,7 @@ ph5read_1d
 procedure,private :: h5write_scalar_r32,h5write_scalar_r64, &
 ph5write1d_r32, ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, &
 ph5write1d_r64, ph5write2d_r64, ph5write3d_r64, ph5write4d_r64
-procedure, private :: h5read_scalar_r32, h5read_scalar_r64, &
+procedure, private :: h5read_scalar, &
 ph5read_1d
 !! mapped procedures must be declared again like this
 
@@ -153,17 +153,11 @@ end interface
 
 interface !< reader.f90
 
-module subroutine h5read_scalar_r32(self, dname, value)
+module subroutine h5read_scalar(self, dname, value)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
-real(real32), intent(out)        :: value
-end subroutine h5read_scalar_r32
-
-module subroutine h5read_scalar_r64(self, dname, value)
-class(hdf5_file), intent(in)     :: self
-character(*), intent(in)         :: dname
-real(real64), intent(out)        :: value
-end subroutine h5read_scalar_r64
+class(*), intent(out)        :: value
+end subroutine h5read_scalar
 
 module subroutine ph5read_1d(self, dname, value)
 class(hdf5_file), intent(in)     :: self
