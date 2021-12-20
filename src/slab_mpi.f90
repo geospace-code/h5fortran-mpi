@@ -55,7 +55,7 @@ do i = 1, command_argument_count()
     call get_cli(i, argv, real_bits)
   case ("-comp")
     call get_cli(i, argv, comp_lvl)
-  case("-d")
+  case("-d", "-debug")
     debug = .true.
   end select
 end do
@@ -116,6 +116,8 @@ main : do i = 1, Nrun
   endif
 
 end do main
+
+if (debug) print '(a,i0)', "mpi write:done: worker: ", mpi_id
 
 !> sanity check file shape
 
