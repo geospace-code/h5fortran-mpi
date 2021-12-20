@@ -12,10 +12,9 @@ if(ier/=0) error stop 'h5fortran:reader: open ' // dname // ' from ' // self%fil
 
 native_dtype = get_native_dtype(ds_id, dname, self%filename)
 
-!> cast the dataset read from disk to the variable type presented by user h5f%read("/my_dataset", x)
-!> We only cast when needed to save memory.
-if(native_dtype == H5T_NATIVE_DOUBLE .or. native_dtype == H5T_NATIVE_REAL) then
+!> casting is handled by HDF5 library internally
 !! select case doesn't allow H5T_*
+if(native_dtype == H5T_NATIVE_DOUBLE .or. native_dtype == H5T_NATIVE_REAL) then
   select type(value)
   type is (real(real64))
     call h5dread_f(ds_id, H5T_NATIVE_DOUBLE, value, dims, ier, mem_space_id, space_id)
