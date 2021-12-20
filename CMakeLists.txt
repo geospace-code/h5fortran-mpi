@@ -23,3 +23,7 @@ include(cmake/hwloc-fortran.cmake)
 find_package(HDF5 COMPONENTS Fortran parallel REQUIRED)
 
 add_subdirectory(src)
+
+if(BUILD_TESTING)
+  add_subdirctory(src/tests)
+endif()

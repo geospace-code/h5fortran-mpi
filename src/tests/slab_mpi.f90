@@ -1,4 +1,4 @@
-program simple
+program slab_mpi_write
 !! use hyperslabs with each worker
 !! use HDF5-MPI layer for best efficiency
 !! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90

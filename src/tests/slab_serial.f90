@@ -1,6 +1,5 @@
-program simple
-!! use hyperslabs with each worker
-!! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90
+program slab_serial
+!! use hyperslabs -- no MPI / parallel at all
 
 use, intrinsic :: iso_fortran_env, only : int64, real32, real64, stderr=>error_unit
 use hdf5, only : HSIZE_T
