@@ -257,7 +257,7 @@ end select
 if(ierr/=0) error stop "h5open/create: could not initialize HDF5 file: " // filename // " action: " // laction
 
 call h5pclose_f(plist_id, ierr)
-if(ierr/=0) error stop "h5pclode: " // filename
+if(ierr/=0) error stop "h5pclose: " // filename
 
 self%filename = filename
 self%is_open = .true.
