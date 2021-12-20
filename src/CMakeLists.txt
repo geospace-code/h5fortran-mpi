@@ -2,10 +2,11 @@
 ## object-oriented HDF5 interface
 file(READ writer_template_r32.f90 writer_template_r32)
 file(READ writer_template_r64.f90 writer_template_r64)
+file(READ reader_template.f90 reader_template)
 
 configure_file(reader.in.f90 reader.f90 @ONLY)
 configure_file(writer.in.f90 writer.f90 @ONLY)
-set_directory_properties(PROPERTIES CMAKE_CONFIGURE_DEPENDS "writer_template_r32.f90;writer_template_r64.f90")
+set_directory_properties(PROPERTIES CMAKE_CONFIGURE_DEPENDS "reader_template.f90;writer_template_r32.f90;writer_template_r64.f90")
 
 
 # see if HDF5 was configured for parallel compression

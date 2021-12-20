@@ -36,7 +36,7 @@ generic, public :: write => h5write_scalar_r32,h5write_scalar_r64, &
 ph5write1d_r32, ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, &
 ph5write1d_r64, ph5write2d_r64, ph5write3d_r64, ph5write4d_r64
 generic, public :: read => h5read_scalar, &
-ph5read_1d
+ph5read_1d, ph5read_2d, ph5read_3d
 
 !! mapped procedures
 
@@ -44,7 +44,7 @@ procedure,private :: h5write_scalar_r32,h5write_scalar_r64, &
 ph5write1d_r32, ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, &
 ph5write1d_r64, ph5write2d_r64, ph5write3d_r64, ph5write4d_r64
 procedure, private :: h5read_scalar, &
-ph5read_1d
+ph5read_1d, ph5read_2d, ph5read_3d
 !! mapped procedures must be declared again like this
 
 end type hdf5_file
@@ -164,6 +164,18 @@ class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
 class(*), intent(inout) :: value(:)
 end subroutine ph5read_1d
+
+module subroutine ph5read_2d(self, dname, value)
+class(hdf5_file), intent(in)     :: self
+character(*), intent(in)         :: dname
+class(*), intent(inout) :: value(:,:)
+end subroutine ph5read_2d
+
+module subroutine ph5read_3d(self, dname, value)
+class(hdf5_file), intent(in)     :: self
+character(*), intent(in)         :: dname
+class(*), intent(inout) :: value(:,:,:)
+end subroutine ph5read_3d
 
 end interface
 
