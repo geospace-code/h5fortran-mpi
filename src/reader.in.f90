@@ -1,7 +1,5 @@
 submodule (h5mpi:hdf5_read) reader
 
-use, intrinsic :: iso_fortran_env, only : int32, int64
-
 implicit none (type, external)
 
 contains

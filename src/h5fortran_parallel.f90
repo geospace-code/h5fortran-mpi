@@ -1,6 +1,6 @@
 module h5mpi
 
-use, intrinsic :: iso_fortran_env, only : real32, real64, int64, stderr=>error_unit
+use, intrinsic :: iso_fortran_env, only : real32, real64, int32, int64, stderr=>error_unit
 
 use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL
 use hdf5
