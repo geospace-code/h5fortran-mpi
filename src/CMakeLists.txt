@@ -75,7 +75,7 @@ COMMAND runner -lx 16 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUT
 WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 )
 set_tests_properties(MPI-Slab16 PROPERTIES
-TIMEOUT 10
+TIMEOUT 30
 LABELS mpi_hdf5
 RUN_SERIAL true
 )
