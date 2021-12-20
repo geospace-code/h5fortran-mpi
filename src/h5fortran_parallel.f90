@@ -1,6 +1,6 @@
 module h5mpi
 
-use, intrinsic :: iso_fortran_env, only : real32, real64, stderr=>error_unit
+use, intrinsic :: iso_fortran_env, only : real32, real64, int64, stderr=>error_unit
 
 use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL
 use hdf5
@@ -32,14 +32,19 @@ procedure, public :: open => ph5open, close => ph5close, &
   create => hdf_create, filesize => hdf_filesize
 !! procedures without mapping
 
-generic, public :: write => hdf_write_scalar_r32,hdf_write_scalar_r64, &
+generic, public :: write => h5write_scalar_r32,h5write_scalar_r64, &
 ph5write1d_r32, ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, &
 ph5write1d_r64, ph5write2d_r64, ph5write3d_r64, ph5write4d_r64
+generic, public :: read => h5read_scalar_r32, h5read_scalar_r64, &
+ph5read_1d
+
 !! mapped procedures
 
-procedure,private :: hdf_write_scalar_r32,hdf_write_scalar_r64, &
+procedure,private :: h5write_scalar_r32,h5write_scalar_r64, &
 ph5write1d_r32, ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, &
 ph5write1d_r64, ph5write2d_r64, ph5write3d_r64, ph5write4d_r64
+procedure, private :: h5read_scalar_r32, h5read_scalar_r64, &
+ph5read_1d
 !! mapped procedures must be declared again like this
 
 end type hdf5_file
@@ -53,7 +58,7 @@ end type mpi_tags
 
 private
 public :: mpi_h5comm, hdf5_file, mpi_tags, &
-check, hdf_wrapup
+check, hdf_wrapup, hdf_rank_check, hdf_shape_check
 
 interface !< write.f90
 module subroutine hdf_create(self, dname, dtype, dims, dims_file, filespace, memspace, dset_id, xfer_id, chunk_size)
@@ -75,18 +80,17 @@ end interface
 
 interface !< writer.f90
 
-module subroutine hdf_write_scalar_r32(self, dname, A)
+module subroutine h5write_scalar_r32(self, dname, A)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 real(real32), intent(in) :: A
-end subroutine hdf_write_scalar_r32
+end subroutine h5write_scalar_r32
 
-module subroutine hdf_write_scalar_r64(self, dname, A)
+module subroutine h5write_scalar_r64(self, dname, A)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 real(real64), intent(in) :: A
-end subroutine hdf_write_scalar_r64
-
+end subroutine h5write_scalar_r64
 
 module subroutine ph5write1d_r32(self, dname, A, dims_file)
 class(hdf5_file), intent(inout) :: self
@@ -143,6 +147,29 @@ character(*), intent(in) :: dname
 real(real64), intent(in) :: A(:,:,:,:)
 integer(HSIZE_T), intent(in) :: dims_file(4)
 end subroutine ph5write4d_r64
+
+end interface
+
+
+interface !< reader.f90
+
+module subroutine h5read_scalar_r32(self, dname, value)
+class(hdf5_file), intent(in)     :: self
+character(*), intent(in)         :: dname
+real(real32), intent(out)        :: value
+end subroutine h5read_scalar_r32
+
+module subroutine h5read_scalar_r64(self, dname, value)
+class(hdf5_file), intent(in)     :: self
+character(*), intent(in)         :: dname
+real(real64), intent(out)        :: value
+end subroutine h5read_scalar_r64
+
+module subroutine ph5read_1d(self, dname, value)
+class(hdf5_file), intent(in)     :: self
+character(*), intent(in)         :: dname
+class(*), intent(inout) :: value(:)
+end subroutine ph5read_1d
 
 end interface
 
@@ -372,6 +399,73 @@ call h5pclose_f(plist_id, ierr)
 if(ierr/=0) error stop "closing dataset/space/property"
 
 end subroutine hdf_wrapup
+
+
+subroutine hdf_rank_check(self, dname, mrank, vector_scalar)
+
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+integer, intent(in) :: mrank
+logical, intent(out), optional :: vector_scalar
+
+integer(HSIZE_T) :: ddims(1)
+integer(SIZE_T) :: type_size
+integer :: ierr, drank, type_class
+
+if(present(vector_scalar)) vector_scalar = .false.
+
+if(.not.self%is_open) error stop 'h5fortran:rank_check: file handle is not open'
+
+if (.not.self%exist(dname)) error stop 'ERROR: ' // dname // ' does not exist in ' // self%filename
+
+!> check for matching rank, else bad reads can occur--doesn't always crash without this check
+call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ierr)
+if (ierr/=0) error stop 'h5fortran:rank_check: get_dataset_ndim ' // dname // ' read ' // self%filename
+
+if (drank == mrank) return
+
+if (present(vector_scalar) .and. drank == 1 .and. mrank == 0) then
+  !! check if vector of length 1
+  call h5ltget_dataset_info_f(self%file_id, dname, dims=ddims, &
+    type_class=type_class, type_size=type_size, errcode=ierr)
+  if (ierr/=0) error stop 'h5fortran:rank_check: get_dataset_info ' // dname // ' read ' // self%filename
+  if (ddims(1) == 1) then
+    vector_scalar = .true.
+    return
+  endif
+endif
+
+write(stderr,'(A,I0,A,I0)') 'h5fortran:rank_check: rank mismatch ' // dname // ' = ',drank,'  variable rank =', mrank
+error stop
+
+end subroutine hdf_rank_check
+
+
+subroutine hdf_shape_check(self, dname, dims)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+integer(HSIZE_T), intent(in) :: dims(:)
+
+integer :: ierr
+integer(SIZE_T) :: type_size
+integer(HSIZE_T), dimension(size(dims)):: ddims
+integer :: type_class
+
+call hdf_rank_check(self, dname, size(dims))
+
+!> check for matching size, else bad reads can occur.
+
+call h5ltget_dataset_info_f(self%file_id, dname, dims=ddims, &
+    type_class=type_class, type_size=type_size, errcode=ierr)
+if (ierr/=0) error stop 'h5fortran:shape_check: get_dataset_info ' // dname // ' read ' // self%filename
+
+
+if(any(int(dims, int64) /= ddims)) then
+  write(stderr,*) 'h5fortran:shape_check: shape mismatch ' // dname // ' = ',ddims,'  variable shape =', dims
+  error stop
+endif
+
+end subroutine hdf_shape_check
 
 
 integer(HSIZE_T) function hdf_filesize(self)

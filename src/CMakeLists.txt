@@ -3,7 +3,8 @@
 file(READ writer_template_r32.f90 writer_template_r32)
 file(READ writer_template_r64.f90 writer_template_r64)
 
-configure_file(writer.in.f90 writer.f90)
+configure_file(reader.in.f90 reader.f90 @ONLY)
+configure_file(writer.in.f90 writer.f90 @ONLY)
 set_directory_properties(PROPERTIES CMAKE_CONFIGURE_DEPENDS "writer_template_r32.f90;writer_template_r64.f90")
 
 
@@ -35,8 +36,9 @@ endif()
 configure_file(hdf5_config.in.f90 hdf5_config.f90 @ONLY)
 
 # main library
-add_library(h5mpi h5fortran_parallel.f90 write.f90
+add_library(h5mpi h5fortran_parallel.f90 write.f90 read.f90
 ${CMAKE_CURRENT_BINARY_DIR}/writer.f90
+${CMAKE_CURRENT_BINARY_DIR}/reader.f90
 ${CMAKE_CURRENT_BINARY_DIR}/hdf5_config.f90
 )
 target_link_libraries(h5mpi PRIVATE HDF5::HDF5 MPI::MPI_Fortran)
