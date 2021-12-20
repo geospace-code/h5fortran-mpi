@@ -28,7 +28,7 @@ integer :: libversion(3)  !< major, minor, rel
 contains
 
 procedure, public :: open => ph5open, close => ph5close, &
-  flush => hdf_flush, shape => hdf_get_shape, exist => hdf_exist, &
+  flush => hdf_flush, shape => h5get_shape, exist => hdf_exist, &
   create => hdf_create, filesize => hdf_filesize
 !! procedures without mapping
 
@@ -254,7 +254,7 @@ case default
   error stop 'Unsupported action: ' // laction
 end select
 
-if(ierr/=0) error stop "h5open/create: could not initialize HDF5 file: " // filename
+if(ierr/=0) error stop "h5open/create: could not initialize HDF5 file: " // filename // " action: " // laction
 
 call h5pclose_f(plist_id, ierr)
 if(ierr/=0) error stop "h5pclode: " // filename
@@ -347,12 +347,10 @@ write(stderr,*) 'ERROR: ' // fn // ':' // dn // ' error code ', ierr
 end function check
 
 
-subroutine hdf_get_shape(self, dname, dims, ierr)
+subroutine h5get_shape(self, dname, dims)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 integer(HSIZE_T), intent(inout), allocatable :: dims(:)
-!! intent(out)
-integer, intent(out), optional :: ierr
 
 !! must get rank before info, as "dims" must be allocated first.
 integer(SIZE_T) :: type_size
@@ -361,17 +359,14 @@ integer :: type_class, drank, ier
 if(.not. self%exist(dname)) error stop 'h5fortran:get_shape: ' // dname // ' does not exist in ' // self%filename
 
 call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ier)
+if (ier /= 0) error stop "h5fortran:get_shape: could not get rank of " // dname // " in " // self%filename
 
-if (ier == 0) then
-  allocate(dims(drank))
-  call h5ltget_dataset_info_f(self%file_id, dname, dims=dims, &
-    type_class=type_class, type_size=type_size, errcode=ier)
-endif
+allocate(dims(drank))
+call h5ltget_dataset_info_f(self%file_id, dname, dims=dims, &
+  type_class=type_class, type_size=type_size, errcode=ier)
+if (ier /= 0) error stop "h5fortran:get_shape: could not get shape of " // dname // " in " // self%filename
 
-if (present(ierr)) ierr = ier
-if ((ier /= 0) .and. .not. present(ierr)) error stop
-
-end subroutine hdf_get_shape
+end subroutine h5get_shape
 
 
 logical function hdf_exist(self, dname) result(exists)
@@ -447,27 +442,26 @@ error stop
 end subroutine hdf_rank_check
 
 
-subroutine hdf_shape_check(self, dname, dims)
+subroutine hdf_shape_check(self, dname, dims, dset_dims)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 integer(HSIZE_T), intent(in) :: dims(:)
+integer(HSIZE_T), intent(out) :: dset_dims(size(dims))
 
-integer :: ierr
+integer :: ierr, type_class
 integer(SIZE_T) :: type_size
-integer(HSIZE_T), dimension(size(dims)):: ddims
-integer :: type_class
 
 call hdf_rank_check(self, dname, size(dims))
 
 !> check for matching size, else bad reads can occur.
 
-call h5ltget_dataset_info_f(self%file_id, dname, dims=ddims, &
+call h5ltget_dataset_info_f(self%file_id, dname, dims=dset_dims, &
     type_class=type_class, type_size=type_size, errcode=ierr)
 if (ierr/=0) error stop 'h5fortran:shape_check: get_dataset_info ' // dname // ' read ' // self%filename
 
 
-if(any(int(dims, int64) /= ddims)) then
-  write(stderr,*) 'h5fortran:shape_check: shape mismatch ' // dname // ' = ',ddims,'  variable shape =', dims
+if(any(int(dims, int64) /= dset_dims)) then
+  write(stderr,*) 'h5fortran:shape_check: shape mismatch ' // dname // ' = ', dset_dims, '  variable shape =', dims
   error stop
 endif
 

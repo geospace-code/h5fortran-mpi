@@ -32,7 +32,7 @@ if (self%use_mpi) then
   if(ierr /= 0) error stop "hdf_create: could not get MPI rank"
 
   !> chunk choices are arbitrary, but must be the same on all processes
-  !> only chunking along first dim
+  !> TODO: only chunking along first dim
   cnt(1) = dims(1)
   cnt(2:) = 1
   offset(1) = mpi_id*cnt(1)

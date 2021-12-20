@@ -71,7 +71,7 @@ target_link_libraries(runner PRIVATE partition cli HWLOCfortran::hwloc_ifc)
 set(Nrun 3)
 
 add_test(NAME MPI-Slab16
-COMMAND runner 16 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o out16mpi.h5
+COMMAND runner -lx 16 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o out16mpi.h5
 WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 )
 set_tests_properties(MPI-Slab16 PROPERTIES
@@ -81,7 +81,7 @@ RUN_SERIAL true
 )
 
 add_test(NAME Serial-Slab16
-COMMAND slab_serial 16 4 8 -Nrun ${Nrun} -o out16serial.h5
+COMMAND slab_serial -lx 16 4 8 -Nrun ${Nrun} -o out16serial.h5
 WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 )
 set_tests_properties(Serial-Slab16 PROPERTIES
@@ -91,7 +91,7 @@ RUN_SERIAL true
 )
 
 add_test(NAME MPI-Slab-8192
-COMMAND runner 8192 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o out8192mpi.h5
+COMMAND runner -lx 8192 4 8 -exe $<TARGET_FILE:slab_mpi> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o out8192mpi.h5
 WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 )
 set_tests_properties(MPI-Slab-8192 PROPERTIES
@@ -101,7 +101,7 @@ RUN_SERIAL true
 )
 
 add_test(NAME Serial-Slab-8192
-COMMAND slab_serial 8192 4 8 -Nrun ${Nrun} -o out8192serial.h5
+COMMAND slab_serial -lx 8192 4 8 -Nrun ${Nrun} -o out8192serial.h5
 WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 )
 set_tests_properties(Serial-Slab-8192 PROPERTIES
