@@ -1,5 +1,8 @@
 # hdf5-benchmark
 
+[![ci](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci.yml)
+[![ci_macos](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci_macos.yml/badge.svg)](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci_macos.yml)
+
 benchmarking speed of HDF5 writes from MPI parallel workers.
 Once the program is built as in the following sections, run benchmarks in the [scripts](./scripts) directory like:
 

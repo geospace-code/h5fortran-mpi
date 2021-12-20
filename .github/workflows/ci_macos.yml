@@ -24,7 +24,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - run: brew install hdf5-mpi ninja
+    - run: brew install hwloc hdf5-mpi ninja
 
     - run: cmake --preset multi --install-prefix=${HOME}
 

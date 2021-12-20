@@ -26,7 +26,7 @@ jobs:
     - name: install hdf5
       run: |
         sudo apt update -yq
-        sudo apt install -yq --no-install-recommends ninja-build libhdf5-mpi-dev
+        sudo apt install -yq --no-install-recommends ninja-build libhdf5-mpi-dev libhwloc-dev
 
     - run: cmake --preset multi --install-prefix=${HOME}
 
