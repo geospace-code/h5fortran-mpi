@@ -30,6 +30,10 @@ module procedure ph5write1d_r64
 @writer_template_r64@
 end procedure ph5write1d_r64
 
+module procedure ph5write1d_i32
+@writer_template_i32@
+end procedure ph5write1d_i32
+
 
 module procedure ph5write2d_r32
 @writer_template_r32@
@@ -38,6 +42,10 @@ end procedure ph5write2d_r32
 module procedure ph5write2d_r64
 @writer_template_r64@
 end procedure ph5write2d_r64
+
+module procedure ph5write2d_i32
+@writer_template_i32@
+end procedure ph5write2d_i32
 
 
 module procedure ph5write3d_r32
@@ -48,6 +56,11 @@ module procedure ph5write3d_r64
 @writer_template_r64@
 end procedure ph5write3d_r64
 
+module procedure ph5write3d_i32
+@writer_template_i32@
+end procedure ph5write3d_i32
+
+
 module procedure ph5write4d_r32
 @writer_template_r32@
 end procedure ph5write4d_r32
@@ -55,6 +68,49 @@ end procedure ph5write4d_r32
 module procedure ph5write4d_r64
 @writer_template_r64@
 end procedure ph5write4d_r64
+
+module procedure ph5write4d_i32
+@writer_template_i32@
+end procedure ph5write4d_i32
+
+
+module procedure ph5write5d_r32
+@writer_template_r32@
+end procedure ph5write5d_r32
+
+module procedure ph5write5d_r64
+@writer_template_r64@
+end procedure ph5write5d_r64
+
+module procedure ph5write5d_i32
+@writer_template_i32@
+end procedure ph5write5d_i32
+
+
+module procedure ph5write6d_r32
+@writer_template_r32@
+end procedure ph5write6d_r32
+
+module procedure ph5write6d_r64
+@writer_template_r64@
+end procedure ph5write6d_r64
+
+module procedure ph5write6d_i32
+@writer_template_i32@
+end procedure ph5write6d_i32
+
+
+module procedure ph5write7d_r32
+@writer_template_r32@
+end procedure ph5write7d_r32
+
+module procedure ph5write7d_r64
+@writer_template_r64@
+end procedure ph5write7d_r64
+
+module procedure ph5write7d_i32
+@writer_template_i32@
+end procedure ph5write7d_i32
 
 
 end submodule writer
