@@ -1,4 +1,4 @@
-program slab_mpi_root
+program write_slab_mpi_root
 !! use hyperslabs with each worker, but have only root write serial HDF5
 !! this is noticably less efficient than using HDF5 MPI built-in interface.
 !! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90

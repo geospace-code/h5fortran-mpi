@@ -4,7 +4,7 @@ implicit none (type, external)
 
 contains
 
-integer function gcd(a, b)
+pure integer function gcd(a, b)
 
 integer, intent(in) :: a, b
 integer :: x,y,z
@@ -24,7 +24,7 @@ gcd = y
 end function gcd
 
 
-integer function max_mpi(lx2, lx3, max_cpu)
+pure integer function max_mpi(lx2, lx3, max_cpu)
 !! goal is to find the highest x2 + x3 to maximum CPU core count
 integer, intent(in) :: lx2, lx3, max_cpu
 
@@ -40,7 +40,7 @@ end if
 end function max_mpi
 
 
-integer function max_gcd(L, M)
+pure integer function max_gcd(L, M)
 !! find the Greatest Common Factor to evenly partition the simulation grid
 !! Output range is [M, 1]
 
@@ -58,7 +58,7 @@ end do
 end function max_gcd
 
 
-integer function max_gcd2(lx2, lx3, M)
+pure integer function max_gcd2(lx2, lx3, M)
 !! find the Greatest Common Factor to evenly partition the simulation grid
 !! Output range is [M, 1]
 !!

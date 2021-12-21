@@ -25,5 +25,6 @@ find_package(HDF5 COMPONENTS Fortran parallel REQUIRED)
 add_subdirectory(src)
 
 if(BUILD_TESTING)
-  add_subdirctory(src/tests)
+  add_subdirectory(src/utils)
+  add_subdirectory(src/tests)
 endif()

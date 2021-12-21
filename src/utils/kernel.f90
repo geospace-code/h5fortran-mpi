@@ -5,7 +5,7 @@ implicit none (type, external)
 contains
 
 
-function gaussian2d(M, N, sigma)
+pure function gaussian2d(M, N, sigma)
 
 real :: gaussian2d(M, N)
 integer, intent(in) :: M, N
