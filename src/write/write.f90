@@ -24,6 +24,7 @@ call h5ltpath_valid_f(self%file_id, dname, .true., exists, ierr)
 !! h5lexists_f can false error with groups--just use h5ltpath_valid
 !! stricter than self%exists() since we're creating and/or writing variable
 if (ierr /= 0) error stop 'ERROR:h5fortran:create: variable path invalid: ' // dname // ' in ' // self%filename
+
 if(self%debug) print *,'h5fortran:TRACE:create:exists: ' // dname, exists
 
 if (self%use_mpi) then
@@ -43,9 +44,9 @@ if (self%use_mpi) then
 endif
 
 !> compression
-if (size(dims) >= 2) then
+if(size(dims) >= 2) then
   call set_deflate(self, dims, plist_id, ierr, chunk_size)
-  if (ierr/=0) error stop 'h5fortran:create: problem setting deflate on ' // dname
+  if (ierr/=0) error stop 'ERROR:h5fortran:create: problem setting deflate on ' // dname
 endif
 
 !> create dataspace
@@ -63,7 +64,7 @@ endif
 call h5dcreate_f(self%file_id, dname, dtype, space_id=filespace, dset_id=dset_id, hdferr=ierr, dcpl_id=plist_id)
 if (ierr/=0) error stop "h5dcreate: " // dname // " " // self%filename
 call h5pclose_f(plist_id, ierr)
-if (check(ierr, self%filename, dname)) error stop "h5fortran:h5pclose: " // dname
+if (ierr/=0) error stop "h5fortran:h5pclose: " // dname // ' in ' // self%filename
 
 if(self%use_mpi) then
   !> Select hyperslab in the file.
@@ -82,6 +83,8 @@ if(self%use_mpi) then
   ! For independent write use
   ! call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_INDEPENDENT_F, ierr)
 endif
+if (ierr/=0) error stop "h5fortran:create: final " // dname // ' in ' // self%filename
+
 
 end procedure hdf_create
 

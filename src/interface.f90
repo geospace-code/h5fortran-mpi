@@ -32,19 +32,12 @@ procedure, public :: open => ph5open, close => ph5close, &
   create => hdf_create, filesize => hdf_filesize
 !! procedures without mapping
 
-generic, public :: write => h5write_scalar_r32,h5write_scalar_r64, &
-ph5write1d_r32, ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, ph5write5d_r32, ph5write6d_r32, ph5write7d_r32, &
-ph5write1d_r64, ph5write2d_r64, ph5write3d_r64, ph5write4d_r64, ph5write5d_r64, ph5write6d_r64, ph5write7d_r64, &
-ph5write1d_i32, ph5write2d_i32, ph5write3d_i32, ph5write4d_i32, ph5write5d_i32, ph5write6d_i32, ph5write7d_i32
+generic, public :: write => h5write_scalar, ph5write1d, ph5write2d, ph5write3d, ph5write4d, ph5write5d, ph5write6d, ph5write7d
 
-generic, public :: read => h5read_scalar, &
-ph5read_1d, ph5read_2d, ph5read_3d
+generic, public :: read => h5read_scalar, ph5read_1d, ph5read_2d, ph5read_3d
 !! mapped procedures
 
-procedure,private :: h5write_scalar_r32,h5write_scalar_r64, &
-ph5write1d_r32, ph5write2d_r32, ph5write3d_r32, ph5write4d_r32, ph5write5d_r32, ph5write6d_r32, ph5write7d_r32, &
-ph5write1d_r64, ph5write2d_r64, ph5write3d_r64, ph5write4d_r64, ph5write5d_r64, ph5write6d_r64, ph5write7d_r64, &
-ph5write1d_i32, ph5write2d_i32, ph5write3d_i32, ph5write4d_i32, ph5write5d_i32, ph5write6d_i32, ph5write7d_i32
+procedure,private :: h5write_scalar, ph5write1d, ph5write2d, ph5write3d, ph5write4d, ph5write5d, ph5write6d, ph5write7d
 
 procedure, private :: h5read_scalar, &
 ph5read_1d, ph5read_2d, ph5read_3d
@@ -83,167 +76,61 @@ end interface
 
 interface !< writer.f90
 
-module subroutine h5write_scalar_r32(self, dname, A)
+module subroutine h5write_scalar(self, dname, value)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
-real(real32), intent(in) :: A
-end subroutine h5write_scalar_r32
+class(*), intent(in) :: value
+end subroutine h5write_scalar
+module subroutine ph5write1d(self, dname, value, dims_file)
+class(hdf5_file), intent(inout) :: self
+character(*), intent(in) :: dname
+class(*), intent(in) :: value(:)
+integer(HSIZE_T), intent(in) :: dims_file(1)  !< full disk shape (not just per worker)
+end subroutine ph5write1d
 
-module subroutine h5write_scalar_r64(self, dname, A)
+module subroutine ph5write2d(self, dname, value, dims_file)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
-real(real64), intent(in) :: A
-end subroutine h5write_scalar_r64
-
-module subroutine ph5write1d_r32(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-real(real32), intent(in) :: A(:)
-integer(HSIZE_T), intent(in) :: dims_file(1)  !< full disk shape of A (not just per worker)
-end subroutine ph5write1d_r32
-
-module subroutine ph5write1d_r64(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-real(real64), intent(in) :: A(:)
-integer(HSIZE_T), intent(in) :: dims_file(1)
-end subroutine ph5write1d_r64
-
-module subroutine ph5write1d_i32(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-integer(int32), intent(in) :: A(:)
-integer(HSIZE_T), intent(in) :: dims_file(1)  !< full disk shape of A (not just per worker)
-end subroutine ph5write1d_i32
-
-module subroutine ph5write2d_r32(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-real(real32), intent(in) :: A(:,:)
-integer(HSIZE_T), intent(in) :: dims_file(2)  !< full disk shape of A (not just per worker)
-end subroutine ph5write2d_r32
-
-module subroutine ph5write2d_r64(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-real(real64), intent(in) :: A(:,:)
+class(*), intent(in) :: value(:,:)
 integer(HSIZE_T), intent(in) :: dims_file(2)
-end subroutine ph5write2d_r64
+end subroutine ph5write2d
 
-module subroutine ph5write2d_i32(self, dname, A, dims_file)
+module subroutine ph5write3d(self, dname, value, dims_file)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
-integer(int32), intent(in) :: A(:,:)
-integer(HSIZE_T), intent(in) :: dims_file(2)
-end subroutine ph5write2d_i32
-
-module subroutine ph5write3d_r32(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-real(real32), intent(in) :: A(:,:,:)
+class(*), intent(in) :: value(:,:,:)
 integer(HSIZE_T), intent(in) :: dims_file(3)
-end subroutine ph5write3d_r32
+end subroutine ph5write3d
 
-module subroutine ph5write3d_r64(self, dname, A, dims_file)
+module subroutine ph5write4d(self, dname, value, dims_file)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
-real(real64), intent(in) :: A(:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(3)
-end subroutine ph5write3d_r64
-
-module subroutine ph5write3d_i32(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-integer(int32), intent(in) :: A(:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(3)
-end subroutine ph5write3d_i32
-
-module subroutine ph5write4d_r32(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-real(real32), intent(in) :: A(:,:,:,:)
+class(*), intent(in) :: value(:,:,:,:)
 integer(HSIZE_T), intent(in) :: dims_file(4)
-end subroutine ph5write4d_r32
+end subroutine ph5write4d
 
-module subroutine ph5write4d_r64(self, dname, A, dims_file)
+module subroutine ph5write5d(self, dname, value, dims_file)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
-real(real64), intent(in) :: A(:,:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(4)
-end subroutine ph5write4d_r64
-
-module subroutine ph5write4d_i32(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-integer(int32), intent(in) :: A(:,:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(4)
-end subroutine ph5write4d_i32
-
-
-module subroutine ph5write5d_r32(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-real(real32), intent(in) :: A(:,:,:,:,:)
+class(*), intent(in) :: value(:,:,:,:,:)
 integer(HSIZE_T), intent(in) :: dims_file(5)
-end subroutine ph5write5d_r32
+end subroutine ph5write5d
 
-module subroutine ph5write5d_r64(self, dname, A, dims_file)
+
+module subroutine ph5write6d(self, dname, value, dims_file)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
-real(real64), intent(in) :: A(:,:,:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(5)
-end subroutine ph5write5d_r64
-
-module subroutine ph5write5d_i32(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-integer(int32), intent(in) :: A(:,:,:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(5)
-end subroutine ph5write5d_i32
-
-
-module subroutine ph5write6d_r32(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-real(real32), intent(in) :: A(:,:,:,:,:,:)
+class(*), intent(in) :: value(:,:,:,:,:,:)
 integer(HSIZE_T), intent(in) :: dims_file(6)
-end subroutine ph5write6d_r32
+end subroutine ph5write6d
 
-module subroutine ph5write6d_r64(self, dname, A, dims_file)
+
+module subroutine ph5write7d(self, dname, value, dims_file)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
-real(real64), intent(in) :: A(:,:,:,:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(6)
-end subroutine ph5write6d_r64
-
-module subroutine ph5write6d_i32(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-integer(int32), intent(in) :: A(:,:,:,:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(6)
-end subroutine ph5write6d_i32
-
-
-module subroutine ph5write7d_r32(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-real(real32), intent(in) :: A(:,:,:,:,:,:,:)
+class(*), intent(in) :: value(:,:,:,:,:,:,:)
 integer(HSIZE_T), intent(in) :: dims_file(7)
-end subroutine ph5write7d_r32
-
-module subroutine ph5write7d_r64(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-real(real64), intent(in) :: A(:,:,:,:,:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(7)
-end subroutine ph5write7d_r64
-
-module subroutine ph5write7d_i32(self, dname, A, dims_file)
-class(hdf5_file), intent(inout) :: self
-character(*), intent(in) :: dname
-integer(int32), intent(in) :: A(:,:,:,:,:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(7)
-end subroutine ph5write7d_i32
+end subroutine ph5write7d
 
 end interface
 
