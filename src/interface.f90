@@ -3,7 +3,21 @@ module h5mpi
 use, intrinsic :: iso_fortran_env, only : real32, real64, int32, int64, stderr=>error_unit
 
 use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL
-use hdf5
+use hdf5, only : &
+HID_T, HSIZE_T, SIZE_T, &
+H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F, &
+H5T_NATIVE_CHARACTER, H5T_NATIVE_INTEGER, H5T_NATIVE_REAL, H5T_NATIVE_DOUBLE, H5T_STD_I64LE, &
+H5F_ACC_RDONLY_F, H5F_ACC_TRUNC_F, H5F_ACC_RDWR_F, H5F_SCOPE_GLOBAL_F, &
+H5FD_MPIO_COLLECTIVE_F, &
+H5P_DEFAULT_F, H5P_FILE_ACCESS_F, H5P_DATASET_CREATE_F, H5P_DATASET_XFER_F, &
+H5S_ALL_F, H5S_SELECT_SET_F, &
+h5dcreate_f, h5dclose_f, &
+h5fopen_f, h5fclose_f, h5fcreate_f, h5fget_filesize_f, h5fflush_f, &
+h5pcreate_f, h5pclose_f, h5pset_chunk_f, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, &
+h5sselect_hyperslab_f, h5screate_simple_f, h5sclose_f, &
+h5get_libversion_f, &
+h5open_f, h5close_f
+
 use h5lt, only : h5ltget_dataset_info_f, h5ltget_dataset_ndims_f, h5ltpath_valid_f
 
 implicit none

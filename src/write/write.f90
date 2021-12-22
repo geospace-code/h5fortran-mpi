@@ -1,6 +1,9 @@
 submodule (h5mpi) write
 
 use mpi, only : mpi_comm_rank
+use hdf5, only : h5pset_deflate_f, h5pset_fletcher32_f, h5pset_shuffle_f, &
+h5dget_space_f, &
+h5dwrite_f
 
 implicit none (type, external)
 
