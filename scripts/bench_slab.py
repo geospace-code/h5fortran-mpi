@@ -66,10 +66,10 @@ def serial_runner(
 def mpi_runner(
     exe_name: str,
     bin_dir: Path,
-    Nrun: int,
-    lx: tuple[int, int, int],
-    comp_lvl: int,
     outfn: Path,
+    Nrun: int,
+    lx: tuple[int, int, int] = None,
+    comp_lvl: int = None,
     np: int = None,
 ) -> float:
     """
@@ -86,25 +86,22 @@ def mpi_runner(
     mpiexec = shutil.which("mpiexec")
     if not mpiexec:
         raise FileNotFoundError("mpiexec not found")
-    args = (
-        ["-lx"]
-        + list(map(str, lx))
-        + [
-            "-exe",
-            exe,
-            "-o",
-            str(outfn),
-            "-mpiexec",
-            mpiexec,
-            "-Nrun",
-            str(Nrun),
-            "-comp",
-            str(comp_lvl),
-        ]
-    )
-
+    args = [
+        "-exe",
+        exe,
+        "-o",
+        str(outfn),
+        "-mpiexec",
+        mpiexec,
+        "-Nrun",
+        str(Nrun),
+    ]
+    if lx:
+        args += ["-lx"] + list(map(str, lx))
     if np:
         args += ["-np", str(np)]
+    if comp_lvl:
+        args += ["-comp", str(comp_lvl)]
 
     tic = time.monotonic()
     subprocess.check_call([runner_exe] + args, timeout=TIMEOUT)
@@ -156,15 +153,26 @@ def write_bench(
         if "mpi_root" in tests:
             # MPI transfer to root (inefficient relative to HDF5-MPI)
             mpirootfn = data_dir / f"mpi_root_{tail}.h5"
+
             write_times["mpi_root"][c] = mpi_runner(
                 "slab_mpi_serial_write",
                 bin_dir,
+                mpirootfn,
                 Nrun,
                 lx,
-                outfn=mpirootfn,
                 comp_lvl=c,
                 np=np,
             )
+
+            read_times["mpi_root"][c] = mpi_runner(
+                "slab_mpi_serial_read",
+                bin_dir,
+                mpirootfn,
+                Nrun,
+                lx,
+                np=np,
+            )
+
             if not keep:
                 mpirootfn.unlink()
 
@@ -174,9 +182,9 @@ def write_bench(
             write_times["mpi_hdf5"][c] = mpi_runner(
                 "slab_mpi_write",
                 bin_dir,
+                mpih5fn,
                 Nrun,
                 lx,
-                outfn=mpih5fn,
                 comp_lvl=c,
                 np=np,
             )
@@ -191,11 +199,15 @@ def write_bench(
 
     fig, ax = plot_time(write_times)
     ax.set_title(f"WRITE: Slab Benchmark: size: {lx}  Ncpu: {Ncpu}\n{compiler}")
-    fig.savefig("write_slab_time.png", dpi=150)
+    plotfn = data_dir / f"write_times_{tail}.png"
+    print("making", plotfn)
+    fig.savefig(plotfn, dpi=150)
 
     fig, ax = plot_time(read_times)
     ax.set_title(f"READ: Slab Benchmark: size: {lx}  Ncpu: {Ncpu}\n{compiler}")
-    fig.savefig("read_slab_time.png", dpi=150)
+    plotfn = data_dir / f"read_times_{tail}.png"
+    print("making", plotfn)
+    fig.savefig(plotfn, dpi=150)
 
 
 if __name__ == "__main__":

@@ -3,10 +3,11 @@ target_link_libraries(slab_mpi_write PRIVATE h5mpi cli perf kernel HDF5::HDF5 MP
 
 add_executable(slab_mpi_serial_write slab_mpi_serial_write.f90)
 target_link_libraries(slab_mpi_serial_write PRIVATE h5mpi cli perf kernel HDF5::HDF5 MPI::MPI_Fortran)
+add_executable(slab_mpi_serial_read slab_mpi_serial_read.f90)
+target_link_libraries(slab_mpi_serial_read PRIVATE h5mpi cli perf HDF5::HDF5 MPI::MPI_Fortran)
 
 add_executable(slab_serial_write slab_serial_write.f90)
 target_link_libraries(slab_serial_write PRIVATE h5mpi cli perf kernel HDF5::HDF5 MPI::MPI_Fortran)
-
 add_executable(slab_serial_read slab_serial_read.f90)
 target_link_libraries(slab_serial_read PRIVATE h5mpi cli perf HDF5::HDF5 MPI::MPI_Fortran)
 

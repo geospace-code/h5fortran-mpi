@@ -48,7 +48,7 @@ do i = 1, command_argument_count()
   end select
 end do
 
-if(len_trim(h5fn) == 0) error stop "please specify -o filename to read"
+if(len_trim(h5fn) == 0) error stop "please specify -o HDF5 filename"
 
 !> get simsize
 call h5%open(trim(h5fn), action="r", mpi=.false., debug=debug)
