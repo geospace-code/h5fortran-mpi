@@ -66,37 +66,47 @@ def title_meta(lx: tuple[int, int, int], bin_dir: Path) -> str:
     return ttxt
 
 
-def read_bench(lx: tuple[int, int, int], data_dir: Path) -> pd.DataFrame:
-    """read benchmark HDF5 files to pandas dataframe"""
+def get_bench(lx: tuple[int, int, int], data_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """get writing benchmark HDF5 files to pandas dataframe"""
 
-    datarate = pd.DataFrame(index=[0, 1, 3, 5, 7, 9], columns=["serial", "mpi_root", "mpi_hdf5"])
+    comp_lvls = [0, 1, 3, 5, 7, 9]
+    tests = ["serial", "mpi_root", "mpi_hdf5"]
 
-    for c in datarate.index:
-        tail = f"{P['lx'][0]}_{P['lx'][1]}_{P['lx'][2]}_comp{c}"
-        serialfn = data_dir / f"serial_{tail}.h5.stat.h5"
-        with h5py.File(serialfn, "r") as f:
-            datarate["serial"][c] = f["/median_MBsec"][()]
+    write_datarate = pd.DataFrame(index=comp_lvls, columns=tests)
+    read_datarate = pd.DataFrame(index=comp_lvls, columns=tests)
 
-        mpirootfn = data_dir / f"mpi_root_{tail}.h5.stat.h5"
-        with h5py.File(mpirootfn, "r") as f:
-            datarate["mpi_root"][c] = f["/median_MBsec"][()]
+    for t in tests:
+        for c in comp_lvls:
+            tail = f"{P['lx'][0]}_{P['lx'][1]}_{P['lx'][2]}_comp{c}"
 
-        mpih5fn = data_dir / f"mpi_hdf5_{tail}.h5.stat.h5"
-        with h5py.File(mpih5fn, "r") as f:
-            datarate["mpi_hdf5"][c] = f["/median_MBsec"][()]
+            try:
+                with h5py.File(data_dir / f"{t}_{tail}.h5.write_stat.h5", "r") as f:
+                    write_datarate[t][c] = f["/median_MBsec"][()]
+            except FileNotFoundError:
+                print(f"ERROR: {t} comp_lvl {c}: write benchmark not found")
 
-    return datarate
+            try:
+                with h5py.File(data_dir / f"{t}_{tail}.h5.read_stat.h5", "r") as f:
+                    read_datarate[t][c] = f["/median_MBsec"][()]
+            except FileNotFoundError:
+                print(f"ERROR: {t} comp_lvl {c}: read benchmark not found")
+
+    return write_datarate, read_datarate
 
 
 if __name__ == "__main__":
 
     P = cli()
-
-    datarate = read_bench(P["lx"], P["data_dir"])
-
-    fig, ax = plot_datarate(datarate)
-
     ttxt = title_meta(P["lx"], P["bin_dir"])
-    ax.set_title(f"Slab Benchmark: {ttxt}")
-    plotfn = P["data_dir"] / f"datarate_{P['lx'][0]}_{P['lx'][1]}_{P['lx'][2]}.png"
+
+    write_datarate, read_datarate = get_bench(P["lx"], P["data_dir"])
+
+    fig, ax = plot_datarate(write_datarate)
+    ax.set_title(f"WRITE: Slab Benchmark: {ttxt}")
+    plotfn = P["data_dir"] / f"write_datarate_{P['lx'][0]}_{P['lx'][1]}_{P['lx'][2]}.png"
+    fig.savefig(plotfn, dpi=150)
+
+    fig, ax = plot_datarate(read_datarate)
+    ax.set_title(f"READ: Slab Benchmark: {ttxt}")
+    plotfn = P["data_dir"] / f"read_datarate_{P['lx'][0]}_{P['lx'][1]}_{P['lx'][2]}.png"
     fig.savefig(plotfn, dpi=150)
