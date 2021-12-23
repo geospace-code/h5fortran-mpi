@@ -144,7 +144,6 @@ main : do j = 1, Nrun
   if(mpi_id == mpi_root_id) then
     call system_clock(count=toc)
     t_elapsed(j) = toc-tic
-    print '(a,f9.1)', "worker => root transfer time (ms)", sysclock2ms(t_elapsed(j))
   endif
 
 end do main
