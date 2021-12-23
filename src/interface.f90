@@ -1,5 +1,6 @@
 module h5mpi
 
+use, intrinsic :: iso_c_binding, only : C_NULL_CHAR
 use, intrinsic :: iso_fortran_env, only : real32, real64, int32, int64, stderr=>error_unit
 
 use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL
@@ -169,7 +170,7 @@ interface !< reader.f90
 module subroutine h5read_scalar(self, dname, value)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
-class(*), intent(out)        :: value
+class(*), intent(inout)        :: value
 end subroutine h5read_scalar
 
 module subroutine ph5read_1d(self, dname, value)

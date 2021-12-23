@@ -4,6 +4,7 @@ use mpi, only : mpi_comm_rank
 use hdf5, only : h5tget_native_type_f, h5tget_class_f, h5dget_type_f, h5tget_size_f, h5tclose_f, h5topen_f, &
 h5dopen_f, h5dget_space_f, h5dread_f,  &
 H5T_DIR_ASCEND_F
+use h5lt, only : h5ltread_dataset_string_f
 
 implicit none (type, external)
 

@@ -4,6 +4,7 @@ implicit none (type, external)
 
 contains
 
+
 module procedure h5read_scalar
 
 integer(HSIZE_T) :: dims(rank(value))
@@ -64,6 +65,20 @@ elseif(dclass == H5T_INTEGER_F) then
     call h5dread_f(dset_id, H5T_STD_I64LE, value, dims, ier)
   class default
     error stop 'h5fortran:read: integer disk dataset ' // dname // ' needs integer memory variable'
+  end select
+elseif(dclass == H5T_STRING_F) then
+  select type(value)
+  type is (character(*))
+    block
+    character(len(value)) :: buf_char
+    integer :: i
+    call h5ltread_dataset_string_f(self%file_id, dname, buf_char, ier)
+    i = index(buf_char, c_null_char) - 1
+    if (i == -1) i = len_trim(buf_char)
+    value = buf_char(:i)
+    end block
+  class default
+    error stop "h5fortran:read: character disk dataset " // dname // " needs character memory variable"
   end select
 else
   error stop 'h5fortran:reader: non-handled datatype--please reach out to developers.'
