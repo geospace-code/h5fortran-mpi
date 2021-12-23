@@ -17,7 +17,7 @@ def plot_datarate(dr: pd.DataFrame):
     ax = fig.gca()
 
     for c in dr.columns:
-        dr[c].plot(ax=ax, label=c)
+        dr[c].plot(ax=ax, label=c, marker=".")
 
     ax.set_xlabel("Compression Level")
     ax.set_ylabel("data bandwidth (MB/second)")
@@ -33,7 +33,7 @@ def plot_time(t: pd.DataFrame):
     ax = fig.gca()
 
     for c in t.columns:
-        t[c].plot(ax=ax, label=c)
+        t[c].plot(ax=ax, label=c, marker=".")
 
     ax.set_xlabel("Compression Level")
     ax.set_ylabel("Wallclock Time (seconds)")
