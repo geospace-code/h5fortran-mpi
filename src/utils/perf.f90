@@ -50,14 +50,18 @@ data_MB = bytes * real(product(dims) + product(dims(:2))) / 1024 / 1024
 data_MBsec = data_MB/(t_ms/1000)
 
 mean_MBsec = sum(data_MBsec) / N
-var_MBsec = sum((data_MBsec - mean_MBsec)**2) / (N - 1)
+if (N > 1) then
+  var_MBsec = sum((data_MBsec - mean_MBsec)**2) / (N - 1)
+else
+  var_MBsec = 0
+endif
 std_MBsec = sqrt(var_MBsec)
 median_MBsec = median(data_MBsec)
 
 file_MB = file_bytes / 1024 / 1024
 print '(f15.1,1x,f15.3,1x,f9.1,1x,f9.1)', median_MBsec, std_MBsec, data_MB, file_MB
 
-if(mean_MBsec < 10) write(stderr,'(a)') "WARNING: write speed seems unusually slow."
+if(mean_MBsec < 10) write(stderr,'(a)') "WARNING: data bandwidth seems unusually low."
 if(data_MB < 5) write(stderr, '(a)') "WARNING: benchmark loses accuracy with small files."
 
 if(.not.present(statfn)) return
