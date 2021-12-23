@@ -32,6 +32,6 @@ type is (integer(int64))
 class default
   error stop "unknown variable type for " // dname
 end select
-if (ier/=0) error stop "h5dwrite: " // dname // " " // self%filename
+if (ier/=0) error stop 'h5fortran:ERROR: could not write ' // dname // ' to ' // self%filename
 
 call hdf_wrapup(file_space_id, mem_space_id, dset_id, xfer_id)
