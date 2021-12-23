@@ -43,7 +43,8 @@ contains
 
 procedure, public :: open => ph5open, close => ph5close, &
   flush => hdf_flush, shape => h5get_shape, exist => hdf_exist, &
-  create => hdf_create, filesize => hdf_filesize
+  create => hdf_create, filesize => hdf_filesize, &
+  class => get_class, dtype => get_native_dtype
 !! procedures without mapping
 
 generic, public :: write => h5write_scalar, &
@@ -146,6 +147,20 @@ class(*), intent(in) :: value(:,:,:,:,:,:,:)
 integer(HSIZE_T), intent(in) :: dims_file(7)
 end subroutine ph5write_7d
 
+end interface
+
+
+interface !< read.f90
+module integer function get_class(self, dname)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+end function get_class
+
+module integer(hid_t) function get_native_dtype(self, dname, ds_id)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+integer(hid_t), intent(in), optional :: ds_id
+end function get_native_dtype
 end interface
 
 

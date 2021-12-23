@@ -8,7 +8,7 @@ dims = shape(value, HSIZE_T)
 
 call h5open_read(self, dname, dims, file_space_id, dset_id, xfer_id)
 
-native_dtype = get_native_dtype(dset_id, dname, self%filename)
+native_dtype = get_native_dtype(self, dname, dset_id)
 
 !> casting is handled by HDF5 library internally
 !! select case doesn't allow H5T_*

@@ -1,4 +1,4 @@
-submodule (h5mpi:hdf5_read) reader
+submodule (h5mpi:hdf5_read) hdf5_reader
 
 implicit none (type, external)
 
@@ -7,7 +7,7 @@ contains
 module procedure h5read_scalar
 
 integer(HSIZE_T) :: dims(rank(value))
-integer(hid_t) :: ds_id, native_dtype
+integer(hid_t) :: dset_id, native_dtype
 integer :: ier
 
 logical :: vector_scalar
@@ -38,10 +38,10 @@ if(vector_scalar) then
   return
 endif
 
-call h5dopen_f(self%file_id, dname, ds_id, ier)
+call h5dopen_f(self%file_id, dname, dset_id, ier)
 if(ier/=0) error stop 'h5fortran:reader: ' // dname // ' could not be opened in ' // self%filename
 
-native_dtype = get_native_dtype(ds_id, dname, self%filename)
+native_dtype = get_native_dtype(self, dname, dset_id)
 
 !> cast the dataset read from disk to the variable type presented by user h5f%read("/my_dataset", x)
 !> We only cast when needed to save memory.
@@ -50,18 +50,18 @@ native_dtype = get_native_dtype(ds_id, dname, self%filename)
 if(native_dtype == H5T_NATIVE_DOUBLE .or. native_dtype == H5T_NATIVE_REAL) then
   select type(value)
   type is (real(real64))
-    call h5dread_f(ds_id, H5T_NATIVE_DOUBLE, value, dims, ier)
+    call h5dread_f(dset_id, H5T_NATIVE_DOUBLE, value, dims, ier)
   type is (real(real32))
-    call h5dread_f(ds_id, H5T_NATIVE_REAL, value, dims, ier)
+    call h5dread_f(dset_id, H5T_NATIVE_REAL, value, dims, ier)
   class default
     error stop 'h5fortran:read: real disk dataset ' // dname // ' needs real memory variable'
   end select
 elseif(native_dtype == H5T_NATIVE_INTEGER .or. native_dtype == H5T_STD_I64LE) then
   select type(value)
   type is (integer(int32))
-    call h5dread_f(ds_id, H5T_NATIVE_INTEGER, value, dims, ier)
+    call h5dread_f(dset_id, H5T_NATIVE_INTEGER, value, dims, ier)
   type is (integer(int64))
-    call h5dread_f(ds_id, H5T_STD_I64LE, value, dims, ier)
+    call h5dread_f(dset_id, H5T_STD_I64LE, value, dims, ier)
   class default
     error stop 'h5fortran:read: integer disk dataset ' // dname // ' needs integer memory variable'
   end select
@@ -70,7 +70,7 @@ else
 end if
 if(ier/=0) error stop 'h5fortran:reader: reading ' // dname // ' from ' // self%filename
 
-call h5dclose_f(ds_id, ier)
+call h5dclose_f(dset_id, ier)
 if (ier/=0) error stop 'h5fortran:reader: error closing dataset ' // dname // ' in ' // self%filename
 
 end procedure h5read_scalar
@@ -90,4 +90,4 @@ module procedure ph5read_3d
 end procedure ph5read_3d
 
 
-end submodule reader
+end submodule hdf5_reader
