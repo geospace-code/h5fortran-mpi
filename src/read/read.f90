@@ -16,7 +16,7 @@ subroutine h5open_read(self, dname, dims, filespace, dset_id, xfer_id)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 integer(HSIZE_T), intent(in) :: dims(:)
-integer(HID_T), intent(out), optional :: filespace, dset_id, xfer_id
+integer(HID_T), intent(out) :: filespace, dset_id, xfer_id
 
 integer(HSIZE_T), dimension(size(dims)) :: cnt, stride, blk, offset, dset_dims
 

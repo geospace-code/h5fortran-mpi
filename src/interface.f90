@@ -428,12 +428,17 @@ integer(HID_T), intent(in) :: filespace, memspace, dset_id, plist_id
 
 integer :: ierr
 
-call h5sclose_f(filespace, ierr)
-if (memspace /= H5S_ALL_F) call h5sclose_f(memspace, ierr)
-
 call h5dclose_f(dset_id, ierr)
+if(ierr/=0) error stop "ERROR: closing dataset"
+
+if(memspace /= H5S_ALL_F) call h5sclose_f(memspace, ierr)
+if(ierr/=0) error stop "ERROR: closing memory dataspace"
+
+if(filespace /= H5S_ALL_F) call h5sclose_f(filespace, ierr)
+if(ierr/=0) error stop "ERROR: closing file dataspace"
+
 call h5pclose_f(plist_id, ierr)
-if(ierr/=0) error stop "closing dataset/space/property"
+if(ierr/=0) error stop "ERROR: closing property"
 
 end subroutine hdf_wrapup
 
