@@ -104,5 +104,20 @@ module procedure ph5read_3d
 @reader_template@
 end procedure ph5read_3d
 
+module procedure ph5read_4d
+@reader_template@
+end procedure ph5read_4d
+
+module procedure ph5read_5d
+@reader_template@
+end procedure ph5read_5d
+
+module procedure ph5read_6d
+@reader_template@
+end procedure ph5read_6d
+
+module procedure ph5read_7d
+@reader_template@
+end procedure ph5read_7d
 
 end submodule hdf5_reader

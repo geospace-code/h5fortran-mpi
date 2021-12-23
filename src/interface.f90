@@ -48,16 +48,14 @@ procedure, public :: open => ph5open, close => ph5close, &
   class => get_class, dtype => get_native_dtype
 !! procedures without mapping
 
-generic, public :: write => h5write_scalar, &
-ph5write_1d, ph5write_2d, ph5write_3d, ph5write_4d, ph5write_5d, ph5write_6d, ph5write_7d
+generic, public :: write => h5write_scalar,ph5write_1d, ph5write_2d, ph5write_3d, ph5write_4d, ph5write_5d, ph5write_6d, ph5write_7d
 
-generic, public :: read => h5read_scalar, ph5read_1d, ph5read_2d, ph5read_3d
+generic, public :: read => h5read_scalar, ph5read_1d, ph5read_2d, ph5read_3d, ph5read_4d, ph5read_5d, ph5read_6d, ph5read_7d
 !! mapped procedures
 
 procedure,private :: h5write_scalar, ph5write_1d, ph5write_2d, ph5write_3d, ph5write_4d, ph5write_5d, ph5write_6d, ph5write_7d
 
-procedure, private :: h5read_scalar, &
-ph5read_1d, ph5read_2d, ph5read_3d
+procedure, private :: h5read_scalar, ph5read_1d, ph5read_2d, ph5read_3d, ph5read_4d, ph5read_5d, ph5read_6d, ph5read_7d
 !! mapped procedures must be declared again like this
 
 end type hdf5_file
@@ -190,6 +188,30 @@ class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
 class(*), intent(inout) :: value(:,:,:)
 end subroutine ph5read_3d
+
+module subroutine ph5read_4d(self, dname, value)
+class(hdf5_file), intent(in)     :: self
+character(*), intent(in)         :: dname
+class(*), intent(inout) :: value(:,:,:,:)
+end subroutine ph5read_4d
+
+module subroutine ph5read_5d(self, dname, value)
+class(hdf5_file), intent(in)     :: self
+character(*), intent(in)         :: dname
+class(*), intent(inout) :: value(:,:,:,:,:)
+end subroutine ph5read_5d
+
+module subroutine ph5read_6d(self, dname, value)
+class(hdf5_file), intent(in)     :: self
+character(*), intent(in)         :: dname
+class(*), intent(inout) :: value(:,:,:,:,:,:)
+end subroutine ph5read_6d
+
+module subroutine ph5read_7d(self, dname, value)
+class(hdf5_file), intent(in)     :: self
+character(*), intent(in)         :: dname
+class(*), intent(inout) :: value(:,:,:,:,:,:,:)
+end subroutine ph5read_7d
 
 end interface
 
