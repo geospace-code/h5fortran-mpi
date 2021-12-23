@@ -23,7 +23,7 @@ character(1000) :: argv, h5fn
 
 integer :: ierr, dx1, i, j, comp_lvl, real_bits
 integer :: lx1, lx2, lx3
-integer(HSIZE_T), allocatable, dimension(:) :: d2, d3, dims_full
+integer(HSIZE_T), allocatable, dimension(:) :: dims_full
 integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
 
@@ -90,7 +90,7 @@ if(lx3 < 1 .or. lx2 < 1 .or. lx1 < 1) then
   write(stderr,"(A,i0,A,i0,1x,i0,1x,i0)") "ERROR: MPI ID: ", mpi_id, " failed to receive lx1, lx2, lx3: ", lx1, lx2, lx3
   error stop
 endif
-!! we init workers with sentinel values to catch broken MPI library or mpiexec.
+!! init workers with sentinel values to catch broken MPI library or mpiexec.
 
 if (debug) print '(a,i0,a,i0,1x,i0,1x,i0)', 'MPI worker: ', mpi_id, ' lx1, lx2, lx3 = ', lx1, lx2, lx3
 
@@ -147,17 +147,6 @@ main : do j = 1, Nrun
   endif
 
 end do main
-
-!> sanity check file shape
-
-if(mpi_id == mpi_root_id) then
-  call h5%open(trim(h5fn), action="r", mpi=.false.)
-  call h5%shape("/A2", d2)
-  call h5%shape("/A3", d3)
-  call h5%close()
-
-  if(any(d2 /= dims_full(:2)) .or. any(d3 /= dims_full)) error stop "slab_mpi: file shape mismatch"
-endif
 
 !> RESULTS
 

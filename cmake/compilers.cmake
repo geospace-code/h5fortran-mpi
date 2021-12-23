@@ -5,8 +5,7 @@ add_compile_options(
 "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:Debug,RelWithDebInfo>>:-Wextra;-fcheck=all;-Werror=array-bounds>"
 "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:Release>>:-fno-backtrace>"
 )
-#"$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RelWithDebInfo>>:-Wno-maybe-uninitialized>"
-
+# -Wno-maybe-uninitialized
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
 
 add_compile_options(

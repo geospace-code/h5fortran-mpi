@@ -1,30 +1,25 @@
-program write_slab_mpi
+program read_slab_mpi
 !! use hyperslabs with each worker
 !! use HDF5-MPI layer for best efficiency
 !! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90
 
-use, intrinsic :: iso_fortran_env, only : int64, real64, stderr=>error_unit
+use, intrinsic :: iso_fortran_env, only : int32, int64, real64, stderr=>error_unit
 use mpi, only : mpi_comm_size, mpi_comm_rank, mpi_integer
 use hdf5, only : HSIZE_T
-use h5mpi, only : mpi_h5comm, hdf5_file, mpi_tags
-use cli, only : get_cli, get_simsize
+use h5mpi, only : mpi_h5comm, hdf5_file
+use cli, only : get_cli
 use perf, only : print_timing, sysclock2ms
-use kernel, only : gaussian2d
-use test_utils, only : generate_and_send
 
 implicit none
 
 external :: mpi_bcast, mpi_init, mpi_finalize
 
 type(hdf5_file) :: h5
-type(mpi_tags) :: mt
 
 real, allocatable :: A2(:,:), A3(:,:,:)
-real :: noise
 character(1000) :: argv, h5fn
 
 integer :: ierr, lx1, lx2, lx3, dx1, i, comp_lvl, real_bits
-integer(HSIZE_T), allocatable, dimension(:) :: d2, d3
 integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
 
@@ -33,7 +28,7 @@ logical :: debug = .false.
 integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
 
-integer(HSIZE_T) :: dims_full(rank(A3))
+integer(HSIZE_T), allocatable :: dims_full(:)
 
 call mpi_init(ierr)
 if(ierr/=0) error stop "mpi_init"
@@ -56,10 +51,6 @@ do i = 1, command_argument_count()
     call get_cli(i, argv, Nrun)
   case("-realbits")
     call get_cli(i, argv, real_bits)
-  case ("-comp")
-    call get_cli(i, argv, comp_lvl)
-  case ("-noise")
-    call get_cli(i, argv, noise)
   case("-d", "-debug")
     debug = .true.
   end select
@@ -72,10 +63,20 @@ allocate(t_elapsed(Nrun))
 lx1 = -1
 lx2 = -1
 lx3 = -1
-if(mpi_id == mpi_root_id) call get_simsize(lx1, lx2, lx3, Nmpi)
 
 if(mpi_id == mpi_root_id) then
-  print '(a,i0,a,i0,1x,i0,1x,i0)', "MPI-HDF5 parallel write. ", Nmpi, " total MPI processes. shape: ", &
+  !> get simsize
+  call h5%open(trim(h5fn), action="r", mpi=.false., debug=debug)
+  call h5%shape("/A3", dims_full)
+  call h5%close()
+  lx1 = int(dims_full(1), int32)
+  lx2 = int(dims_full(2), int32)
+  lx3 = int(dims_full(3), int32)
+  print '(a,i0,a,i0,1x,i0,1x,i0)', "MPI-root: ", Nmpi, " total MPI processes. shape: ", lx1, lx2, lx3
+endif
+
+if(mpi_id == mpi_root_id) then
+  print '(a,i0,a,i0,1x,i0,1x,i0)', "MPI-HDF5 parallel. ", Nmpi, " total MPI processes. shape: ", &
   lx1, lx2, lx3
 endif
 
@@ -97,32 +98,19 @@ endif
 
 if (debug) print '(a,i0,a,i0,1x,i0,1x,i0)', 'MPI worker: ', mpi_id, ' lx1, lx2, lx3 = ', lx1, lx2, lx3
 
-dims_full = [lx1, lx2, lx3]
-
 !! 1-D decompose in rows (neglect ghost cells)
 dx1 = lx1 / Nmpi
 
 allocate(A2(dx1, lx2), A3(dx1, lx2, lx3))
-!> dummy data
-!! root has only a subarray like workers.
-!! Here we generate synthetic data on root; real programs wouldn't do this
 
-if (mpi_id == mpi_root_id) call system_clock(count=tic)
-
-call generate_and_send(Nmpi, mpi_id, mpi_root_id, dx1, lx1, lx2, lx3, mt%a2, mt%a3, mpi_h5comm, noise, A2, A3)
-
-if (mpi_id == mpi_root_id) then
-  call system_clock(count=toc)
-  if (debug) print '(a,i0,a,f10.3)', "MPI worker: ", mpi_id, " time to initialize (milliseconds) ", sysclock2ms(toc-tic)
-endif
 !> benchmark loop
 
 main : do i = 1, Nrun
   if(mpi_id == mpi_root_id) call system_clock(count=tic)
-  call h5%open(trim(h5fn), action="w", mpi=.true., comp_lvl=comp_lvl, debug=debug)
+  call h5%open(trim(h5fn), action="r", mpi=.true., debug=debug)
 
-  call h5%write("/A2", A2, dims_full(:2))
-  call h5%write("/A3", A3, dims_full)
+  call h5%read("/A2", A2)
+  call h5%read("/A3", A3)
 
   call h5%close()
   if(mpi_id == mpi_root_id) then
@@ -131,19 +119,6 @@ main : do i = 1, Nrun
   endif
 
 end do main
-
-if (debug) print '(a,i0)', "mpi write:done: worker: ", mpi_id
-
-!> sanity check file shape
-
-if(mpi_id == mpi_root_id) then
-  call h5%open(trim(h5fn), action="r", mpi=.false.)
-  call h5%shape("/A2", d2)
-  call h5%shape("/A3", d3)
-  call h5%close()
-
-  if(any(d2 /= dims_full(:2)) .or. any(d3 /= dims_full)) error stop "slab_mpi: file shape mismatch"
-endif
 
 !> RESULTS
 

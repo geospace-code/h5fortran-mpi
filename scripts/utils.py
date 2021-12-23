@@ -20,7 +20,12 @@ def cli() -> dict[str, T.Any]:
     p.add_argument("-np", help="number of MPI processes", type=int)
     p.add_argument("-k", "--keep", help="keep output files", action="store_true")
     p.add_argument(
-        "-t", "--tests", help="test names", nargs="+", default=["serial", "mpi_root", "mpi_hdf5"]
+        "-t",
+        "--tests",
+        help="test names",
+        nargs="+",
+        choices=["serial", "mpi_root", "mpi_hdf5"],
+        default=["serial", "mpi_root", "mpi_hdf5"],
     )
     p.add_argument(
         "-c", "--comp", help="compression levels", nargs="+", type=int, default=[0, 1, 3, 5, 7, 9]

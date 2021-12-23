@@ -14,6 +14,7 @@ type(hdf5_file) :: h5
 
 real(real32), allocatable :: S2(:,:), S3(:,:,:)
 real(real64), allocatable :: D2(:,:), D3(:,:,:)
+real :: noise
 
 character(1000) :: argv, outfn
 
@@ -38,6 +39,7 @@ Nrun = 1
 outfn = ""
 real_bits = 32
 comp_lvl = 0
+noise = 0.
 
 do i = 1, command_argument_count()
   call get_command_argument(i, argv, status=ierr)
@@ -52,6 +54,8 @@ do i = 1, command_argument_count()
     call get_cli(i, argv, real_bits)
   case ("-comp")
     call get_cli(i, argv, comp_lvl)
+  case ("-noise")
+    call get_cli(i, argv, noise)
   case("-d")
     debug = .true.
   end select
@@ -62,14 +66,18 @@ if(len_trim(outfn) == 0) error stop "please specify -o filename to write"
 allocate(t_elapsed(Nrun))
 if(real_bits == 32) then
   allocate(S2(lx1, lx2), S3(lx1, lx2, lx3))
-  S2(1:lx1, 1:lx2) = gaussian2d(lx1, lx2, 1.)
+
+  call random_number(S2)
+  S2(1:lx1, 1:lx2) = noise*S2 + gaussian2d(lx1, lx2, 1.)
   call random_number(S3)
-  S3(1:lx1, 1:lx2, 1:lx3) = 0.1*S3 + spread(gaussian2d(lx1, lx2, 1.), 3, lx3)
+  S3(1:lx1, 1:lx2, 1:lx3) = noise*S3 + spread(gaussian2d(lx1, lx2, 1.), 3, lx3)
 elseif(real_bits==64) then
   allocate(D2(lx1, lx2), D3(lx1, lx2, lx3))
-  S2(1:lx1, 1:lx2) = gaussian2d(lx1, lx2, 1.)
-  call random_number(S3)
-  S3(1:lx1, 1:lx2, 1:lx3) = 0.1*S3 + spread(gaussian2d(lx1, lx2, 1.), 3, lx3)
+
+  call random_number(D2)
+  D2(1:lx1, 1:lx2) = noise*D2 + gaussian2d(lx1, lx2, 1.)
+  call random_number(D3)
+  D3(1:lx1, 1:lx2, 1:lx3) = noise*D3 + spread(gaussian2d(lx1, lx2, 1.), 3, lx3)
 else
   error stop "unknown real_bits: expect 32 or 64"
 endif

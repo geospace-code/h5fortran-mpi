@@ -1,13 +1,18 @@
 add_executable(slab_mpi_write slab_mpi_write.f90)
-target_link_libraries(slab_mpi_write PRIVATE h5mpi cli perf kernel HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab_mpi_write PRIVATE h5mpi cli perf test_utils kernel HDF5::HDF5 MPI::MPI_Fortran)
+add_executable(slab_mpi_read slab_mpi_read.f90)
+target_link_libraries(slab_mpi_read PRIVATE h5mpi cli perf HDF5::HDF5 MPI::MPI_Fortran)
+
+add_library(test_utils OBJECT utils.f90)
+target_link_libraries(test_utils PRIVATE kernel MPI::MPI_Fortran)
 
 add_executable(slab_mpi_serial_write slab_mpi_serial_write.f90)
-target_link_libraries(slab_mpi_serial_write PRIVATE h5mpi cli perf kernel HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab_mpi_serial_write PRIVATE h5mpi cli perf test_utils kernel HDF5::HDF5 MPI::MPI_Fortran)
 add_executable(slab_mpi_serial_read slab_mpi_serial_read.f90)
 target_link_libraries(slab_mpi_serial_read PRIVATE h5mpi cli perf HDF5::HDF5 MPI::MPI_Fortran)
 
 add_executable(slab_serial_write slab_serial_write.f90)
-target_link_libraries(slab_serial_write PRIVATE h5mpi cli perf kernel HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab_serial_write PRIVATE h5mpi cli perf test_utils kernel HDF5::HDF5 MPI::MPI_Fortran)
 add_executable(slab_serial_read slab_serial_read.f90)
 target_link_libraries(slab_serial_read PRIVATE h5mpi cli perf HDF5::HDF5 MPI::MPI_Fortran)
 
@@ -45,7 +50,20 @@ foreach(lx1 16 8192)
   )
   set_tests_properties(WRITE_MPI-Slab${lx1} PROPERTIES
   TIMEOUT 30
+  FIXTURES_SETUP write_mpi-Slab${lx1}
   LABELS "mpi_hdf5;write"
+  RUN_SERIAL true
+  WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+  )
+
+  add_test(NAME READ_MPI-Slab${lx1}
+  COMMAND runner -lx ${lx1} 4 8 -exe $<TARGET_FILE:slab_mpi_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o out${lx1}mpi.h5 -debug
+  )
+  set_tests_properties(READ_MPI-Slab${lx1} PROPERTIES
+  TIMEOUT 30
+  FIXTURES_REQUIRED write_mpi-Slab${lx1}
+  REQUIRED_FILES out${lx1}mpi.h5
+  LABELS "mpi_hdf5;read"
   RUN_SERIAL true
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
   )
