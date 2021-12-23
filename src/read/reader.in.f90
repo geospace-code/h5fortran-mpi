@@ -7,8 +7,8 @@ contains
 module procedure h5read_scalar
 
 integer(HSIZE_T) :: dims(rank(value))
-integer(hid_t) :: dset_id, native_dtype
-integer :: ier
+integer(hid_t) :: dset_id
+integer :: dclass, ier
 
 logical :: vector_scalar
 
@@ -41,13 +41,13 @@ endif
 call h5dopen_f(self%file_id, dname, dset_id, ier)
 if(ier/=0) error stop 'h5fortran:reader: ' // dname // ' could not be opened in ' // self%filename
 
-native_dtype = get_native_dtype(self, dname, dset_id)
+call get_dset_class(self, dname, dclass, dset_id)
 
 !> cast the dataset read from disk to the variable type presented by user h5f%read("/my_dataset", x)
 !> We only cast when needed to save memory.
 !! select case doesn't allow H5T_*
 !! https://support.hdfgroup.org/HDF5/doc/UG/HDF5_Users_Guide-Responsive%20HTML5/index.html#t=HDF5_Users_Guide%2FDatatypes%2FHDF5_Datatypes.htm%23TOC_6_10_Data_Transferbc-26&rhtocid=6.5_2
-if(native_dtype == H5T_NATIVE_DOUBLE .or. native_dtype == H5T_NATIVE_REAL) then
+if(dclass == H5T_FLOAT_F) then
   select type(value)
   type is (real(real64))
     call h5dread_f(dset_id, H5T_NATIVE_DOUBLE, value, dims, ier)
@@ -56,7 +56,7 @@ if(native_dtype == H5T_NATIVE_DOUBLE .or. native_dtype == H5T_NATIVE_REAL) then
   class default
     error stop 'h5fortran:read: real disk dataset ' // dname // ' needs real memory variable'
   end select
-elseif(native_dtype == H5T_NATIVE_INTEGER .or. native_dtype == H5T_STD_I64LE) then
+elseif(dclass == H5T_INTEGER_F) then
   select type(value)
   type is (integer(int32))
     call h5dread_f(dset_id, H5T_NATIVE_INTEGER, value, dims, ier)
