@@ -22,6 +22,9 @@ def cli() -> dict[str, T.Any]:
     p.add_argument(
         "-t", "--tests", help="test names", nargs="+", default=["serial", "mpi_root", "mpi_hdf5"]
     )
+    p.add_argument(
+        "-c", "--comp", help="compression levels", nargs="+", type=int, default=[0, 1, 3, 5, 7, 9]
+    )
     P = p.parse_args()
 
     bin_dir = Path(P.binary_dir).resolve()
@@ -43,6 +46,7 @@ def cli() -> dict[str, T.Any]:
         "np": P.np,
         "keep": P.keep,
         "tests": P.tests,
+        "comp": P.comp,
     }
 
     return params

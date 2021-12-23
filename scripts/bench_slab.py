@@ -202,8 +202,6 @@ if __name__ == "__main__":
 
     P = cli()
 
-    comp_lvls = [0, 1, 3, 5, 7, 9]
-
     write_bench(
-        P["tests"], comp_lvls, P["keep"], P["lx"], P["Nrun"], P["np"], P["bin_dir"], P["data_dir"]
+        P["tests"], P["comp"], P["keep"], P["lx"], P["Nrun"], P["np"], P["bin_dir"], P["data_dir"]
     )
