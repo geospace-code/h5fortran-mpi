@@ -25,12 +25,12 @@ sysclock2ms = real(t) * r
 end function sysclock2ms
 
 
-subroutine print_timing(bits, dims, t_elapsed, file_bytes, outfn)
+subroutine print_timing(bits, dims, t_elapsed, file_bytes, statfn)
 !! print summary of results
 integer, intent(in) :: bits, dims(:)
 integer(int64), intent(in) :: t_elapsed(:)
 real, intent(in) :: file_bytes
-character(*), intent(in), optional :: outfn
+character(*), intent(in), optional :: statfn
 
 integer :: bytes,N
 real :: data_MB, file_MB, mean_MBsec, var_MBsec, std_MBsec, median_MBsec
@@ -60,9 +60,9 @@ print '(f15.1,1x,f15.3,1x,f9.1,1x,f9.1)', median_MBsec, std_MBsec, data_MB, file
 if(mean_MBsec < 10) write(stderr,'(a)') "WARNING: write speed seems unusually slow."
 if(data_MB < 5) write(stderr, '(a)') "WARNING: benchmark loses accuracy with small files."
 
-if(.not.present(outfn)) return
+if(.not.present(statfn)) return
 
-call f%open(outfn, action="w", mpi=.false.)
+call f%open(statfn, action="w", mpi=.false.)
 
 call f%write("t_ms", t_ms, shape(t_ms, HSIZE_T))
 call f%write("MBsec", data_MBsec, shape(data_MBsec, HSIZE_T))

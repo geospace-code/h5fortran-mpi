@@ -19,6 +19,9 @@ def cli() -> dict[str, T.Any]:
     p.add_argument("-Nrun", help="number of test runs", type=int, default=5)
     p.add_argument("-np", help="number of MPI processes", type=int)
     p.add_argument("-k", "--keep", help="keep output files", action="store_true")
+    p.add_argument(
+        "-t", "--tests", help="test names", nargs="+", default=["serial", "mpi_root", "mpi_hdf5"]
+    )
     P = p.parse_args()
 
     bin_dir = Path(P.binary_dir).resolve()
@@ -39,6 +42,7 @@ def cli() -> dict[str, T.Any]:
         "lx": P.n,
         "np": P.np,
         "keep": P.keep,
+        "tests": P.tests,
     }
 
     return params

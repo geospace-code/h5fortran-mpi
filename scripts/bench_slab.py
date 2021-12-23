@@ -26,10 +26,10 @@ TIMEOUT = 600
 def serial_runner(
     exe_name: str,
     bin_dir: Path,
-    Nrun: int,
-    lx: tuple[int, int, int],
-    comp_lvl: int,
     outfn: Path,
+    Nrun: int,
+    lx: tuple[int, int, int] = None,
+    comp_lvl: int = None,
     np: int = None,
 ) -> float:
     """
@@ -40,23 +40,25 @@ def serial_runner(
     if not exe:
         raise FileNotFoundError(f"{exe_name} not found in {bin_dir}")
 
-    args = (
-        ["-lx"]
-        + list(map(str, lx))
-        + [
-            "-o",
-            str(outfn),
-            "-Nrun",
-            str(Nrun),
-            "-comp",
-            str(comp_lvl),
-        ]
-    )
+    args = [
+        "-o",
+        str(outfn),
+        "-Nrun",
+        str(Nrun),
+    ]
+
+    if lx:
+        args += ["-lx"] + list(map(str, lx))
+    if comp_lvl:
+        args += ["-comp", str(comp_lvl)]
     if np:
         args += ["-np", str(np)]
 
+    cmd = [exe] + args
+    print(" ".join(cmd))
+
     tic = time.monotonic()
-    subprocess.check_call([exe] + args, timeout=TIMEOUT)
+    subprocess.check_call(cmd, timeout=TIMEOUT)
 
     return time.monotonic() - tic
 
@@ -120,70 +122,88 @@ def write_bench(
     bin_dir: Path,
     data_dir: Path,
 ):
-    times = pd.DataFrame(index=comp_lvls, columns=tests)
+    write_times = pd.DataFrame(index=comp_lvls, columns=tests)
+    read_times = pd.DataFrame(index=comp_lvls, columns=tests)
 
     for c in comp_lvls:
         tail = f"{lx[0]}_{lx[1]}_{lx[2]}_comp{c}"
-        # %% Serial (no MPI at all)
-        serialfn = data_dir / f"serial_{tail}.h5"
-        times["serial"][c] = serial_runner(
-            "slab_serial_write",
-            bin_dir,
-            Nrun,
-            lx,
-            outfn=serialfn,
-            comp_lvl=c,
-            np=np,
-        )
-        if not keep:
-            serialfn.unlink()
 
-        # %% MPI transfer to root (inefficient relative to HDF5-MPI)
-        mpirootfn = data_dir / f"mpi_root_{tail}.h5"
-        times["mpi_root"][c] = mpi_runner(
-            "slab_mpi_serial_write",
-            bin_dir,
-            Nrun,
-            lx,
-            outfn=mpirootfn,
-            comp_lvl=c,
-            np=np,
-        )
-        if not keep:
-            mpirootfn.unlink()
+        if "serial" in tests:
+            # Serial (no MPI at all)
+            serialfn = data_dir / f"serial_{tail}.h5"
 
-        # %% HDF5-MPI layer (most efficient general I/O approach for parallel computation)
-        mpih5fn = data_dir / f"mpi_hdf5_{tail}.h5"
-        times["mpi_hdf5"][c] = mpi_runner(
-            "slab_mpi_write",
-            bin_dir,
-            Nrun,
-            lx,
-            outfn=mpih5fn,
-            comp_lvl=c,
-            np=np,
-        )
-        if not keep:
-            mpih5fn.unlink()
+            write_times["serial"][c] = serial_runner(
+                "slab_serial_write",
+                bin_dir,
+                serialfn,
+                Nrun,
+                lx,
+                comp_lvl=c,
+                np=np,
+            )
+
+            read_times["serial"][c] = serial_runner(
+                "slab_serial_read",
+                bin_dir,
+                serialfn,
+                Nrun,
+                np=np,
+            )
+
+            if not keep:
+                serialfn.unlink()
+
+        if "mpi_root" in tests:
+            # MPI transfer to root (inefficient relative to HDF5-MPI)
+            mpirootfn = data_dir / f"mpi_root_{tail}.h5"
+            write_times["mpi_root"][c] = mpi_runner(
+                "slab_mpi_serial_write",
+                bin_dir,
+                Nrun,
+                lx,
+                outfn=mpirootfn,
+                comp_lvl=c,
+                np=np,
+            )
+            if not keep:
+                mpirootfn.unlink()
+
+        if "mpi_hdf5" in tests:
+            # HDF5-MPI layer (most efficient general I/O approach for parallel computation)
+            mpih5fn = data_dir / f"mpi_hdf5_{tail}.h5"
+            write_times["mpi_hdf5"][c] = mpi_runner(
+                "slab_mpi_write",
+                bin_dir,
+                Nrun,
+                lx,
+                outfn=mpih5fn,
+                comp_lvl=c,
+                np=np,
+            )
+            if not keep:
+                mpih5fn.unlink()
 
     runner_exe = shutil.which("runner", path=bin_dir)
     compiler = subprocess.check_output([runner_exe, "-compiler"], text=True)
-
-    fig, ax = plot_time(times)
     Ncpu = subprocess.check_output(
         [runner_exe, "-lx"] + list(map(str, lx)) + ["-tell_cpu"], text=True
     ).strip()
+
+    fig, ax = plot_time(write_times)
     ax.set_title(f"WRITE: Slab Benchmark: size: {lx}  Ncpu: {Ncpu}\n{compiler}")
     fig.savefig("write_slab_time.png", dpi=150)
+
+    fig, ax = plot_time(read_times)
+    ax.set_title(f"READ: Slab Benchmark: size: {lx}  Ncpu: {Ncpu}\n{compiler}")
+    fig.savefig("read_slab_time.png", dpi=150)
 
 
 if __name__ == "__main__":
 
     P = cli()
 
-    tests = ["serial", "mpi_root", "mpi_hdf5"]
     comp_lvls = [0, 1, 3, 5, 7, 9]
 
     write_bench(
-        tests, comp_lvls, P["keep"], P["lx"], P["Nrun"], P["np"], P["bin_dir"], P["data_dir"]
+        P["tests"], comp_lvls, P["keep"], P["lx"], P["Nrun"], P["np"], P["bin_dir"], P["data_dir"]
     )
