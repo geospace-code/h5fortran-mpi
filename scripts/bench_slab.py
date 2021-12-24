@@ -9,14 +9,10 @@ MPI problems of interest are likely to be larger.
 """
 
 from __future__ import annotations
-import time
 import subprocess
 import shutil
 from pathlib import Path
 
-import pandas as pd
-
-from bench_plot import plot_time
 from utils import cli
 
 
@@ -31,7 +27,7 @@ def serial_runner(
     lx: tuple[int, int, int] = None,
     comp_lvl: int = None,
     np: int = None,
-) -> float:
+):
     """
     Serial without MPI
     """
@@ -57,10 +53,7 @@ def serial_runner(
     cmd = [exe] + args
     print(" ".join(cmd))
 
-    tic = time.monotonic()
     subprocess.check_call(cmd, timeout=TIMEOUT)
-
-    return time.monotonic() - tic
 
 
 def mpi_runner(
@@ -71,7 +64,7 @@ def mpi_runner(
     lx: tuple[int, int, int] = None,
     comp_lvl: int = None,
     np: int = None,
-) -> float:
+):
     """
     Runner frontend uses HWLOC to compute physical core count
     """
@@ -103,10 +96,7 @@ def mpi_runner(
     if comp_lvl:
         args += ["-comp", str(comp_lvl)]
 
-    tic = time.monotonic()
     subprocess.check_call([runner_exe] + args, timeout=TIMEOUT)
-
-    return time.monotonic() - tic
 
 
 def slab_bench(
@@ -119,8 +109,6 @@ def slab_bench(
     bin_dir: Path,
     data_dir: Path,
 ):
-    write_times = pd.DataFrame(index=comp_lvls, columns=tests)
-    read_times = pd.DataFrame(index=comp_lvls, columns=tests)
 
     for c in comp_lvls:
         tail = f"{lx[0]}_{lx[1]}_{lx[2]}_comp{c}"
@@ -129,7 +117,7 @@ def slab_bench(
             # Serial (no MPI at all)
             serialfn = data_dir / f"serial_{tail}.h5"
 
-            write_times["serial"][c] = serial_runner(
+            serial_runner(
                 "slab_serial_write",
                 bin_dir,
                 serialfn,
@@ -139,7 +127,7 @@ def slab_bench(
                 np=np,
             )
 
-            read_times["serial"][c] = serial_runner(
+            serial_runner(
                 "slab_serial_read",
                 bin_dir,
                 serialfn,
@@ -154,7 +142,7 @@ def slab_bench(
             # MPI transfer to root (inefficient relative to HDF5-MPI)
             mpirootfn = data_dir / f"mpi_root_{tail}.h5"
 
-            write_times["mpi_root"][c] = mpi_runner(
+            mpi_runner(
                 "slab_mpi_serial_write",
                 bin_dir,
                 mpirootfn,
@@ -164,7 +152,7 @@ def slab_bench(
                 np=np,
             )
 
-            read_times["mpi_root"][c] = mpi_runner(
+            mpi_runner(
                 "slab_mpi_serial_read",
                 bin_dir,
                 mpirootfn,
@@ -180,7 +168,7 @@ def slab_bench(
             # HDF5-MPI layer (most efficient general I/O approach for parallel computation)
             mpih5fn = data_dir / f"mpi_hdf5_{tail}.h5"
 
-            write_times["mpi_hdf5"][c] = mpi_runner(
+            mpi_runner(
                 "slab_mpi_write",
                 bin_dir,
                 mpih5fn,
@@ -190,7 +178,7 @@ def slab_bench(
                 np=np,
             )
 
-            read_times["mpi_hdf5"][c] = mpi_runner(
+            mpi_runner(
                 "slab_mpi_read",
                 bin_dir,
                 mpih5fn,
@@ -201,24 +189,6 @@ def slab_bench(
 
             if not keep:
                 mpih5fn.unlink()
-
-    runner_exe = shutil.which("runner", path=bin_dir)
-    compiler = subprocess.check_output([runner_exe, "-compiler"], text=True)
-    Ncpu = subprocess.check_output(
-        [runner_exe, "-lx"] + list(map(str, lx)) + ["-tell_cpu"], text=True
-    ).strip()
-
-    fig, ax = plot_time(write_times)
-    ax.set_title(f"WRITE: Slab Benchmark: size: {lx}  Ncpu: {Ncpu}\n{compiler}")
-    plotfn = data_dir / f"write_times_{tail}.png"
-    print("making", plotfn)
-    fig.savefig(plotfn, dpi=150)
-
-    fig, ax = plot_time(read_times)
-    ax.set_title(f"READ: Slab Benchmark: size: {lx}  Ncpu: {Ncpu}\n{compiler}")
-    plotfn = data_dir / f"read_times_{tail}.png"
-    print("making", plotfn)
-    fig.savefig(plotfn, dpi=150)
 
 
 if __name__ == "__main__":
