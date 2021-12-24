@@ -38,8 +38,6 @@ integer :: comp_lvl = 0
 !! compression level (1-9)  0: disable compression
 !! compression with MPI requires MPI-3 and HDF5 >= 1.10.2
 
-integer :: libversion(3)  !< major, minor, rel
-
 contains
 
 procedure, public :: open => ph5open, close => ph5close, &
@@ -69,7 +67,8 @@ end type mpi_tags
 
 private
 public :: mpi_h5comm, hdf5_file, mpi_tags, &
-check, hdf_wrapup, hdf_rank_check, hdf_shape_check
+check, hdf_wrapup, hdf_rank_check, hdf_shape_check, &
+hdf5version
 
 interface !< write.f90
 module subroutine hdf_create(self, dname, dtype, dims, dims_file, filespace, memspace, dset_id, xfer_id, chunk_size)
@@ -261,14 +260,6 @@ if(ierr/=0) error stop "h5open: could not open HDF5 library"
 !! OK to call repeatedly
 !! https://support.hdfgroup.org/HDF5/doc/RM/RM_H5.html#Library-Open
 
-!> get library version
-call h5get_libversion_f(self%libversion(1), self%libversion(2), self%libversion(3), ierr)
-if (self%debug) print '(a,i0,a1,i0,a1,i0)', 'HDF5 version: ',self%libversion(1),'.',self%libversion(2),'.',self%libversion(3)
-if (check(ierr, 'ERROR:h5fortran: HDF5 library get version')) error stop
-if ((self%libversion(2) == 10 .and. self%libversion(3) < 2) .or. self%libversion(2) < 10) error stop &
-  "HDF5 >= 1.10.2 required for MPI parallel HDF5. " // &
-  "https://www.hdfgroup.org/2018/03/release-of-hdf5-1-10-2-newsletter-160/"
-
 inquire(file=filename, exist=exists)
 if (laction(1:1) == "r".and..not.exists) error stop "h5open: file does not exist: " // filename
 
@@ -354,6 +345,24 @@ self%file_id = 0
 self%is_open = .false.
 
 end subroutine ph5close
+
+
+function hdf5version() result(v)
+!! tell HDF5 library version (major, minor, release)
+integer :: v(3), ierr
+
+!> get library version
+call h5get_libversion_f(v(1), v(2), v(3), ierr)
+
+if (ierr/=0) error stop 'ERROR:h5fortran: HDF5 library get version'
+
+if ((v(2) == 10 .and. v(3) < 2) .or. v(2) < 10) then
+  write(stderr,'(a,I0,a1,I0,a1,I0,/,a)') "WARNING: HDF5 >= 1.10.2 required for MPI-HDF5. Your HDF5 version: ", &
+  v(1), ".", v(2), ".", v(3), &
+  "https://www.hdfgroup.org/2018/03/release-of-hdf5-1-10-2-newsletter-160/"
+end if
+
+end function hdf5version
 
 
 subroutine hdf_flush(self, ierr)

@@ -104,7 +104,8 @@ integer(HSIZE_T) :: cs(size(dims))
 ierr = 0
 plist_id = H5P_DEFAULT_F
 
-if (.not. self%parallel_compression .or. self%comp_lvl < 1 .or. self%comp_lvl > 9) return
+if (self%use_mpi .and. .not. self%parallel_compression) return
+if (self%comp_lvl < 1 .or. self%comp_lvl > 9) return
 
 if (present(chunk_size)) then
   cs = chunk_size

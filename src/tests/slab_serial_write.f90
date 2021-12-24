@@ -116,6 +116,6 @@ end do main
 
 !> RESULTS
 
-call print_timing(real_bits, int(dims_full), t_elapsed, real(h5%filesize()), statfn=trim(outfn) // ".write_stat.h5")
+call print_timing(1, h5%comp_lvl, real_bits, int(dims_full), t_elapsed, h5%filesize(), trim(outfn) // ".write_stat.h5")
 
 end program

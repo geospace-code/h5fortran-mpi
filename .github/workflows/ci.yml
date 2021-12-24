@@ -22,11 +22,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: "3.8"
 
     - name: install hdf5
       run: |
         sudo apt update -yq
         sudo apt install -yq --no-install-recommends ninja-build libhdf5-mpi-dev libhwloc-dev
+
+    - name: Python pkgs
+      run: pip install --user -r requirements.txt
 
     - run: cmake --preset multi --install-prefix=${HOME}
 

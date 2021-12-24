@@ -20,7 +20,7 @@ lx1 = -1
 lx2 = -1
 lx3 = -1
 lid = -1
-mpiexec = ""
+mpiexec = "mpiexec"
 exe = ""
 outfn = ""
 
@@ -41,13 +41,6 @@ do i = 1, command_argument_count()
     call get_cli(i, buf, exe)
   case ("-comp")
     call get_cli(i, buf, comp_lvl)
-  case ("-tell_cpu")
-    call get_simsize(lx1, lx2, lx3)
-    if(Ncpu < 1) Ncpu = get_cpu_count()
-    lid = max_gcd(lx1, Ncpu)
-    if (lid < 1) error stop "use '-lx lx1 lx2 lx3' to set the simulation size"
-    print '(i0)', lid
-    stop
   case ("-compiler")
     print '(A)', compiler_version()
     stop
@@ -60,9 +53,7 @@ end do
 
 if (any([lx1, lx2, lx3] < 1)) error stop "use '-lx lx1 lx2 lx3' to set the simulation size"
 
-if(len_trim(mpiexec)==0) mpiexec = "mpiexec"
 if(len_trim(outfn)==0) error stop "must specify -o <output file>"
-
 if(len_trim(exe)==0) error stop "please specify MPI program to run with option:  -exe myprog.exe"
 inquire(file=exe, exist=exists)
 if(.not. exists) error stop trim(exe) // " is not a file."

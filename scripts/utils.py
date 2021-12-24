@@ -12,7 +12,7 @@ def cli() -> dict[str, T.Any]:
         "-B",
         "--binary_dir",
         help="Path to the binary directory",
-        default=R / "../build",
+        default=R / "../build/src/tests",
     )
     p.add_argument("-o", "--datadir", help="data directory", default=R / "data")
     p.add_argument("-n", help="total size of slab", type=int, nargs=3, default=[8192, 32, 64])

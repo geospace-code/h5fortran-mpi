@@ -1,9 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
 import h5py
-import shutil
-import subprocess
-import platform
 
 import numpy as np
 import pandas as pd
@@ -44,35 +41,10 @@ def plot_time(t: pd.DataFrame) -> tuple:
     return fig, ax
 
 
-def title_meta(lx: tuple[int, int, int], bin_dir: Path) -> str:
-    """system metadata for plot title"""
-
-    runner_exe = shutil.which("runner", path=bin_dir)
-    if not runner_exe:
-        raise FileNotFoundError(f"runner not found in {bin_dir}")
-    compiler = subprocess.check_output([runner_exe, "-compiler"], text=True).strip()
-
-    Ncpu = subprocess.check_output(
-        [runner_exe, "-lx"] + list(map(str, lx)) + ["-tell_cpu"], text=True
-    ).strip()
-
-    if platform.system() == "Linux":
-        os = platform.system()
-    elif platform.system() == "Darwin":
-        os = platform.platform(terse=True)
-    else:
-        os = platform.platform(terse=True)
-
-    ttxt = f"size: {lx}  Ncpu: {Ncpu}\n{compiler} {os}"
-
-    return ttxt
-
-
-def get_bench(lx: tuple[int, int, int], data_dir: Path) -> dict[str, pd.DataFrame]:
+def get_bench(
+    lx: tuple[int, int, int], data_dir: Path, tests: list[str], comp_lvls: list[int]
+) -> dict[str, pd.DataFrame]:
     """get writing benchmark HDF5 files to pandas dataframe"""
-
-    comp_lvls = [0, 1, 3, 5, 7, 9]
-    tests = ["serial", "mpi_root", "mpi_hdf5"]
 
     data = {
         "write_dr": pd.DataFrame(index=comp_lvls, columns=tests),
@@ -81,23 +53,42 @@ def get_bench(lx: tuple[int, int, int], data_dir: Path) -> dict[str, pd.DataFram
         "read_t": pd.DataFrame(index=comp_lvls, columns=tests),
     }
 
+    hdf5_vers = None
+    mpi_api = None
+
     for t in tests:
         for c in comp_lvls:
             tail = f"{lx[0]}_{lx[1]}_{lx[2]}_comp{c}"
 
+            h5fn = data_dir / f"{t}_{tail}.h5.write_stat.h5"
             try:
-                with h5py.File(data_dir / f"{t}_{tail}.h5.write_stat.h5", "r") as f:
-                    data["write_dr"][t][c] = f["/median_MBsec"][()]
-                    data["write_t"][t][c] = np.median(f["/t_ms"][:])
+                with h5py.File(h5fn, "r") as f:
+                    ca = f["/comp_lvl"][()]
+                    data["write_dr"][t][ca] = f["/median_MBsec"][()]
+                    data["write_t"][t][ca] = np.median(f["/t_ms"][:])
             except FileNotFoundError:
-                print(f"ERROR: {t} comp_lvl {c}: write benchmark not found")
+                print(f"ERROR: {t} comp_lvl {c}: write benchmark {h5fn}")
 
+            h5fn = data_dir / f"{t}_{tail}.h5.read_stat.h5"
             try:
-                with h5py.File(data_dir / f"{t}_{tail}.h5.read_stat.h5", "r") as f:
-                    data["read_dr"][t][c] = f["/median_MBsec"][()]
-                    data["read_t"][t][c] = np.median(f["/t_ms"][:])
+                with h5py.File(h5fn, "r") as f:
+                    ca = f["/comp_lvl"][()]
+                    data["read_dr"][t][ca] = f["/median_MBsec"][()]
+                    data["read_t"][t][ca] = np.median(f["/t_ms"][:])
+
+                    if "Ncpu" not in data:
+                        data["Ncpu"] = f["/Ncpu"][()]
+                        data["compiler"] = f["/compiler"].asstr()[()]
+                        data["os"] = f["/os"].asstr()[()]
+                        hdf5_vers = f["/hdf5version"][:]
+                        mpi_api = f["/mpi_api_version"][:]
+                        data["mpi_lib_version"] = f["/mpi_lib_version"].asstr()[()]
             except FileNotFoundError:
-                print(f"ERROR: {t} comp_lvl {c}: read benchmark not found")
+                print(f"ERROR: {t} comp_lvl {c}: read benchmark {h5fn}")
+
+    if hdf5_vers is not None:
+        data["hdf5version"] = f"{hdf5_vers[0]}.{hdf5_vers[1]}.{hdf5_vers[2]}"
+        data["mpi_api_version"] = f"{mpi_api[0]}.{mpi_api[1]}"
 
     return data
 
@@ -105,11 +96,14 @@ def get_bench(lx: tuple[int, int, int], data_dir: Path) -> dict[str, pd.DataFram
 if __name__ == "__main__":
 
     P = cli()
-    ttxt = title_meta(P["lx"], P["bin_dir"])
 
-    data = get_bench(P["lx"], P["data_dir"])
+    data = get_bench(P["lx"], P["data_dir"], P["tests"], P["comp"])
 
     tail = f"{P['lx'][0]}_{P['lx'][1]}_{P['lx'][2]}"
+    ttxt = (
+        f"size: {P['lx']}  Ncpu: {data['Ncpu']}\n{data['compiler']} {data['os']}\n"
+        f"HDF5 {data['hdf5version']}  MPI-{data['mpi_api_version']}  {data['mpi_lib_version']}"
+    )
 
     fig, ax = plot_datarate(data["write_dr"])
     ax.set_title(f"WRITE: Slab Benchmark: {ttxt}")

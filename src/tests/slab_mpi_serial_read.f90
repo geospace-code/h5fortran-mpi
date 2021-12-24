@@ -157,7 +157,7 @@ end do main
 !> RESULTS
 
 if(mpi_id == mpi_root_id) then
-  call print_timing(storage_size(A3), int(dims_full), t_elapsed, real(h5%filesize()), statfn=trim(h5fn) // ".read_stat.h5")
+  call print_timing(Nmpi, h5%comp_lvl, storage_size(A3), int(dims_full), t_elapsed, h5%filesize(), trim(h5fn) // ".read_stat.h5")
 endif
 
 if (debug) print '(a,i0)', "mpi finalize: worker: ", mpi_id
