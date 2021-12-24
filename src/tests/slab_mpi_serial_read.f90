@@ -28,6 +28,7 @@ integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
 
 logical :: debug = .false.
+logical :: test2d = .false.
 
 integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
@@ -99,10 +100,11 @@ dx1 = lx1 / Nmpi
 
 !! root has the full array, and all other processes have a subarray
 if(mpi_id == mpi_root_id) then
-  allocate(A2(lx1, lx2), A3(lx1, lx2, lx3))
-  allocate(t2(dx1, lx2), t3(dx1, lx2, lx3))  !< root-only working subarray
+  if(test2d) allocate(A2(lx1, lx2), t2(dx1, lx2))
+  allocate(A3(lx1, lx2, lx3), t3(dx1, lx2, lx3))  !< root-only working subarray
 else
-  allocate(A2(dx1, lx2), A3(dx1, lx2, lx3))
+  if(test2d) allocate(A2(dx1, lx2))
+  allocate(A3(dx1, lx2, lx3))
 endif
 
 allocate(t_elapsed(Nrun))
@@ -115,7 +117,7 @@ main : do j = 1, Nrun
     call system_clock(count=tic)
     call h5%open(trim(h5fn), action="r", mpi=.false., debug=debug)
 
-    call h5%read("/A2", A2)
+    if(test2d) call h5%read("/A2", A2)
     call h5%read("/A3", A3)
 
     call h5%close()
@@ -124,21 +126,25 @@ main : do j = 1, Nrun
   !! workers receive data from root
   if(mpi_id == mpi_root_id) then
     !! root's own subarray
-    t2 = A2(1:dx1, :)
+    if(test2d) t2 = A2(1:dx1, :)
     t3 = A3(1:dx1, :, :)
     !! worker subarrays
     do i = 1, Nmpi-1
-      call mpi_send(A2(i*dx1+1:(i+1)*dx1,:), dx1*lx2, MPI_REAL, i, mt%a2, mpi_h5comm, ierr)
+      if(test2d) then
+        call mpi_send(A2(i*dx1+1:(i+1)*dx1,:), dx1*lx2, MPI_REAL, i, mt%a2, mpi_h5comm, ierr)
+        if(ierr/=0) error stop "root => worker: mpi_send 2D"
+      endif
       call mpi_send(A3(i*dx1+1:(i+1)*dx1,:,:), dx1*lx2*lx3, MPI_REAL, i, mt%a3, mpi_h5comm, ierr)
-
-      if(ierr/=0) error stop "worker => root: mpi_recv"
+      if(ierr/=0) error stop "root => worker: mpi_send 3D"
     end do
   else
     !! workers receive data from root
-    call mpi_recv(A2, dx1*lx2, MPI_REAL, mpi_root_id, mt%a2, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
+    if(test2d) then
+      call mpi_recv(A2, dx1*lx2, MPI_REAL, mpi_root_id, mt%a2, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
+      if(ierr/=0) error stop "root => worker: mpi_recv 2D"
+    endif
     call mpi_recv(A3, dx1*lx2*lx3, MPI_REAL, mpi_root_id, mt%a3, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
-
-    if(ierr/=0) error stop "worker => root: mpi_send"
+    if(ierr/=0) error stop "root => worker: mpi_recv 3D"
   endif
 
   if(mpi_id == mpi_root_id) then
@@ -156,5 +162,6 @@ endif
 
 if (debug) print '(a,i0)', "mpi finalize: worker: ", mpi_id
 call mpi_finalize(ierr)
+if(ierr/=0) error stop "mpi_finalize failed"
 
 end program

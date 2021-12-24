@@ -24,6 +24,7 @@ integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
 
 logical :: debug = .false.
+logical :: test2d = .false.
 
 integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
@@ -101,7 +102,8 @@ if (debug) print '(a,i0,a,i0,1x,i0,1x,i0)', 'MPI worker: ', mpi_id, ' lx1, lx2, 
 !! 1-D decompose in rows (neglect ghost cells)
 dx1 = lx1 / Nmpi
 
-allocate(A2(dx1, lx2), A3(dx1, lx2, lx3))
+if(test2d) allocate(A2(dx1, lx2))
+allocate(A3(dx1, lx2, lx3))
 
 !> benchmark loop
 
@@ -109,7 +111,7 @@ main : do i = 1, Nrun
   if(mpi_id == mpi_root_id) call system_clock(count=tic)
   call h5%open(trim(h5fn), action="r", mpi=.true., debug=debug)
 
-  call h5%read("/A2", A2)
+  if(test2d) call h5%read("/A2", A2)
   call h5%read("/A3", A3)
 
   call h5%close()

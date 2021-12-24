@@ -20,6 +20,7 @@ integer :: ierr, i, real_bits
 integer :: Nrun
 
 logical :: debug = .false.
+logical :: test2d = .false.
 
 integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
@@ -63,9 +64,11 @@ lx3 = dims_full(3)
 !> read arrays
 allocate(t_elapsed(Nrun))
 if(real_bits == 32) then
-  allocate(S2(lx1, lx2), S3(lx1, lx2, lx3))
+  if(test2d) allocate(S2(lx1, lx2))
+  allocate(S3(lx1, lx2, lx3))
 elseif(real_bits==64) then
-  allocate(D2(lx1, lx2), D3(lx1, lx2, lx3))
+  if(test2d) allocate(D2(lx1, lx2))
+  allocate(D3(lx1, lx2, lx3))
 else
   error stop "unknown real_bits: expect 32 or 64"
 endif
@@ -80,10 +83,10 @@ main : do i = 1, Nrun
   call h5%open(trim(h5fn), action="r", mpi=.false., debug=debug)
 
   if(real_bits == 32) then
-    call h5%read("/A2", S2)
+    if(test2d) call h5%read("/A2", S2)
     call h5%read("/A3", S3)
   elseif(real_bits == 64) then
-    call h5%read("/A2", D2)
+    if(test2d) call h5%read("/A2", D2)
     call h5%read("/A3", D3)
   endif
 

@@ -29,6 +29,7 @@ integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
 
 logical :: debug = .false.
+logical :: test2d = .false.
 
 integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
@@ -102,7 +103,8 @@ dims_full = [lx1, lx2, lx3]
 !! 1-D decompose in rows (neglect ghost cells)
 dx1 = lx1 / Nmpi
 
-allocate(A2(dx1, lx2), A3(dx1, lx2, lx3))
+if(test2d) allocate(A2(dx1, lx2))
+allocate(A3(dx1, lx2, lx3))
 !> dummy data
 !! root has only a subarray like workers.
 !! Here we generate synthetic data on root; real programs wouldn't do this
@@ -119,12 +121,14 @@ endif
 
 main : do i = 1, Nrun
   if(mpi_id == mpi_root_id) call system_clock(count=tic)
+
   call h5%open(trim(h5fn), action="w", mpi=.true., comp_lvl=comp_lvl, debug=debug)
 
-  call h5%write("/A2", A2, dims_full(:2))
+  if(test2d) call h5%write("/A2", A2, dims_full(:2))
   call h5%write("/A3", A3, dims_full)
 
   call h5%close()
+
   if(mpi_id == mpi_root_id) then
     call system_clock(count=toc)
     t_elapsed(i) = toc-tic
@@ -138,11 +142,17 @@ if (debug) print '(a,i0)', "mpi write:done: worker: ", mpi_id
 
 if(mpi_id == mpi_root_id) then
   call h5%open(trim(h5fn), action="r", mpi=.false.)
-  call h5%shape("/A2", d2)
+
+  if(test2d) then
+    call h5%shape("/A2", d2)
+    if(any(d2 /= dims_full(:2))) error stop "slab_mpi: file shape 2D mismatch"
+  endif
+
   call h5%shape("/A3", d3)
+  if(any(d3 /= dims_full)) error stop "slab_mpi: file shape mismatch"
+
   call h5%close()
 
-  if(any(d2 /= dims_full(:2)) .or. any(d3 /= dims_full)) error stop "slab_mpi: file shape mismatch"
 endif
 
 !> RESULTS
@@ -153,5 +163,6 @@ endif
 
 if (debug) print '(a,i0)', "mpi finalize: worker: ", mpi_id
 call mpi_finalize(ierr)
+if (ierr/=0) error stop "mpi_finalize failed"
 
 end program

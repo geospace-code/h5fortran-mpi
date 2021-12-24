@@ -22,6 +22,7 @@ integer :: ierr, lx1, lx2, lx3, i, real_bits, comp_lvl
 integer :: Nrun
 
 logical :: debug = .false.
+logical :: test2d = .false.
 
 integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
@@ -65,17 +66,23 @@ if(len_trim(outfn) == 0) error stop "please specify -o filename to write"
 
 allocate(t_elapsed(Nrun))
 if(real_bits == 32) then
-  allocate(S2(lx1, lx2), S3(lx1, lx2, lx3))
+  if(test2d) then
+    allocate(S2(lx1, lx2))
+    call random_number(S2)
+    S2(1:lx1, 1:lx2) = noise*S2 + gaussian2d(lx1, lx2, 1.)
+  endif
 
-  call random_number(S2)
-  S2(1:lx1, 1:lx2) = noise*S2 + gaussian2d(lx1, lx2, 1.)
+  allocate(S3(lx1, lx2, lx3))
   call random_number(S3)
   S3(1:lx1, 1:lx2, 1:lx3) = noise*S3 + spread(gaussian2d(lx1, lx2, 1.), 3, lx3)
 elseif(real_bits==64) then
-  allocate(D2(lx1, lx2), D3(lx1, lx2, lx3))
+  if(test2d) then
+    allocate(D2(lx1, lx2))
+    call random_number(D2)
+    D2(1:lx1, 1:lx2) = noise*D2 + gaussian2d(lx1, lx2, 1.)
+  endif
 
-  call random_number(D2)
-  D2(1:lx1, 1:lx2) = noise*D2 + gaussian2d(lx1, lx2, 1.)
+  allocate(D3(lx1, lx2, lx3))
   call random_number(D3)
   D3(1:lx1, 1:lx2, 1:lx3) = noise*D3 + spread(gaussian2d(lx1, lx2, 1.), 3, lx3)
 else
@@ -89,13 +96,14 @@ endif
 main : do i = 1, Nrun
 
   call system_clock(count=tic)
+
   call h5%open(trim(outfn), action="w", mpi=.false., comp_lvl=comp_lvl, debug=debug)
 
   if(real_bits == 32) then
-    call h5%write("/A2", S2, dims_full(:2))
+    if(test2d) call h5%write("/A2", S2, dims_full(:2))
     call h5%write("/A3", S3, dims_full)
   elseif(real_bits == 64) then
-    call h5%write("/A2", D2, dims_full(:2))
+    if(test2d) call h5%write("/A2", D2, dims_full(:2))
     call h5%write("/A3", D3, dims_full)
   endif
 

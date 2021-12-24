@@ -29,6 +29,7 @@ integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
 
 logical :: debug = .false.
+logical :: test2d = .false.
 
 integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
@@ -103,9 +104,11 @@ dx1 = lx1 / Nmpi
 
 !! root has the full array, and all other processes have a subarray
 if(mpi_id == mpi_root_id) then
-  allocate(A2(lx1, lx2), A3(lx1, lx2, lx3))
+  if(test2d) allocate(A2(lx1, lx2))
+  allocate(A3(lx1, lx2, lx3))
 else
-  allocate(A2(dx1, lx2), A3(dx1, lx2, lx3))
+  if(test2d) allocate(A2(dx1, lx2))
+  allocate(A3(dx1, lx2, lx3))
 endif
 
 
@@ -128,17 +131,21 @@ main : do j = 1, Nrun
     !! root's own subarray i=0 is already initialized
     !! worker i=1..Nmpi subarrays
     do i = 1, Nmpi-1
-      call mpi_recv(A2(i*dx1+1:(i+1)*dx1,:), dx1*lx2, MPI_REAL, i, mt%a2, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
-      if(ierr/=0) error stop "worker => root: mpi_recv 2D"
+      if(test2d) then
+        call mpi_recv(A2(i*dx1+1:(i+1)*dx1,:), dx1*lx2, MPI_REAL, i, mt%a2, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
+        if(ierr/=0) error stop "worker => root: mpi_recv 2D"
+      endif
       call mpi_recv(A3(i*dx1+1:(i+1)*dx1,:,:), dx1*lx2*lx3, MPI_REAL, i, mt%a3, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
       if(ierr/=0) error stop "worker => root: mpi_recv 3D"
     end do
   else
     !! workers send data to root
-    call mpi_send(A2, dx1*lx2, MPI_REAL, mpi_root_id, mt%a2, mpi_h5comm, ierr)
+    if(test2d) then
+      call mpi_send(A2, dx1*lx2, MPI_REAL, mpi_root_id, mt%a2, mpi_h5comm, ierr)
+      if(ierr/=0) error stop "worker => root: mpi_send 2D"
+    endif
     call mpi_send(A3, dx1*lx2*lx3, MPI_REAL, mpi_root_id, mt%a3, mpi_h5comm, ierr)
-
-    if(ierr/=0) error stop "worker => root: mpi_send"
+    if(ierr/=0) error stop "worker => root: mpi_send 3D"
   endif
 
   if(mpi_id == mpi_root_id) then
@@ -150,7 +157,7 @@ main : do j = 1, Nrun
     !! Root: serial write HDF5 file
     call h5%open(trim(outfn), action="w", mpi=.false., comp_lvl=comp_lvl, debug=debug)
 
-    call h5%write("/A2", A2, dims_full(:2))
+    if(test2d) call h5%write("/A2", A2, dims_full(:2))
     call h5%write("/A3", A3, dims_full)
 
     call h5%close()
@@ -165,11 +172,16 @@ end do main
 
 if(mpi_id == mpi_root_id) then
   call h5%open(trim(outfn), action="r", mpi=.false.)
-  call h5%shape("/A2", d2)
-  call h5%shape("/A3", d3)
-  call h5%close()
 
-  if(any(d2 /= dims_full(:2)) .or. any(d3 /= dims_full)) error stop "slab_mpi: file shape mismatch"
+  if(test2d) then
+    call h5%shape("/A2", d2)
+    if(any(d2 /= dims_full(:2))) error stop "slab_mpi: file shape 2D mismatch"
+  endif
+
+  call h5%shape("/A3", d3)
+  if(any(d3 /= dims_full)) error stop "slab_mpi: file shape 3D mismatch"
+
+  call h5%close()
 endif
 
 !> RESULTS
@@ -180,5 +192,6 @@ endif
 
 if (debug) print '(a,i0)', "mpi finalize: worker: ", mpi_id
 call mpi_finalize(ierr)
+if(ierr/=0) error stop "mpi_finalize failed"
 
 end program
