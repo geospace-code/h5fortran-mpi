@@ -17,76 +17,74 @@ add_executable(slab_serial_read slab_serial_read.f90)
 target_link_libraries(slab_serial_read PRIVATE h5mpi cli perf HDF5::HDF5 MPI::MPI_Fortran)
 
 
-set(Nrun 3)
+set(Nrun 2)
 
-foreach(lx1 16 256)
+set(lx 512 128 96)
 
-  add_test(NAME WRITE_serial-Slab${lx1}
-  COMMAND slab_serial_write -lx ${lx1} 4 8 -Nrun ${Nrun} -o ${CMAKE_CURRENT_BINARY_DIR}/out${lx1}serial.h5
-  )
-  set_tests_properties(WRITE_serial-Slab${lx1} PROPERTIES
-  TIMEOUT 15
-  FIXTURES_SETUP write_serial-Slab${lx1}
-  LABELS "serial_hdf5;write"
-  RUN_SERIAL true
-  )
+add_test(NAME WRITE_serial-Slab
+COMMAND slab_serial_write -lx ${lx} -Nrun ${Nrun} -o ${CMAKE_CURRENT_BINARY_DIR}/outserial.h5
+)
+set_tests_properties(WRITE_serial-Slab PROPERTIES
+TIMEOUT 15
+FIXTURES_SETUP write_serial-Slab
+LABELS "serial_hdf5;write"
+RUN_SERIAL true
+)
 
-  add_test(NAME READ_serial-Slab${lx1}
-  COMMAND slab_serial_read -Nrun ${Nrun} -o ${CMAKE_CURRENT_BINARY_DIR}/out${lx1}serial.h5
-  )
-  set_tests_properties(READ_serial-Slab${lx1} PROPERTIES
-  TIMEOUT 15
-  FIXTURES_REQUIRED write_serial-Slab${lx1}
-  REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/out${lx1}serial.h5
-  LABELS "serial_hdf5;read"
-  RUN_SERIAL true
-  )
-
-
-  add_test(NAME WRITE_MPI_root-Slab${lx1}
-  COMMAND runner -lx ${lx1} 4 8 -exe $<TARGET_FILE:slab_mpi_serial_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${CMAKE_CURRENT_BINARY_DIR}/out${lx1}mpi_root.h5 -debug
-  )
-  set_tests_properties(WRITE_MPI_root-Slab${lx1} PROPERTIES
-  TIMEOUT 30
-  FIXTURES_SETUP write_mpi_root-Slab${lx1}
-  LABELS "mpi_root;write"
-  RUN_SERIAL true
-  )
-
-  add_test(NAME READ_MPI_root-Slab${lx1}
-  COMMAND runner -lx ${lx1} 4 8 -exe $<TARGET_FILE:slab_mpi_serial_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${CMAKE_CURRENT_BINARY_DIR}/out${lx1}mpi_root.h5 -debug
-  )
-  set_tests_properties(READ_MPI_root-Slab${lx1} PROPERTIES
-  TIMEOUT 30
-  FIXTURES_REQUIRED write_mpi_root-Slab${lx1}
-  REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/out${lx1}mpi_root.h5
-  LABELS "mpi_root;read"
-  RUN_SERIAL true
-  )
+add_test(NAME READ_serial-Slab
+COMMAND slab_serial_read -Nrun ${Nrun} -o ${CMAKE_CURRENT_BINARY_DIR}/outserial.h5
+)
+set_tests_properties(READ_serial-Slab PROPERTIES
+TIMEOUT 15
+FIXTURES_REQUIRED write_serial-Slab
+REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/outserial.h5
+LABELS "serial_hdf5;read"
+RUN_SERIAL true
+)
 
 
-  add_test(NAME WRITE_MPI-Slab${lx1}
-  COMMAND runner -lx ${lx1} 4 8 -exe $<TARGET_FILE:slab_mpi_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${CMAKE_CURRENT_BINARY_DIR}/out${lx1}mpi.h5 -debug
-  )
-  set_tests_properties(WRITE_MPI-Slab${lx1} PROPERTIES
-  TIMEOUT 30
-  FIXTURES_SETUP write_mpi-Slab${lx1}
-  LABELS "mpi_hdf5;write"
-  RUN_SERIAL true
-  )
+add_test(NAME WRITE_MPI_root-Slab
+COMMAND runner -lx ${lx} -exe $<TARGET_FILE:slab_mpi_serial_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${CMAKE_CURRENT_BINARY_DIR}/outmpi_root.h5 -debug
+)
+set_tests_properties(WRITE_MPI_root-Slab PROPERTIES
+TIMEOUT 30
+FIXTURES_SETUP write_mpi_root-Slab
+LABELS "mpi_root;write"
+RUN_SERIAL true
+)
 
-  add_test(NAME READ_MPI-Slab${lx1}
-  COMMAND runner -lx ${lx1} 4 8 -exe $<TARGET_FILE:slab_mpi_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${CMAKE_CURRENT_BINARY_DIR}/out${lx1}mpi.h5 -debug
-  )
-  set_tests_properties(READ_MPI-Slab${lx1} PROPERTIES
-  TIMEOUT 30
-  FIXTURES_REQUIRED write_mpi-Slab${lx1}
-  REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/out${lx1}mpi.h5
-  LABELS "mpi_hdf5;read"
-  RUN_SERIAL true
-  )
+add_test(NAME READ_MPI_root-Slab
+COMMAND runner -lx ${lx} -exe $<TARGET_FILE:slab_mpi_serial_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${CMAKE_CURRENT_BINARY_DIR}/outmpi_root.h5 -debug
+)
+set_tests_properties(READ_MPI_root-Slab PROPERTIES
+TIMEOUT 30
+FIXTURES_REQUIRED write_mpi_root-Slab
+REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/outmpi_root.h5
+LABELS "mpi_root;read"
+RUN_SERIAL true
+)
 
-endforeach()
+
+add_test(NAME WRITE_MPI-Slab
+COMMAND runner -lx ${lx} -exe $<TARGET_FILE:slab_mpi_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${CMAKE_CURRENT_BINARY_DIR}/outmpi.h5 -debug
+)
+set_tests_properties(WRITE_MPI-Slab PROPERTIES
+TIMEOUT 30
+FIXTURES_SETUP write_mpi-Slab
+LABELS "mpi_hdf5;write"
+RUN_SERIAL true
+)
+
+add_test(NAME READ_MPI-Slab
+COMMAND runner -lx ${lx} -exe $<TARGET_FILE:slab_mpi_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${CMAKE_CURRENT_BINARY_DIR}/outmpi.h5 -debug
+)
+set_tests_properties(READ_MPI-Slab PROPERTIES
+TIMEOUT 30
+FIXTURES_REQUIRED write_mpi-Slab
+REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/outmpi.h5
+LABELS "mpi_hdf5;read"
+RUN_SERIAL true
+)
 
 
 find_package(Python COMPONENTS Interpreter)
@@ -94,14 +92,14 @@ if(NOT Python_FOUND)
   return()
 endif()
 
-set(pyargs ${PROJECT_SOURCE_DIR}/scripts/bench_slab.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -B $<TARGET_FILE_DIR:slab_mpi_write> -Nrun 1 -n 16 4 8)
+set(pyargs ${PROJECT_SOURCE_DIR}/scripts/bench_slab.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -B $<TARGET_FILE_DIR:slab_mpi_write> -Nrun ${Nrun} -lx ${lx})
 add_test(NAME PythonRunner COMMAND Python::Interpreter ${pyargs})
 set_tests_properties(PythonRunner PROPERTIES
 FIXTURES_SETUP PyRun_fxt
 TIMEOUT 60
 )
 
-add_test(NAME Plotter COMMAND Python::Interpreter ${PROJECT_SOURCE_DIR}/scripts/bench_plot.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -n 16 4 8)
+add_test(NAME Plotter COMMAND Python::Interpreter ${PROJECT_SOURCE_DIR}/scripts/bench_plot.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -lx ${lx})
 set_tests_properties(Plotter PROPERTIES
 FIXTURES_REQUIRED PyRun_fxt
 TIMEOUT 30
