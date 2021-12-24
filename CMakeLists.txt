@@ -19,6 +19,9 @@ include(cmake/libraries.cmake)
 include(cmake/hwloc-fortran.cmake)
 
 find_package(HDF5 COMPONENTS Fortran parallel REQUIRED)
+if(HDF5_VERSION VERSION_LESS 1.10.2)
+  message(WARNING "HDF5 >= 1.10.2 is required for MPI-HDF5")
+endif()
 
 add_subdirectory(src)
 
