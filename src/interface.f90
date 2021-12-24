@@ -150,6 +150,14 @@ end interface
 
 
 interface !< read.f90
+
+module subroutine h5open_read(self, dname, dims, filespace, memspace, dset_id, xfer_id)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+integer(HSIZE_T), intent(in) :: dims(:)
+integer(HID_T), intent(out) :: filespace, memspace, dset_id, xfer_id
+end subroutine h5open_read
+
 module integer function get_class(self, dname)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
@@ -500,6 +508,7 @@ call h5ltget_dataset_info_f(self%file_id, dname, dims=dset_dims, &
     type_class=type_class, type_size=type_size, errcode=ierr)
 if (ierr/=0) error stop 'h5fortran:shape_check: get_dataset_info ' // dname // ' read ' // self%filename
 
+if(self%use_mpi) return
 
 if(any(int(dims, int64) /= dset_dims)) then
   write(stderr,*) 'h5fortran:shape_check: shape mismatch ' // dname // ' = ', dset_dims, '  variable shape =', dims

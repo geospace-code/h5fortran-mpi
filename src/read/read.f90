@@ -11,12 +11,7 @@ implicit none (type, external)
 contains
 
 
-subroutine h5open_read(self, dname, dims, filespace, dset_id, xfer_id)
-
-class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: dname
-integer(HSIZE_T), intent(in) :: dims(:)
-integer(HID_T), intent(out) :: filespace, dset_id, xfer_id
+module procedure h5open_read
 
 integer(HSIZE_T), dimension(size(dims)) :: cnt, stride, blk, offset, dset_dims
 
@@ -24,6 +19,7 @@ integer :: ierr, mpi_id
 integer(HID_T) :: plist_id
 
 filespace = H5S_ALL_F
+memspace = H5S_ALL_F
 plist_id = H5P_DEFAULT_F
 xfer_id = H5P_DEFAULT_F
 
@@ -31,6 +27,15 @@ call hdf_shape_check(self, dname, dims, dset_dims)
 
 call h5dopen_f(self%file_id, dname, dset_id, ierr)
 if(ierr /= 0) error stop 'h5open_read: open ' // dname // ' from ' // self%filename
+
+!> create dataspace
+if(self%use_mpi) then
+  call h5screate_simple_f(rank=size(dset_dims), dims=dset_dims, space_id=filespace, hdferr=ierr)
+  if (ierr/=0) error stop "h5screate_simple:filespace " // dname // " " // self%filename
+
+  call h5screate_simple_f(rank=size(dims), dims=dims, space_id=memspace, hdferr=ierr)
+  if (ierr/=0) error stop "h5screate_simple:memspace " // dname // " " // self%filename
+endif
 
 if (self%use_mpi) then
   !! Each process defines dataset in memory and reads from hyperslab in the file.
@@ -64,7 +69,8 @@ if (self%use_mpi) then
   ! call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_INDEPENDENT_F, ierr)
 endif
 
-end subroutine h5open_read
+end procedure h5open_read
+
 
 module procedure get_class
 

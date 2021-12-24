@@ -2,11 +2,9 @@ integer(HSIZE_T) :: dims(rank(value))
 integer(HID_T) :: dset_id, file_space_id, mem_space_id, xfer_id
 integer :: dclass, ier
 
-mem_space_id = H5S_ALL_F
-
 dims = shape(value, HSIZE_T)
 
-call h5open_read(self, dname, dims, file_space_id, dset_id, xfer_id)
+call h5open_read(self, dname, dims, file_space_id, mem_space_id, dset_id, xfer_id)
 
 call get_dset_class(self, dname, dclass, dset_id)
 
@@ -33,6 +31,6 @@ elseif(dclass == H5T_INTEGER_F) then
 else
   error stop 'h5fortran:reader: non-handled datatype--please reach out to developers.'
 end if
-if(ier/=0) error stop 'h5fortran:reader: reading ' // dname // ' from ' // self%filename
+if(ier/=0) error stop 'h5fortran:reader: h5dread_f ' // dname // ' from ' // self%filename
 
 call hdf_wrapup(file_space_id, mem_space_id, dset_id, xfer_id)
