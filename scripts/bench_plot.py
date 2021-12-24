@@ -37,7 +37,7 @@ def plot_time(t: pd.DataFrame) -> tuple:
         t[c].plot(ax=ax, label=c, marker=".")
 
     ax.set_xlabel("Compression Level")
-    ax.set_ylabel("Wallclock Time (seconds)")
+    ax.set_ylabel("Wallclock Time (milliseconds)")
     ax.legend(loc="best")
 
     return fig, ax
