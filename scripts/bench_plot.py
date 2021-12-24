@@ -72,7 +72,7 @@ def get_bench(
             h5fn = data_dir / f"{t}_{tail}.h5.read_stat.h5"
             try:
                 with h5py.File(h5fn, "r") as f:
-                    ca = f["/comp_lvl"][()]
+                    # read benchmarks refer to write compression level
                     data["read_dr"][t][ca] = f["/median_MBsec"][()]
                     data["read_t"][t][ca] = np.median(f["/t_ms"][:])
 
