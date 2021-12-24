@@ -15,7 +15,7 @@ def cli() -> dict[str, T.Any]:
         default=R / "../build/src/tests",
     )
     p.add_argument("-o", "--datadir", help="data directory", default=R / "data")
-    p.add_argument("-lx", help="total size of slab", type=int, nargs=3, default=[8192, 32, 64])
+    p.add_argument("-lx", help="total size of slab", type=int, nargs=3, default=[4096, 256, 512])
     p.add_argument("-Nrun", help="number of test runs", type=int, default=5)
     p.add_argument("-np", help="number of MPI processes", type=int)
     p.add_argument("-k", "--keep", help="keep output files", action="store_true")
@@ -28,7 +28,7 @@ def cli() -> dict[str, T.Any]:
         default=["serial", "mpi_root", "mpi_hdf5"],
     )
     p.add_argument(
-        "-c", "--comp", help="compression levels", nargs="+", type=int, default=[0, 1, 3, 5, 7, 9]
+        "-c", "--comp", help="compression levels", nargs="+", type=int, default=[0, 1, 3, 9]
     )
     P = p.parse_args()
 
