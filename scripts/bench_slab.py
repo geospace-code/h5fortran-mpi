@@ -109,7 +109,7 @@ def mpi_runner(
     return time.monotonic() - tic
 
 
-def write_bench(
+def slab_bench(
     tests: list[str],
     comp_lvls: list[int],
     keep: bool,
@@ -179,6 +179,7 @@ def write_bench(
         if "mpi_hdf5" in tests:
             # HDF5-MPI layer (most efficient general I/O approach for parallel computation)
             mpih5fn = data_dir / f"mpi_hdf5_{tail}.h5"
+
             write_times["mpi_hdf5"][c] = mpi_runner(
                 "slab_mpi_write",
                 bin_dir,
@@ -188,6 +189,16 @@ def write_bench(
                 comp_lvl=c,
                 np=np,
             )
+
+            read_times["mpi_hdf5"][c] = mpi_runner(
+                "slab_mpi_read",
+                bin_dir,
+                mpih5fn,
+                Nrun,
+                lx,
+                np=np,
+            )
+
             if not keep:
                 mpih5fn.unlink()
 
@@ -214,6 +225,6 @@ if __name__ == "__main__":
 
     P = cli()
 
-    write_bench(
+    slab_bench(
         P["tests"], P["comp"], P["keep"], P["lx"], P["Nrun"], P["np"], P["bin_dir"], P["data_dir"]
     )
