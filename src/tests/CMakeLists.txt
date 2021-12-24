@@ -92,6 +92,22 @@ if(NOT Python_FOUND)
   return()
 endif()
 
+if(NOT DEFINED PyOK)
+  execute_process(COMMAND Python::Interpreter -c "import h5py,numpy,pandas,matplotlib"
+  TIMEOUT 10
+  RESULT_VARIABLE ret
+  )
+  if(ret EQUAL 0)
+    set(PyOK true CACHE BOOL "python ready")
+  else()
+    set(PyOK false CACHE BOOL "Python not ready")
+  endif()
+endif()
+
+if(NOT PyOK)
+  return()
+endif()
+
 set(pyargs ${PROJECT_SOURCE_DIR}/scripts/bench_slab.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -B $<TARGET_FILE_DIR:slab_mpi_write> -Nrun ${Nrun} -lx ${lx})
 add_test(NAME PythonRunner COMMAND Python::Interpreter ${pyargs})
 set_tests_properties(PythonRunner PROPERTIES
