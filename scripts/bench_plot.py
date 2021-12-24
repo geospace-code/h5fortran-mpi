@@ -67,7 +67,7 @@ def get_bench(
                     data["write_dr"][t][ca] = f["/median_MBsec"][()]
                     data["write_t"][t][ca] = np.median(f["/t_ms"][:])
             except FileNotFoundError:
-                print(f"ERROR: {t} comp_lvl {c}: write benchmark {h5fn}")
+                print(f"ERROR: {t}: write benchmark {h5fn}")
 
             h5fn = data_dir / f"{t}_{tail}.h5.read_stat.h5"
             try:
@@ -84,7 +84,7 @@ def get_bench(
                         mpi_api = f["/mpi_api_version"][:]
                         data["mpi_lib_version"] = f["/mpi_lib_version"].asstr()[()]
             except FileNotFoundError:
-                print(f"ERROR: {t} comp_lvl {c}: read benchmark {h5fn}")
+                print(f"ERROR: {t}: read benchmark {h5fn}")
 
     if hdf5_vers is not None:
         data["hdf5version"] = f"{hdf5_vers[0]}.{hdf5_vers[1]}.{hdf5_vers[2]}"
