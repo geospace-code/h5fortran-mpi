@@ -82,7 +82,7 @@ def get_bench(
                         data["os"] = f["/os"].asstr()[()]
                         hdf5_vers = f["/hdf5version"][:]
                         mpi_api = f["/mpi_api_version"][:]
-                        data["mpi_lib_version"] = f["/mpi_lib_version"].asstr()[()]
+                        data["mpi_lib_version"] = f["/mpi_lib_version"].asstr()[()][:16]  # limit length for title
             except FileNotFoundError:
                 print(f"ERROR: {t}: read benchmark {h5fn}")
 
