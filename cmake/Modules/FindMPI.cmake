@@ -463,7 +463,8 @@ if(WIN32)
     set(mpi_libname msmpi)
   endif()
 elseif(DEFINED ENV{I_MPI_ROOT})
-  set(mpi_libname mpi)
+  set(mpi_libname mpifort mpi)
+  # Intel MPI on Linux has lib/libmpifort.so
 else()
   set(mpi_libname
   mpi_usempif08 mpi_usempi_ignore_tkr mpi_mpifh
