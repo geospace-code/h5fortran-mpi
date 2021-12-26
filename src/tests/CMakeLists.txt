@@ -124,6 +124,7 @@ FIXTURES_SETUP PyRun_fxt
 LABELS python
 TIMEOUT 60
 DISABLED ${PySkip}
+RUN_SERIAL true
 )
 
 add_test(NAME Plotter COMMAND Python::Interpreter ${PROJECT_SOURCE_DIR}/scripts/bench_plot.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -lx ${lx})

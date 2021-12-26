@@ -119,8 +119,8 @@ main : do i = 1, Nrun
 
   call h5%open(trim(h5fn), action="w", mpi=.true., comp_lvl=comp_lvl, debug=debug)
 
-  if(test2d) call h5%write("/A2", A2)
-  call h5%write("/A3", A3)
+  if(test2d) call h5%write("/A2", A2, [lx1, lx2])
+  call h5%write("/A3", A3, [lx1, lx2, lx3])
 
   call h5%close()
 

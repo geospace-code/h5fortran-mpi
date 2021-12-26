@@ -4,7 +4,14 @@ integer :: ier
 
 dims = shape(value, HSIZE_T)
 if(present(dset_dims)) then
-  dims_dset = dset_dims
+  select type (dset_dims)
+  type is (integer(HSIZE_T))
+    dims_dset = dset_dims
+  type is (integer(int32))
+    dims_dset = dset_dims
+  class default
+    error stop "write: expecting dset_dimes to be integer"
+  end select
 else
   if(self%use_mpi) error stop "h5mpi:write: must specify dset_dims if using MPI"
   !! FIXME: there may be a way to do indepedent write rather than simply fail
