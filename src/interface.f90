@@ -350,15 +350,22 @@ self%is_open = .false.
 end subroutine ph5close
 
 
-subroutine mpi_hyperslab(dims, dset_dims, dset_id, filespace, dname)
+subroutine mpi_hyperslab(dims, dset_dims, dset_id, filespace, memspace, dname)
 
 integer(HSIZE_T), dimension(:), intent(in) :: dims, dset_dims
 integer(HID_T), intent(in) :: dset_id
-integer(HID_T), intent(inout) :: filespace
+integer(HID_T), intent(inout) :: filespace, memspace
 character(*), intent(in) :: dname !< for error messages
 
 integer(HSIZE_T), dimension(size(dims)) :: cnt, stride, blk, offset
 integer :: ierr, mpi_id
+
+
+if(filespace == H5S_ALL_F) then
+  !> create dataspace
+  call h5screate_simple_f(rank=size(dset_dims), dims=dset_dims, space_id=filespace, hdferr=ierr)
+  if (ierr/=0) error stop "h5screate_simple:filespace " // dname
+endif
 
 !> Select hyperslab in the file.
 call h5dget_space_f(dset_id, filespace, ierr)
@@ -384,6 +391,10 @@ call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
   stride=stride, &
   block=blk)
 if (ierr/=0) error stop "h5sselect_hyperslab: " // dname
+
+!> create memory dataspace
+call h5screate_simple_f(rank=size(dims), dims=dims, space_id=memspace, hdferr=ierr)
+if (ierr/=0) error stop "h5screate_simple:memspace " // dname
 
 end subroutine mpi_hyperslab
 

@@ -46,11 +46,7 @@ if (ierr/=0) error stop "h5pclose: " // dname // ' in ' // self%filename
 
 if(.not. self%use_mpi) return
 
-call mpi_hyperslab(dims, dset_dims, dset_id, filespace, dname)
-
-!> create memory dataspace
-call h5screate_simple_f(rank=size(dims), dims=dims, space_id=memspace, hdferr=ierr)
-if (ierr/=0) error stop "h5screate_simple:memspace " // dname // " " // self%filename
+call mpi_hyperslab(dims, dset_dims, dset_id, filespace, memspace, dname)
 
 xfer_id = mpi_collective(dname)
 

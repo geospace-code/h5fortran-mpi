@@ -29,14 +29,7 @@ if(ierr /= 0) error stop 'h5open_read: open ' // dname // ' from ' // self%filen
 
 if(.not. self%use_mpi) return
 
-!> create dataspace
-call h5screate_simple_f(rank=size(dset_dims), dims=dset_dims, space_id=filespace, hdferr=ierr)
-if (ierr/=0) error stop "h5screate_simple:filespace " // dname // " " // self%filename
-
-call h5screate_simple_f(rank=size(dims), dims=dims, space_id=memspace, hdferr=ierr)
-if (ierr/=0) error stop "h5screate_simple:memspace " // dname // " " // self%filename
-
-call mpi_hyperslab(dims, dset_dims, dset_id, filespace, dname)
+call mpi_hyperslab(dims, dset_dims, dset_id, filespace, memspace, dname)
 
 xfer_id = mpi_collective(dname)
 
