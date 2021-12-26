@@ -20,6 +20,7 @@ integer(HID_T) :: plist_id
 
 plist_id = H5P_DEFAULT_F
 xfer_id = H5P_DEFAULT_F
+memspace = H5S_ALL_F
 
 if(.not.self%is_open) error stop 'h5fortran:write: file handle is not open: ' // self%filename
 
@@ -59,8 +60,6 @@ if (ierr/=0) error stop "h5screate_simple:filespace " // dname // " " // self%fi
 if(self%use_mpi) then
   call h5screate_simple_f(rank=size(dims), dims=dims, space_id=memspace, hdferr=ierr)
   if (ierr/=0) error stop "h5screate_simple:memspace " // dname // " " // self%filename
-else
-  memspace = H5S_ALL_F
 endif
 
 !> create dataset
