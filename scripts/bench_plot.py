@@ -76,7 +76,7 @@ def get_bench(
                     data["read_dr"][t][ca] = f["/median_MBsec"][()]
                     data["read_t"][t][ca] = np.median(f["/t_ms"][:])
 
-                    if "Ncpu" not in data:
+                    if "Ncpu" not in data and "mpi" in t:
                         data["Ncpu"] = f["/Ncpu"][()]
                         data["compiler"] = f["/compiler"].asstr()[()]
                         data["os"] = f["/os"].asstr()[()]
