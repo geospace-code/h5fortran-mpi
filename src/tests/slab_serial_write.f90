@@ -27,13 +27,9 @@ logical :: test2d = .false.
 integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
 
-integer(HSIZE_T) :: dims_full(3)
-
 call get_simsize(lx1, lx2, lx3)
 
 print '(a,1x,i0,1x,i0,1x,i0)', 'Serial: lx1, lx2, lx3 =', lx1, lx2, lx3
-
-dims_full = [lx1, lx2, lx3]
 
 !> output HDF5 file to write
 Nrun = 1
@@ -100,11 +96,11 @@ main : do i = 1, Nrun
   call h5%open(trim(outfn), action="w", mpi=.false., comp_lvl=comp_lvl, debug=debug)
 
   if(real_bits == 32) then
-    if(test2d) call h5%write("/A2", S2, dims_full(:2))
-    call h5%write("/A3", S3, dims_full)
+    if(test2d) call h5%write("/A2", S2)
+    call h5%write("/A3", S3)
   elseif(real_bits == 64) then
-    if(test2d) call h5%write("/A2", D2, dims_full(:2))
-    call h5%write("/A3", D3, dims_full)
+    if(test2d) call h5%write("/A2", D2)
+    call h5%write("/A3", D3)
   endif
 
   call h5%close()
@@ -116,6 +112,7 @@ end do main
 
 !> RESULTS
 
-call print_timing(1, h5%comp_lvl, real_bits, int(dims_full), t_elapsed, h5%filesize(), trim(outfn) // ".write_stat.h5")
+call print_timing(1, h5%comp_lvl, real_bits, [lx1, lx2, lx3], t_elapsed, h5%filesize(), &
+ trim(outfn) // ".write_stat.h5")
 
 end program

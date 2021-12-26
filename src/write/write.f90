@@ -53,14 +53,9 @@ if(size(dims) >= 2) then
   if (ierr/=0) error stop 'ERROR:h5fortran:create: problem setting deflate on ' // dname
 endif
 
-!> create dataspace
+!> create dataset dataspace
 call h5screate_simple_f(rank=size(dset_dims), dims=dset_dims, space_id=filespace, hdferr=ierr)
 if (ierr/=0) error stop "h5screate_simple:filespace " // dname // " " // self%filename
-
-if(self%use_mpi) then
-  call h5screate_simple_f(rank=size(dims), dims=dims, space_id=memspace, hdferr=ierr)
-  if (ierr/=0) error stop "h5screate_simple:memspace " // dname // " " // self%filename
-endif
 
 !> create dataset
 call h5dcreate_f(self%file_id, dname, dtype, space_id=filespace, dset_id=dset_id, hdferr=ierr, dcpl_id=plist_id)
@@ -81,6 +76,10 @@ call h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, &
   stride=stride, &
   block=blk)
 if (ierr/=0) error stop "h5sselect_hyperslab: " // dname // " " // self%filename
+
+!> create memory dataspace
+call h5screate_simple_f(rank=size(dims), dims=dims, space_id=memspace, hdferr=ierr)
+if (ierr/=0) error stop "h5screate_simple:memspace " // dname // " " // self%filename
 
 xfer_id = mpi_collective(dname)
 

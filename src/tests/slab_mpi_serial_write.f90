@@ -34,8 +34,6 @@ logical :: test2d = .false.
 integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
 
-integer(HSIZE_T) :: dims_full(rank(A3))
-
 call mpi_init(ierr)
 if(ierr/=0) error stop "mpi_init"
 
@@ -97,8 +95,6 @@ endif
 
 if (debug) print '(a,i0,a,i0,1x,i0,1x,i0)', 'MPI worker: ', mpi_id, ' lx1, lx2, lx3 = ', lx1, lx2, lx3
 
-dims_full = [lx1, lx2, lx3]
-
 !! 1-D decompose in rows (neglect ghost cells)
 dx1 = lx1 / Nmpi
 
@@ -157,8 +153,8 @@ main : do j = 1, Nrun
     !! Root: serial write HDF5 file
     call h5%open(trim(outfn), action="w", mpi=.false., comp_lvl=comp_lvl, debug=debug)
 
-    if(test2d) call h5%write("/A2", A2, dims_full(:2))
-    call h5%write("/A3", A3, dims_full)
+    if(test2d) call h5%write("/A2", A2)
+    call h5%write("/A3", A3)
 
     call h5%close()
 
@@ -175,11 +171,11 @@ if(mpi_id == mpi_root_id) then
 
   if(test2d) then
     call h5%shape("/A2", d2)
-    if(any(d2 /= dims_full(:2))) error stop "slab_mpi: file shape 2D mismatch"
+    if(any(d2 /= [lx1, lx2])) error stop "slab_mpi: file shape 2D mismatch"
   endif
 
   call h5%shape("/A3", d3)
-  if(any(d3 /= dims_full)) error stop "slab_mpi: file shape 3D mismatch"
+  if(any(d3 /= [lx1, lx2, lx3])) error stop "slab_mpi: file shape 3D mismatch"
 
   call h5%close()
 endif
@@ -187,7 +183,8 @@ endif
 !> RESULTS
 
 if(mpi_id == mpi_root_id) then
-  call print_timing(Nmpi, h5%comp_lvl, storage_size(A3), int(dims_full), t_elapsed, h5%filesize(), trim(outfn) // ".write_stat.h5")
+  call print_timing(Nmpi, h5%comp_lvl, storage_size(A3), int([lx1, lx2, lx3]), t_elapsed, h5%filesize(), &
+    trim(outfn) // ".write_stat.h5")
 endif
 
 if (debug) print '(a,i0)', "mpi finalize: worker: ", mpi_id
