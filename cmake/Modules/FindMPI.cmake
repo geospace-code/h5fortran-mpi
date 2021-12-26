@@ -248,7 +248,9 @@ endif(MPI_C_COMPILER)
 find_library(MPI_C_LIBRARY
   NAMES ${mpi_libname}
   HINTS ${mpi_libdirs} ${mpi_root} ${pc_mpi_c_LIBRARY_DIRS} ${pc_mpi_c_LIBDIR} ${_hints}
+  PATH_SUFFIXES lib lib/release
 )
+# oneAPI MPI libmpi.so is under lib/release on Linux
 
 list(APPEND MPI_C_LIBRARY ${MPI_C_LIBRARY_fullpath})
 
