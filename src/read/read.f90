@@ -12,9 +12,9 @@ contains
 
 module procedure h5open_read
 
-integer(HSIZE_T), dimension(size(dims)) :: cnt, stride, blk, offset, dset_dims
+integer(HSIZE_T), dimension(size(dims)) :: dset_dims
 
-integer :: ierr, mpi_id
+integer :: ierr
 integer(HID_T) :: plist_id
 
 filespace = H5S_ALL_F
@@ -36,30 +36,7 @@ if (ierr/=0) error stop "h5screate_simple:filespace " // dname // " " // self%fi
 call h5screate_simple_f(rank=size(dims), dims=dims, space_id=memspace, hdferr=ierr)
 if (ierr/=0) error stop "h5screate_simple:memspace " // dname // " " // self%filename
 
-!! Each process defines dataset in memory and reads from hyperslab in the file.
-call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
-if(ierr /= 0) error stop "h5open_read: could not get MPI rank"
-
-!> chunk choices are arbitrary, but must be the same on all processes
-!> TODO: only chunking along first dim
-cnt(1) = dims(1)
-cnt(2:) = 1
-offset(1) = mpi_id*cnt(1)
-offset(2:) = 0
-stride = 1
-blk(1) = 1
-blk(2:) = dset_dims(2:)
-
-!> Select hyperslab in the file.
-call h5dget_space_f(dset_id, filespace, ierr)
-if (ierr/=0) error stop "h5dget_space: " // dname // " " // self%filename
-
-call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
-  start=offset, &
-  count=cnt, hdferr=ierr, &
-  stride=stride, &
-  block=blk)
-if (ierr/=0) error stop "h5sselect_hyperslab: " // dname // " " // self%filename
+call mpi_hyperslab(dims, dset_dims, dset_id, filespace, dname)
 
 xfer_id = mpi_collective(dname)
 

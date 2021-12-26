@@ -10,7 +10,7 @@ if(present(dset_dims)) then
   type is (integer(int32))
     dims_dset = dset_dims
   class default
-    error stop "write: expecting dset_dimes to be integer"
+    error stop "write: expecting dset_dims to be integer"
   end select
 else
   if(self%use_mpi) error stop "h5mpi:write: must specify dset_dims if using MPI"
