@@ -36,7 +36,7 @@ add_test(NAME READ_serial-Slab
 COMMAND slab_serial_read -Nrun ${Nrun} -o ${serialfn}
 )
 set_tests_properties(READ_serial-Slab PROPERTIES
-TIMEOUT 15
+TIMEOUT 10
 FIXTURES_REQUIRED write_serial-Slab
 REQUIRED_FILES ${serialfn}
 LABELS "serial_hdf5;read"
@@ -62,7 +62,7 @@ add_test(NAME READ_MPI_root-Slab
 COMMAND runner -lx ${lx} -exe $<TARGET_FILE:slab_mpi_serial_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpi_rootfn} -debug
 )
 set_tests_properties(READ_MPI_root-Slab PROPERTIES
-TIMEOUT 30
+TIMEOUT 10
 FIXTURES_REQUIRED write_mpi_root-Slab
 REQUIRED_FILES ${mpi_rootfn}
 LABELS "mpi_root;read"
@@ -88,7 +88,7 @@ add_test(NAME READ_MPI-Slab
 COMMAND runner -lx ${lx} -exe $<TARGET_FILE:slab_mpi_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpifn} -debug
 )
 set_tests_properties(READ_MPI-Slab PROPERTIES
-TIMEOUT 30
+TIMEOUT 10
 FIXTURES_REQUIRED write_mpi-Slab
 REQUIRED_FILES ${mpifn}
 LABELS "mpi_hdf5;read"
