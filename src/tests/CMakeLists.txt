@@ -121,6 +121,7 @@ set(pyargs ${PROJECT_SOURCE_DIR}/scripts/bench_slab.py --datadir ${CMAKE_CURRENT
 add_test(NAME PythonRunner COMMAND Python::Interpreter ${pyargs})
 set_tests_properties(PythonRunner PROPERTIES
 FIXTURES_SETUP PyRun_fxt
+LABELS python
 TIMEOUT 60
 DISABLED ${PySkip}
 )
@@ -128,6 +129,7 @@ DISABLED ${PySkip}
 add_test(NAME Plotter COMMAND Python::Interpreter ${PROJECT_SOURCE_DIR}/scripts/bench_plot.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -lx ${lx})
 set_tests_properties(Plotter PROPERTIES
 FIXTURES_REQUIRED PyRun_fxt
+LABELS python
 TIMEOUT 30
 DISABLED ${PySkip}
 )

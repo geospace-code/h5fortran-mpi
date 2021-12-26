@@ -65,28 +65,24 @@ endif
 !> create dataset
 call h5dcreate_f(self%file_id, dname, dtype, space_id=filespace, dset_id=dset_id, hdferr=ierr, dcpl_id=plist_id)
 if (ierr/=0) error stop "h5dcreate: " // dname // " " // self%filename
+
 call h5pclose_f(plist_id, ierr)
-if (ierr/=0) error stop "h5fortran:h5pclose: " // dname // ' in ' // self%filename
+if (ierr/=0) error stop "h5pclose: " // dname // ' in ' // self%filename
 
-if(self%use_mpi) then
-  !> Select hyperslab in the file.
-  call h5dget_space_f(dset_id, filespace, ierr)
-  call h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, &
-    start=offset, &
-    count=cnt, hdferr=ierr, &
-    stride=stride, &
-    block=blk)
-  if (ierr/=0) error stop "h5sselect_hyperslab: " // dname // " " // self%filename
+if(.not. self%use_mpi) return
 
-  !! Create property list for collective dataset write
-  call h5pcreate_f(H5P_DATASET_XFER_F, xfer_id, ierr)
-  call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_COLLECTIVE_F, ierr)
+!> Select hyperslab in the file.
+call h5dget_space_f(dset_id, filespace, ierr)
+if (ierr/=0) error stop "h5dget_space: " // dname // " " // self%filename
 
-  ! For independent write use
-  ! call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_INDEPENDENT_F, ierr)
-endif
-if (ierr/=0) error stop "h5fortran:create: final " // dname // ' in ' // self%filename
+call h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, &
+  start=offset, &
+  count=cnt, hdferr=ierr, &
+  stride=stride, &
+  block=blk)
+if (ierr/=0) error stop "h5sselect_hyperslab: " // dname // " " // self%filename
 
+xfer_id = mpi_collective(dname)
 
 end procedure hdf_create
 

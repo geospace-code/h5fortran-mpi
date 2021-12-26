@@ -67,7 +67,7 @@ end type mpi_tags
 
 private
 public :: mpi_h5comm, hdf5_file, mpi_tags, &
-check, hdf_wrapup, hdf_rank_check, hdf_shape_check, &
+check, hdf_wrapup, hdf_rank_check, hdf_shape_check, mpi_collective, &
 hdf5version
 
 interface !< write.f90
@@ -346,6 +346,24 @@ self%file_id = 0
 self%is_open = .false.
 
 end subroutine ph5close
+
+
+integer(HID_T) function mpi_collective(dname) result(xfer_id)
+
+character(*), intent(in) :: dname !< just for error messages
+integer :: ierr
+
+!! Create property list for collective dataset operations
+call h5pcreate_f(H5P_DATASET_XFER_F, xfer_id, ierr)
+if (ierr/=0) error stop "h5pcreate dataset xfer: " // dname
+
+call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_COLLECTIVE_F, ierr)
+if (ierr/=0) error stop "h5pset_dxpl_mpio collective: " // dname
+
+! For independent dataset operations
+! call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_INDEPENDENT_F, ierr)
+
+end function mpi_collective
 
 
 function hdf5version() result(v)

@@ -53,6 +53,8 @@ blk(2:) = dset_dims(2:)
 
 !> Select hyperslab in the file.
 call h5dget_space_f(dset_id, filespace, ierr)
+if (ierr/=0) error stop "h5dget_space: " // dname // " " // self%filename
+
 call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
   start=offset, &
   count=cnt, hdferr=ierr, &
@@ -60,13 +62,7 @@ call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
   block=blk)
 if (ierr/=0) error stop "h5sselect_hyperslab: " // dname // " " // self%filename
 
-!! Create property list for collective dataset operations
-call h5pcreate_f(H5P_DATASET_XFER_F, xfer_id, ierr)
-call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_COLLECTIVE_F, ierr)
-
-! For independent dataset operations
-! call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_INDEPENDENT_F, ierr)
-
+xfer_id = mpi_collective(dname)
 
 end procedure h5open_read
 
