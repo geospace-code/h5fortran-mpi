@@ -16,6 +16,11 @@ target_link_libraries(slab_serial_write PRIVATE h5mpi cli perf test_utils kernel
 add_executable(slab_serial_read slab_serial_read.f90)
 target_link_libraries(slab_serial_read PRIVATE h5mpi cli perf HDF5::HDF5 MPI::MPI_Fortran)
 
+find_program(H5DIFF
+NAMES h5diff
+HINTS ${HDF5_ROOT}
+)
+
 
 set(Nrun 2)
 
@@ -48,7 +53,7 @@ set_tests_properties(READ_serial-cleanup PROPERTIES
 FIXTURES_CLEANUP "write_serial-Slab;write_mpi_root-Slab;write_mpi-Slab"
 TIMEOUT 5)
 
-
+# --- MPI-ROOT
 set(mpi_rootfn ${CMAKE_CURRENT_BINARY_DIR}/mpi_root.h5)
 add_test(NAME WRITE_MPI_root-Slab
 COMMAND runner -lx ${lx} -exe $<TARGET_FILE:slab_mpi_serial_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpi_rootfn} -debug
@@ -60,12 +65,24 @@ LABELS "mpi_root;write"
 RUN_SERIAL true
 )
 
+add_test(NAME COMPARE_MPI_root-Slab
+COMMAND ${H5DIFF} ${mpi_rootfn} ${serialfn}
+)
+set_tests_properties(COMPARE_MPI_root-Slab PROPERTIES
+FIXTURES_REQUIRED "write_serial-Slab;write_mpi_root-Slab"
+FIXTURES_SETUP compare_mpi_root-Slab
+REQUIRED_FILES "${mpi_rootfn};${serialfn}"
+LABELS "mpi_root;compare"
+TIMEOUT 10
+DISABLED $<NOT:$<BOOL:${H5DIFF}>>
+)
+
 add_test(NAME READ_MPI_root-Slab
 COMMAND runner -lx ${lx} -exe $<TARGET_FILE:slab_mpi_serial_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpi_rootfn} -ref ${serialfn}
 )
 set_tests_properties(READ_MPI_root-Slab PROPERTIES
 TIMEOUT 10
-FIXTURES_REQUIRED "write_serial-Slab;write_mpi_root-Slab"
+FIXTURES_REQUIRED "compare_mpi_root-Slab;write_serial-Slab;write_mpi_root-Slab"
 REQUIRED_FILES "${mpi_rootfn};${serialfn}"
 LABELS "mpi_root;read"
 RUN_SERIAL true
@@ -74,6 +91,7 @@ RUN_SERIAL true
 add_test(NAME READ_MPI_root-cleanup COMMAND ${CMAKE_COMMAND} -E rm ${mpi_rootfn})
 set_tests_properties(READ_MPI_root-cleanup PROPERTIES FIXTURES_CLEANUP write_mpi_root-Slab TIMEOUT 5)
 
+# --- MPI-HDF5
 
 set(mpifn ${CMAKE_CURRENT_BINARY_DIR}/outmpi.h5)
 add_test(NAME WRITE_MPI-Slab
@@ -86,12 +104,24 @@ LABELS "mpi_hdf5;write"
 RUN_SERIAL true
 )
 
+add_test(NAME COMPARE_MPI-Slab
+COMMAND ${H5DIFF} ${mpifn} ${serialfn}
+)
+set_tests_properties(COMPARE_MPI-Slab PROPERTIES
+FIXTURES_REQUIRED "write_serial-Slab;write_mpi-Slab"
+FIXTURES_SETUP compare_mpi_hdf5-Slab
+REQUIRED_FILES "${mpifn};${serialfn}"
+LABELS "mpi_hdf5;compare"
+TIMEOUT 10
+DISABLED $<NOT:$<BOOL:${H5DIFF}>>
+)
+
 add_test(NAME READ_MPI-Slab
 COMMAND runner -lx ${lx} -exe $<TARGET_FILE:slab_mpi_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpifn} -ref ${serialfn}
 )
 set_tests_properties(READ_MPI-Slab PROPERTIES
 TIMEOUT 10
-FIXTURES_REQUIRED "write_mpi-Slab;write_serial-Slab"
+FIXTURES_REQUIRED "compare_mpi_hdf5-Slab;write_mpi-Slab;write_serial-Slab"
 REQUIRED_FILES "${mpifn};${serialfn}"
 LABELS "mpi_hdf5;read"
 RUN_SERIAL true
