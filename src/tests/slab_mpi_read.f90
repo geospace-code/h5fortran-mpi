@@ -17,7 +17,9 @@ external :: mpi_bcast, mpi_init, mpi_finalize
 type(hdf5_file) :: h5
 
 real, allocatable :: A2(:,:), A3(:,:,:)
-character(1000) :: argv, h5fn
+real, allocatable :: t2(:,:), t3(:,:,:)
+
+character(1000) :: argv, h5fn, refh5fn
 
 integer :: ierr, lx1, lx2, lx3, dx1, i, comp_lvl, real_bits
 integer :: Nmpi, mpi_id, Nrun
@@ -37,8 +39,10 @@ if(ierr/=0) error stop "mpi_init"
 call mpi_comm_size(mpi_h5comm, Nmpi, ierr)
 call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
 
+tic = 0
 Nrun = 1
 h5fn = ""
+refh5fn = ""
 comp_lvl = 0
 
 do i = 1, command_argument_count()
@@ -48,6 +52,8 @@ do i = 1, command_argument_count()
   select case(argv)
   case("-o")
     call get_cli(i, argv, h5fn)
+  case("-ref")
+    call get_cli(i, argv, refh5fn)
   case("-Nrun")
     call get_cli(i, argv, Nrun)
   case("-realbits")
@@ -57,7 +63,8 @@ do i = 1, command_argument_count()
   end select
 end do
 
-if(len_trim(h5fn) == 0) error stop "please specify -o filename to write"
+if(len_trim(h5fn) == 0) error stop "please specify -o HDF5 filename to write"
+if(len_trim(refh5fn) == 0) error stop "please specify -ref reference HDF5 filename to read"
 
 allocate(t_elapsed(Nrun))
 
@@ -121,6 +128,24 @@ main : do i = 1, Nrun
   endif
 
 end do main
+
+!> Check vs. serial read
+if(mpi_id == mpi_root_id) then
+  if(test2d)  allocate(t2(lx1, lx2))
+  allocate(t3(lx1, lx2, lx3))
+
+  call h5%open(trim(refh5fn), action="r", mpi=.false.)
+
+  if(test2d) call h5%read("/A2", t2)
+  call h5%read("/A3", t3)
+
+  call h5%close()
+
+  if(test2d) then
+    if (any(abs(t2 - A2) > 0.1)) error stop "2D ref mismatch " // trim(refh5fn) // " /= " // trim(h5fn)
+  endif
+  if (any(abs(t3 - A3) > 0.1)) error stop "3D ref mismatch " // trim(refh5fn) // " /= " // trim(h5fn)
+endif
 
 !> RESULTS
 

@@ -8,7 +8,7 @@ use cli, only : get_cli, get_simsize
 implicit none (type, external)
 
 integer :: lid, lx1, lx2, lx3, Ncpu, ierr, Nrun, i, comp_lvl
-character(2000) :: buf, exe, mpiexec, outfn
+character(2000) :: buf, exe, mpiexec, outfn, refh5fn
 character(:), allocatable :: cmd
 logical :: exists
 
@@ -23,6 +23,7 @@ lid = -1
 mpiexec = "mpiexec"
 exe = ""
 outfn = ""
+refh5fn = ""
 
 do i = 1, command_argument_count()
   call get_command_argument(i, buf, status=ierr)
@@ -35,6 +36,8 @@ do i = 1, command_argument_count()
     call get_cli(i, buf, Nrun)
   case("-o")
     call get_cli(i, buf, outfn)
+  case("-ref")
+    call get_cli(i, buf, refh5fn)
   case("-np")
     call get_cli(i, buf, Ncpu)
   case("-exe")
@@ -66,13 +69,14 @@ print '(A,I0)', 'MPI images: ', lid
 !> run MPI-based executable
 !> need to quote executables in case they have spaces in the path.
 !> don't quote "exe" as this makes the CLI invalid syntax--don't have spaces in the exe path.
-write(buf, '(A1,A,A1,1X,A2,1X,I0,1X,A,1X,A3,1X,I0,1X,I0,1X,I0,1X,A5,1X,I0,1x,a5,1x,I1,1x,a2,1x,a)') &
+write(buf, '(A1,A,A1,1X,A2,1X,I0,1X,A,1X,A3,1X,I0,1X,I0,1X,I0,1X,A5,1X,I0,1x,a5,1x,I1,1x,a2,1x,a,1x,a4,1x,a)') &
   char(34), trim(mpiexec), char(34), '-n', lid, &
   trim(exe), &
   "-lx", lx1,lx2,lx3, &
   "-Nrun", Nrun, &
   "-comp", comp_lvl, &
-  "-o", trim(outfn)
+  "-o", trim(outfn), &
+  "-ref", trim(refh5fn)
 
 !! quotes are for mpiexec path with spaces
 cmd = trim(buf)
