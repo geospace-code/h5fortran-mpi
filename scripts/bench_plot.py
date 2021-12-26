@@ -82,13 +82,16 @@ def get_bench(
                         data["os"] = f["/os"].asstr()[()]
                         hdf5_vers = f["/hdf5version"][:]
                         mpi_api = f["/mpi_api_version"][:]
-                        data["mpi_lib_version"] = f["/mpi_lib_version"].asstr()[()][:16]  # limit length for title
+                        data["mpi_lib_version"] = f["/mpi_lib_version"].asstr()[()][:16]
+                        # limit length for title
             except FileNotFoundError:
                 print(f"ERROR: {t}: read benchmark {h5fn}")
 
-    if hdf5_vers is not None:
-        data["hdf5version"] = f"{hdf5_vers[0]}.{hdf5_vers[1]}.{hdf5_vers[2]}"
-        data["mpi_api_version"] = f"{mpi_api[0]}.{mpi_api[1]}"
+    if hdf5_vers is None:
+        raise FileNotFoundError(f"No data files were found in {data_dir}")
+
+    data["hdf5version"] = f"{hdf5_vers[0]}.{hdf5_vers[1]}.{hdf5_vers[2]}"
+    data["mpi_api_version"] = f"{mpi_api[0]}.{mpi_api[1]}"
 
     return data
 
