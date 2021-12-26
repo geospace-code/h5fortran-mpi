@@ -3,7 +3,7 @@ module h5mpi
 use, intrinsic :: iso_c_binding, only : C_NULL_CHAR
 use, intrinsic :: iso_fortran_env, only : real32, real64, int32, int64, stderr=>error_unit
 
-use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL
+use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL, mpi_comm_rank
 use hdf5, only : &
 HID_T, HSIZE_T, SIZE_T, &
 H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F, &
@@ -12,7 +12,7 @@ H5F_ACC_RDONLY_F, H5F_ACC_TRUNC_F, H5F_ACC_RDWR_F, H5F_SCOPE_GLOBAL_F, &
 H5FD_MPIO_COLLECTIVE_F, &
 H5P_DEFAULT_F, H5P_FILE_ACCESS_F, H5P_DATASET_CREATE_F, H5P_DATASET_XFER_F, &
 H5S_ALL_F, H5S_SELECT_SET_F, &
-h5dcreate_f, h5dclose_f, &
+h5dcreate_f, h5dclose_f, h5dget_space_f, &
 h5fopen_f, h5fclose_f, h5fcreate_f, h5fget_filesize_f, h5fflush_f, &
 h5pcreate_f, h5pclose_f, h5pset_chunk_f, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, &
 h5sselect_hyperslab_f, h5screate_simple_f, h5sclose_f, &
@@ -67,7 +67,7 @@ end type mpi_tags
 
 private
 public :: mpi_h5comm, hdf5_file, mpi_tags, &
-check, hdf_wrapup, hdf_rank_check, hdf_shape_check, mpi_collective, &
+check, hdf_wrapup, hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hyperslab, &
 hdf5version
 
 interface !< write.f90
@@ -267,7 +267,9 @@ if (laction(1:1) == "r".and..not.exists) error stop "h5open: file does not exist
 if(self%use_mpi) then
   !! collective: setup for MPI access
   call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, ierr)
+  if(ierr/=0) error stop "h5open:h5pcreate could not collective open property"
   call h5pset_fapl_mpio_f(plist_id, mpi_h5comm, mpi_h5info, ierr)
+  if(ierr/=0) error stop "h5open:h5pset_fapl_mpio could not collective open file"
 else
   plist_id = H5P_DEFAULT_F
 endif
@@ -292,8 +294,8 @@ end select
 
 if(ierr/=0) error stop "h5open/create: could not initialize HDF5 file: " // filename // " action: " // laction
 
-call h5pclose_f(plist_id, ierr)
-if(ierr/=0) error stop "h5pclose: " // filename
+if(plist_id /= H5P_DEFAULT_F) call h5pclose_f(plist_id, ierr)
+if(ierr/=0) error stop "h5mpi:open:h5pclose: " // filename
 
 self%filename = filename
 self%is_open = .true.
@@ -346,6 +348,44 @@ self%file_id = 0
 self%is_open = .false.
 
 end subroutine ph5close
+
+
+subroutine mpi_hyperslab(dims, dset_dims, dset_id, filespace, dname)
+
+integer(HSIZE_T), dimension(:), intent(in) :: dims, dset_dims
+integer(HID_T), intent(in) :: dset_id
+integer(HID_T), intent(inout) :: filespace
+character(*), intent(in) :: dname !< for error messages
+
+integer(HSIZE_T), dimension(size(dims)) :: cnt, stride, blk, offset
+integer :: ierr, mpi_id
+
+!> Select hyperslab in the file.
+call h5dget_space_f(dset_id, filespace, ierr)
+if (ierr/=0) error stop "h5dget_space: " // dname
+
+!! Each process defines dataset in memory and writes it to the hyperslab in the file.
+call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
+if(ierr /= 0) error stop "hdf_create: could not get MPI rank"
+
+!> chunk choices are arbitrary, but must be the same on all processes
+!> TODO: only chunking along first dim
+cnt(1) = dims(1)
+cnt(2:) = 1
+offset(1) = mpi_id*cnt(1)
+offset(2:) = 0
+stride = 1
+blk(1) = 1
+blk(2:) = dset_dims(2:)
+
+call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
+  start=offset, &
+  count=cnt, hdferr=ierr, &
+  stride=stride, &
+  block=blk)
+if (ierr/=0) error stop "h5sselect_hyperslab: " // dname
+
+end subroutine mpi_hyperslab
 
 
 integer(HID_T) function mpi_collective(dname) result(xfer_id)

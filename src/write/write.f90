@@ -1,8 +1,6 @@
 submodule (h5mpi) write
 
-use mpi, only : mpi_comm_rank
 use hdf5, only : h5pset_deflate_f, h5pset_fletcher32_f, h5pset_shuffle_f, &
-h5dget_space_f, &
 h5dwrite_f
 
 implicit none (type, external)
@@ -12,10 +10,8 @@ contains
 
 module procedure hdf_create
 
-integer(HSIZE_T), dimension(size(dims)) :: cnt, stride, blk, offset
-
 logical :: exists
-integer :: ierr, mpi_id
+integer :: ierr
 integer(HID_T) :: plist_id
 
 plist_id = H5P_DEFAULT_F
@@ -30,22 +26,6 @@ call h5ltpath_valid_f(self%file_id, dname, .true., exists, ierr)
 if (ierr /= 0) error stop 'ERROR:h5fortran:create: variable path invalid: ' // dname // ' in ' // self%filename
 
 if(self%debug) print *,'h5fortran:TRACE:create:exists: ' // dname, exists
-
-if (self%use_mpi) then
-  !! Each process defines dataset in memory and writes it to the hyperslab in the file.
-  call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
-  if(ierr /= 0) error stop "hdf_create: could not get MPI rank"
-
-  !> chunk choices are arbitrary, but must be the same on all processes
-  !> TODO: only chunking along first dim
-  cnt(1) = dims(1)
-  cnt(2:) = 1
-  offset(1) = mpi_id*cnt(1)
-  offset(2:) = 0
-  stride = 1
-  blk(1) = 1
-  blk(2:) = dset_dims(2:)
-endif
 
 !> compression
 if(size(dims) >= 2) then
@@ -66,16 +46,7 @@ if (ierr/=0) error stop "h5pclose: " // dname // ' in ' // self%filename
 
 if(.not. self%use_mpi) return
 
-!> Select hyperslab in the file.
-call h5dget_space_f(dset_id, filespace, ierr)
-if (ierr/=0) error stop "h5dget_space: " // dname // " " // self%filename
-
-call h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, &
-  start=offset, &
-  count=cnt, hdferr=ierr, &
-  stride=stride, &
-  block=blk)
-if (ierr/=0) error stop "h5sselect_hyperslab: " // dname // " " // self%filename
+call mpi_hyperslab(dims, dset_dims, dset_id, filespace, dname)
 
 !> create memory dataspace
 call h5screate_simple_f(rank=size(dims), dims=dims, space_id=memspace, hdferr=ierr)
