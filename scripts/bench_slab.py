@@ -25,6 +25,7 @@ def serial_runner(
     outfn: Path,
     Nrun: int,
     lx: tuple[int, int, int] = None,
+    *,
     comp_lvl: int = None,
     np: int = None,
 ):
@@ -62,8 +63,10 @@ def mpi_runner(
     outfn: Path,
     Nrun: int,
     lx: tuple[int, int, int] = None,
+    *,
     comp_lvl: int = None,
     np: int = None,
+    ref_fn: Path = None,
 ):
     """
     Runner frontend uses HWLOC to compute physical core count
@@ -95,6 +98,8 @@ def mpi_runner(
         args += ["-np", str(np)]
     if comp_lvl:
         args += ["-comp", str(comp_lvl)]
+    if ref_fn:
+        args += ["-ref", str(ref_fn)]
 
     subprocess.check_call([runner_exe] + args, timeout=TIMEOUT)
 
@@ -112,6 +117,8 @@ def slab_bench(
 
     for c in comp_lvls:
         tail = f"{lx[0]}_{lx[1]}_{lx[2]}_comp{c}"
+
+        serialfn = None
 
         if "serial" in tests:
             # Serial (no MPI at all)
@@ -135,9 +142,6 @@ def slab_bench(
                 np=np,
             )
 
-            if not keep:
-                serialfn.unlink()
-
         if "mpi_root" in tests:
             # MPI transfer to root (inefficient relative to HDF5-MPI)
             mpirootfn = data_dir / f"mpi_root_{tail}.h5"
@@ -159,6 +163,7 @@ def slab_bench(
                 Nrun,
                 lx,
                 np=np,
+                ref_fn=serialfn,
             )
 
             if not keep:
@@ -185,10 +190,14 @@ def slab_bench(
                 Nrun,
                 lx,
                 np=np,
+                ref_fn=serialfn,
             )
 
             if not keep:
                 mpih5fn.unlink()
+
+        if not keep and "serial" in tests:
+            serialfn.unlink()
 
 
 if __name__ == "__main__":

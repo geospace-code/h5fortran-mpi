@@ -9,7 +9,7 @@ implicit none (type, external)
 
 integer :: lid, lx1, lx2, lx3, Ncpu, ierr, Nrun, i, comp_lvl
 character(2000) :: buf, exe, mpiexec, outfn, refh5fn
-character(:), allocatable :: cmd
+character(:), allocatable :: cmd, args
 logical :: exists
 
 !> defaults
@@ -69,17 +69,22 @@ print '(A,I0)', 'MPI images: ', lid
 !> run MPI-based executable
 !> need to quote executables in case they have spaces in the path.
 !> don't quote "exe" as this makes the CLI invalid syntax--don't have spaces in the exe path.
-write(buf, '(A1,A,A1,1X,A2,1X,I0,1X,A,1X,A3,1X,I0,1X,I0,1X,I0,1X,A5,1X,I0,1x,a5,1x,I1,1x,a2,1x,a,1x,a4,1x,a)') &
+write(buf, '(A1,A,A1,1X,A2,1X,I0,1X,A,1X,A3,1X,I0,1X,I0,1X,I0,1X,A5,1X,I0,1x,a5,1x,I1,1x,a2,1x,a,1x,a4)') &
   char(34), trim(mpiexec), char(34), '-n', lid, &
   trim(exe), &
   "-lx", lx1,lx2,lx3, &
   "-Nrun", Nrun, &
   "-comp", comp_lvl, &
-  "-o", trim(outfn), &
-  "-ref", trim(refh5fn)
+  "-o", trim(outfn)
+
+if (len_trim(refh5fn) > 0) then
+  args = " -ref " // trim(refh5fn)
+else
+  args = ""
+endif
 
 !! quotes are for mpiexec path with spaces
-cmd = trim(buf)
+cmd = trim(buf) // args
 print *, cmd
 call execute_command_line(cmd, exitstat=ierr)
 
