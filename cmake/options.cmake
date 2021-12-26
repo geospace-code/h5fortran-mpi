@@ -1,6 +1,8 @@
 option(autobuild "autobuild HWLOC" true)
 option(dev "Development mode")
 
+option(ourFindMPI "Use our FindMPI")
+
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 

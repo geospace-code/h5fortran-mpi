@@ -9,6 +9,9 @@ project(HDF5benchmark LANGUAGES C Fortran)
 include(CTest)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
+if(ourFindMPI)
+  list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules/MPI)
+endif()
 
 find_package(MPI COMPONENTS C Fortran REQUIRED)
 
