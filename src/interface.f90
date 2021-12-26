@@ -71,11 +71,12 @@ check, hdf_wrapup, hdf_rank_check, hdf_shape_check, &
 hdf5version
 
 interface !< write.f90
-module subroutine hdf_create(self, dname, dtype, dims, dims_file, filespace, memspace, dset_id, xfer_id, chunk_size)
+module subroutine hdf_create(self, dname, dtype, dims, dset_dims, filespace, memspace, dset_id, xfer_id, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 integer(HID_T), intent(in) :: dtype
-integer(HSIZE_T), intent(in) :: dims(:), dims_file(:)
+integer(HSIZE_T), intent(in) :: dims(:)
+integer(HSIZE_T), intent(in) :: dset_dims(:)
 integer(HID_T), intent(out), optional :: filespace, memspace, dset_id, xfer_id
 integer, intent(in), optional :: chunk_size(:)
 end subroutine hdf_create
@@ -96,53 +97,53 @@ character(*), intent(in) :: dname
 class(*), intent(in) :: value
 end subroutine h5write_scalar
 
-module subroutine ph5write_1d(self, dname, value, dims_file)
+module subroutine ph5write_1d(self, dname, value, dset_dims)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:)
-integer(HSIZE_T), intent(in) :: dims_file(1)  !< full disk shape (not just per worker)
+integer(HSIZE_T), intent(in), optional :: dset_dims(1)  !< full disk shape (not just per worker)
 end subroutine ph5write_1d
 
-module subroutine ph5write_2d(self, dname, value, dims_file)
+module subroutine ph5write_2d(self, dname, value, dset_dims)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:)
-integer(HSIZE_T), intent(in) :: dims_file(2)
+integer(HSIZE_T), intent(in), optional :: dset_dims(2)
 end subroutine ph5write_2d
 
-module subroutine ph5write_3d(self, dname, value, dims_file)
+module subroutine ph5write_3d(self, dname, value, dset_dims)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(3)
+integer(HSIZE_T), intent(in), optional :: dset_dims(3)
 end subroutine ph5write_3d
 
-module subroutine ph5write_4d(self, dname, value, dims_file)
+module subroutine ph5write_4d(self, dname, value, dset_dims)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(4)
+integer(HSIZE_T), intent(in), optional :: dset_dims(4)
 end subroutine ph5write_4d
 
-module subroutine ph5write_5d(self, dname, value, dims_file)
+module subroutine ph5write_5d(self, dname, value, dset_dims)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(5)
+integer(HSIZE_T), intent(in), optional :: dset_dims(5)
 end subroutine ph5write_5d
 
-module subroutine ph5write_6d(self, dname, value, dims_file)
+module subroutine ph5write_6d(self, dname, value, dset_dims)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(6)
+integer(HSIZE_T), intent(in), optional :: dset_dims(6)
 end subroutine ph5write_6d
 
-module subroutine ph5write_7d(self, dname, value, dims_file)
+module subroutine ph5write_7d(self, dname, value, dset_dims)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:,:,:)
-integer(HSIZE_T), intent(in) :: dims_file(7)
+integer(HSIZE_T), intent(in), optional :: dset_dims(7)
 end subroutine ph5write_7d
 
 end interface

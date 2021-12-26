@@ -68,8 +68,8 @@ if(.not.present(statfn)) return
 
 call f%open(statfn, action="w", mpi=.false.)
 
-call f%write("/t_ms", t_ms, shape(t_ms, HSIZE_T))
-call f%write("/MBsec", data_MBsec, shape(data_MBsec, HSIZE_T))
+call f%write("/t_ms", t_ms)
+call f%write("/MBsec", data_MBsec)
 call f%write("/mean_MBsec", mean_MBsec)
 call f%write("/stdev_MBsec", std_MBsec)
 call f%write("/median_MBsec", median_MBsec)
@@ -79,11 +79,11 @@ call f%write("/compiler", compiler_version())
 call f%write("/Ncpu", Ncpu)
 call f%write("/comp_lvl", comp_lvl)
 call f%write("/os", @runner_os@)
-call f%write("/hdf5version", hdf5version(), [3_int64])
+call f%write("/hdf5version", hdf5version())
 
 call mpi_get_version(mpi_api_version(1), mpi_api_version(2), ierr)
 if(ierr /= 0) error stop "h5mpi:perf: mpi_get_version failed"
-call f%write("/mpi_api_version", mpi_api_version, [2_int64])
+call f%write("/mpi_api_version", mpi_api_version)
 
 call MPI_Get_library_version(mpi_lib_version, L, ierr)
 if(ierr /= 0) error stop "h5mpi:perf: MPI_Get_library_version failed"

@@ -44,7 +44,7 @@ if (self%use_mpi) then
   offset(2:) = 0
   stride = 1
   blk(1) = 1
-  blk(2:) = dims_file(2:)
+  blk(2:) = dset_dims(2:)
 endif
 
 !> compression
@@ -54,7 +54,7 @@ if(size(dims) >= 2) then
 endif
 
 !> create dataspace
-call h5screate_simple_f(rank=size(dims_file), dims=dims_file, space_id=filespace, hdferr=ierr)
+call h5screate_simple_f(rank=size(dset_dims), dims=dset_dims, space_id=filespace, hdferr=ierr)
 if (ierr/=0) error stop "h5screate_simple:filespace " // dname // " " // self%filename
 
 if(self%use_mpi) then
