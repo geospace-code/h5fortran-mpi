@@ -68,7 +68,7 @@ end type mpi_tags
 private
 public :: mpi_h5comm, hdf5_file, mpi_tags, &
 check, hdf_wrapup, hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hyperslab, &
-hdf5version
+hdf5version, HSIZE_T
 
 interface !< write.f90
 module subroutine hdf_create(self, dname, dtype, dims, dset_dims, filespace, memspace, dset_id, xfer_id, chunk_size)

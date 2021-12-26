@@ -2,7 +2,6 @@ program write_slab_serial
 !! no MPI / parallel at all
 
 use, intrinsic :: iso_fortran_env, only : int64, real32, real64, stderr=>error_unit
-use hdf5, only : HSIZE_T
 use h5mpi, only : hdf5_file
 use cli, only : get_cli, get_simsize
 use perf, only : print_timing
