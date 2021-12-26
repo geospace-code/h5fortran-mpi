@@ -10,16 +10,19 @@ contains
 module procedure h5write_scalar
 
 integer :: ier
+integer(HSIZE_T) :: dims(0)
 
 if(.not.self%is_open) error stop 'h5fortran:write: file handle is not open'
 
+dims = shape(value)
+
 select type (value)
 type is (real(real32))
-  call h5ltmake_dataset_float_f(self%file_id, dname, rank(value), shape(value, HSIZE_T), value, ier)
+  call h5ltmake_dataset_float_f(self%file_id, dname, rank(value), dims, value, ier)
 type is (real(real64))
-  call h5ltmake_dataset_double_f(self%file_id, dname, rank(value), shape(value, HSIZE_T), value, ier)
+  call h5ltmake_dataset_double_f(self%file_id, dname, rank(value), dims, value, ier)
 type is (integer(int32))
-  call h5ltmake_dataset_int_f(self%file_id, dname, rank(value), shape(value, HSIZE_T), value, ier)
+  call h5ltmake_dataset_int_f(self%file_id, dname, rank(value), dims, value, ier)
 type is (character(*))
   call h5ltmake_dataset_string_f(self%file_id, dname, value, ier)
 class default
