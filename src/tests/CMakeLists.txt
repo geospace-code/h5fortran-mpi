@@ -24,11 +24,12 @@ HINTS ${HDF5_ROOT}
 
 set(Nrun 2)
 
-set(lx3 512 128 96)
+# set(lx3 512 128 96)
+set(lx3 8 6 1)
 
 set(serialfn ${CMAKE_CURRENT_BINARY_DIR}/outserial.h5)
 add_test(NAME WRITE_serial-Slab
-COMMAND slab_serial_write -lx ${lx3} -Nrun ${Nrun} -o ${serialfn} -gen -1.
+COMMAND slab_serial_write -lx ${lx3} -Nrun ${Nrun} -o ${serialfn} -gen -1. -debug
 )
 set_tests_properties(WRITE_serial-Slab PROPERTIES
 TIMEOUT 15
@@ -38,7 +39,7 @@ RUN_SERIAL true
 )
 
 add_test(NAME READ_serial-Slab
-COMMAND slab_serial_read -Nrun ${Nrun} -o ${serialfn}
+COMMAND slab_serial_read -Nrun ${Nrun} -o ${serialfn} -debug
 )
 set_tests_properties(READ_serial-Slab PROPERTIES
 TIMEOUT 10
@@ -56,7 +57,7 @@ TIMEOUT 5)
 # --- MPI-ROOT
 set(mpi_rootfn ${CMAKE_CURRENT_BINARY_DIR}/mpi_root.h5)
 add_test(NAME WRITE_MPI_root-Slab
-COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_serial_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpi_rootfn} -gen -1.
+COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_serial_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpi_rootfn} -gen -1. -debug
 )
 set_tests_properties(WRITE_MPI_root-Slab PROPERTIES
 TIMEOUT 30
@@ -78,7 +79,7 @@ DISABLED $<NOT:$<BOOL:${H5DIFF}>>
 )
 
 add_test(NAME READ_MPI_root-Slab
-COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_serial_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpi_rootfn} -ref ${serialfn}
+COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_serial_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpi_rootfn} -ref ${serialfn} -debug
 )
 set_tests_properties(READ_MPI_root-Slab PROPERTIES
 TIMEOUT 10
@@ -95,7 +96,7 @@ set_tests_properties(READ_MPI_root-cleanup PROPERTIES FIXTURES_CLEANUP write_mpi
 
 set(mpifn ${CMAKE_CURRENT_BINARY_DIR}/outmpi.h5)
 add_test(NAME WRITE_MPI-Slab
-COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpifn} -gen -1.
+COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpifn} -gen -1. -debug
 )
 set_tests_properties(WRITE_MPI-Slab PROPERTIES
 TIMEOUT 30
@@ -117,7 +118,7 @@ DISABLED $<NOT:$<BOOL:${H5DIFF}>>
 )
 
 add_test(NAME READ_MPI-Slab
-COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpifn} -ref ${serialfn}
+COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpifn} -ref ${serialfn} -debug
 )
 set_tests_properties(READ_MPI-Slab PROPERTIES
 TIMEOUT 10

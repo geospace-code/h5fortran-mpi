@@ -26,11 +26,12 @@ sysclock2ms = real(t) * r
 end function sysclock2ms
 
 
-subroutine print_timing(Ncpu, comp_lvl, bits, dims, t_elapsed, file_bytes, statfn)
+subroutine print_timing(Ncpu, comp_lvl, bits, dims, t_elapsed, file_bytes, debug, statfn)
 !! print summary of results
 integer, intent(in) :: Ncpu, comp_lvl, bits, dims(:)
 integer(int64), intent(in) :: t_elapsed(:)
 integer(HSIZE_T), intent(in) :: file_bytes
+logical, intent(in) :: debug
 character(*), intent(in), optional :: statfn
 
 integer :: bytes, N, ierr, mpi_api_version(2), L
@@ -92,6 +93,8 @@ call f%write("/mpi_lib_version", mpi_lib_version)
 call f%close()
 
 print '(a)', "saved stats to " // statfn
+
+if(debug) return
 
 if(data_MB < 10) write(stderr, '(a)') "benchmark inaccurate with small files < 10 MB"
 if(median_MBsec > 50000) error stop "unrealistically high median MB/sec > 50,000"

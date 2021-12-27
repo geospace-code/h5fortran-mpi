@@ -62,7 +62,7 @@ do i = 1, command_argument_count()
     call get_cli(i, argv, noise)
   case ("-gen")
     call get_cli(i, argv, gensig)
-  case("-d")
+  case("-d", "-debug")
     debug = .true.
   end select
 end do
@@ -164,7 +164,7 @@ endif
 !> RESULTS
 
 if(mpi_id == mpi_root_id) then
-  call print_timing(Nmpi, h5%comp_lvl, storage_size(A3), int([lx1, lx2, lx3]), t_elapsed, h5%filesize(), &
+  call print_timing(Nmpi, h5%comp_lvl, storage_size(A3), int([lx1, lx2, lx3]), t_elapsed, h5%filesize(), debug, &
     trim(outfn) // ".write_stat.h5")
 endif
 

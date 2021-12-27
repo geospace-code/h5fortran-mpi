@@ -57,7 +57,7 @@ do i = 1, command_argument_count()
     call get_cli(i, argv, Nrun)
   case("-realbits")
     call get_cli(i, argv, real_bits)
-  case("-d")
+  case("-d", "-debug")
     debug = .true.
   end select
 end do
@@ -158,7 +158,8 @@ endif
 !> RESULTS
 
 if(mpi_id == mpi_root_id) then
-  call print_timing(Nmpi, h5%comp_lvl, storage_size(A3), int(dims_full), t_elapsed, h5%filesize(), trim(h5fn) // ".read_stat.h5")
+  call print_timing(Nmpi, h5%comp_lvl, storage_size(A3), int(dims_full), t_elapsed, h5%filesize(), debug, &
+    trim(h5fn) // ".read_stat.h5")
 endif
 
 if (debug) print '(a,i0)', "mpi finalize: worker: ", mpi_id

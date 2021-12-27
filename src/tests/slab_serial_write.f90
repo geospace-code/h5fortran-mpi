@@ -54,7 +54,7 @@ do i = 1, command_argument_count()
     call get_cli(i, argv, noise)
   case ("-gen")
     call get_cli(i, argv, gensig)
-  case("-d")
+  case("-d", "-debug")
     debug = .true.
   end select
 end do
@@ -99,7 +99,7 @@ end do main
 
 !> RESULTS
 
-call print_timing(1, h5%comp_lvl, real_bits, [lx1, lx2, lx3], t_elapsed, h5%filesize(), &
+call print_timing(1, h5%comp_lvl, real_bits, [lx1, lx2, lx3], t_elapsed, h5%filesize(), debug, &
  trim(outfn) // ".write_stat.h5")
 
 end program
