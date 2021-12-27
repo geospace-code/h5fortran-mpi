@@ -49,8 +49,8 @@ LABELS "serial_hdf5;read"
 RUN_SERIAL true
 )
 
-add_test(NAME READ_serial-cleanup COMMAND ${CMAKE_COMMAND} -E rm ${serialfn})
-set_tests_properties(READ_serial-cleanup PROPERTIES
+add_test(NAME serial-cleanup COMMAND ${CMAKE_COMMAND} -E rm ${serialfn})
+set_tests_properties(serial-cleanup PROPERTIES
 FIXTURES_CLEANUP "write_serial-Slab;write_mpi_root-Slab;write_mpi-Slab"
 TIMEOUT 5)
 
@@ -89,8 +89,11 @@ LABELS "mpi_root;read"
 RUN_SERIAL true
 )
 
-add_test(NAME READ_MPI_root-cleanup COMMAND ${CMAKE_COMMAND} -E rm ${mpi_rootfn})
-set_tests_properties(READ_MPI_root-cleanup PROPERTIES FIXTURES_CLEANUP write_mpi_root-Slab TIMEOUT 5)
+add_test(NAME root-cleanup COMMAND ${CMAKE_COMMAND} -E rm ${mpi_rootfn})
+set_tests_properties(root-cleanup PROPERTIES
+FIXTURES_CLEANUP write_mpi_root-Slab
+TIMEOUT 5
+)
 
 # --- MPI-HDF5
 
@@ -128,8 +131,11 @@ LABELS "mpi_hdf5;read"
 RUN_SERIAL true
 )
 
-add_test(NAME READ_MPI-cleanup COMMAND ${CMAKE_COMMAND} -E rm ${mpifn})
-set_tests_properties(READ_MPI-cleanup PROPERTIES FIXTURES_CLEANUP write_mpi-Slab TIMEOUT 5)
+add_test(NAME mpi-cleanup COMMAND ${CMAKE_COMMAND} -E rm ${mpifn})
+set_tests_properties(mpi-cleanup PROPERTIES
+FIXTURES_CLEANUP write_mpi-Slab
+TIMEOUT 5
+)
 
 
 find_package(Python COMPONENTS Interpreter)
