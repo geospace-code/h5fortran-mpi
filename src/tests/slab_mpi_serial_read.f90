@@ -18,7 +18,7 @@ type(mpi_tags) :: mt
 
 type(hdf5_file) :: h5
 
-real, allocatable :: A2(:,:), A3(:,:,:), t2(:,:), t3(:,:,:)
+real, allocatable ::  A3(:,:,:), t3(:,:,:)
 character(1000) :: argv, h5fn, refh5fn
 
 integer :: ierr, dx1, i, j, comp_lvl, real_bits
@@ -28,7 +28,6 @@ integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
 
 logical :: debug = .false.
-logical :: test2d = .false.
 
 integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
@@ -91,7 +90,7 @@ call mpi_bcast(lx2, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
 if(ierr/=0) error stop "failed to broadcast lx2"
 call mpi_bcast(lx3, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
 if(ierr/=0) error stop "failed to broadcast lx3"
-if(lx3 < 1 .or. lx2 < 1 .or. lx1 < 1) then
+if(lx3 < 0 .or. lx2 < 1 .or. lx1 < 1) then
   write(stderr,"(A,i0,A,i0,1x,i0,1x,i0)") "ERROR: MPI ID: ", mpi_id, " failed to receive lx1, lx2, lx3: ", lx1, lx2, lx3
   error stop
 endif
@@ -104,10 +103,8 @@ dx1 = lx1 / Nmpi
 
 !! root has the full array, and all other processes have a subarray
 if(mpi_id == mpi_root_id) then
-  if(test2d) allocate(A2(lx1, lx2), t2(dx1, lx2))
   allocate(A3(lx1, lx2, lx3), t3(dx1, lx2, lx3))  !< root-only working subarray
 else
-  if(test2d) allocate(A2(dx1, lx2))
   allocate(A3(dx1, lx2, lx3))
 endif
 
@@ -120,33 +117,21 @@ main : do j = 1, Nrun
   if(mpi_id == mpi_root_id) then
     call system_clock(count=tic)
     call h5%open(trim(h5fn), action="r", mpi=.false., debug=debug)
-
-    if(test2d) call h5%read("/A2", A2)
     call h5%read("/A3", A3)
-
     call h5%close()
   end if
 
   !! workers receive data from root
   if(mpi_id == mpi_root_id) then
     !! root's own subarray
-    if(test2d) t2 = A2(1:dx1, :)
     t3 = A3(1:dx1, :, :)
     !! worker subarrays
     do i = 1, Nmpi-1
-      if(test2d) then
-        call mpi_send(A2(i*dx1+1:(i+1)*dx1,:), dx1*lx2, MPI_REAL, i, mt%a2, mpi_h5comm, ierr)
-        if(ierr/=0) error stop "root => worker: mpi_send 2D"
-      endif
       call mpi_send(A3(i*dx1+1:(i+1)*dx1,:,:), dx1*lx2*lx3, MPI_REAL, i, mt%a3, mpi_h5comm, ierr)
       if(ierr/=0) error stop "root => worker: mpi_send 3D"
     end do
   else
     !! workers receive data from root
-    if(test2d) then
-      call mpi_recv(A2, dx1*lx2, MPI_REAL, mpi_root_id, mt%a2, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
-      if(ierr/=0) error stop "root => worker: mpi_recv 2D"
-    endif
     call mpi_recv(A3, dx1*lx2*lx3, MPI_REAL, mpi_root_id, mt%a3, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
     if(ierr/=0) error stop "root => worker: mpi_recv 3D"
   endif
@@ -160,23 +145,12 @@ end do main
 
 !> Check vs. serial read
 if(mpi_id == mpi_root_id) then
-  if(test2d) then
-    deallocate(t2)
-    allocate(t2(lx1, lx2))
-  endif
   deallocate(t3)
   allocate(t3(lx1, lx2, lx3))
-
   call h5%open(trim(refh5fn), action="r", mpi=.false.)
-
-  if(test2d) call h5%read("/A2", t2)
   call h5%read("/A3", t3)
-
   call h5%close()
 
-  if(test2d) then
-    if (any(abs(t2 - A2) > 0.01)) error stop "2D ref mismatch " // refh5fn // " /= " // h5fn
-  endif
   if (any(abs(t3 - A3) > 0.01)) error stop "3D ref mismatch " // refh5fn // " /= " // h5fn
 endif
 

@@ -18,13 +18,14 @@ if (command_argument_count() < i+1) error stop "not enough command line argument
 call get_command_argument(i+1, buf, status=ierr)
 if(ierr /= 0) error stop "could not get argument for " // trim(name)
 if(len_trim(buf) == 0) error stop trim(name) // " needs an argument"
-if(buf(1:1) == "-") error stop trim(name) // " needs an argument"
 
 select type (value)
 type is (character(*))
   value = trim(buf)
 type is (integer)
-  read(buf, "(I6)") value
+  read(buf, "(i6)") value
+type is (real)
+  read(buf, "(f8.3)") value
 class default
   error stop "unknown argument type for " // trim(name)
 end select
@@ -62,7 +63,7 @@ end select
 
 end do
 
-if (any([lx1, lx2, lx3] < 1)) error stop "must input -lx lx1 lx2 lx3"
+if (any([lx1, lx2] < 1)) error stop "must input -lx lx1 lx2 lx3"
 
 if(.not.present(Nmpi)) return
 

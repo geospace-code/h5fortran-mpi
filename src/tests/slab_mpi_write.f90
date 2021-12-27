@@ -8,7 +8,6 @@ use mpi, only : mpi_comm_size, mpi_comm_rank, mpi_integer
 use h5mpi, only : mpi_h5comm, hdf5_file, mpi_tags, HSIZE_T
 use cli, only : get_cli, get_simsize
 use perf, only : print_timing, sysclock2ms
-use kernel, only : gaussian2d
 use test_utils, only : generate_and_send
 
 implicit none
@@ -18,17 +17,16 @@ external :: mpi_bcast, mpi_init, mpi_finalize
 type(hdf5_file) :: h5
 type(mpi_tags) :: mt
 
-real, allocatable :: A2(:,:), A3(:,:,:)
-real :: noise
+real, allocatable :: A3(:,:,:)
+real :: noise, gensig
 character(1000) :: argv, h5fn
 
 integer :: ierr, lx1, lx2, lx3, dx1, i, comp_lvl, real_bits
-integer(HSIZE_T), allocatable, dimension(:) :: d2, d3
+integer(HSIZE_T), allocatable, dimension(:) ::  d3
 integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
 
 logical :: debug = .false.
-logical :: test2d = .false.
 
 integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
@@ -42,6 +40,7 @@ call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
 Nrun = 1
 h5fn = ""
 comp_lvl = 0
+gensig = 1.
 
 do i = 1, command_argument_count()
   call get_command_argument(i, argv, status=ierr)
@@ -58,6 +57,8 @@ do i = 1, command_argument_count()
     call get_cli(i, argv, comp_lvl)
   case ("-noise")
     call get_cli(i, argv, noise)
+  case ("-gen")
+    call get_cli(i, argv, gensig)
   case("-d", "-debug")
     debug = .true.
   end select
@@ -87,7 +88,7 @@ call mpi_bcast(lx2, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
 if(ierr/=0) error stop "failed to broadcast lx2"
 call mpi_bcast(lx3, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
 if(ierr/=0) error stop "failed to broadcast lx3"
-if(lx3 < 1 .or. lx2 < 1 .or. lx1 < 1) then
+if(lx2 < 1 .or. lx1 < 1) then
   write(stderr,"(A,i0,A,i0,1x,i0,1x,i0)") "ERROR: MPI ID: ", mpi_id, " failed to receive lx1, lx2, lx3: ", lx1, lx2, lx3
   error stop
 endif
@@ -98,7 +99,6 @@ if (debug) print '(a,i0,a,i0,1x,i0,1x,i0)', 'MPI worker: ', mpi_id, ' lx1, lx2, 
 !! 1-D decompose in rows (neglect ghost cells)
 dx1 = lx1 / Nmpi
 
-if(test2d) allocate(A2(dx1, lx2))
 allocate(A3(dx1, lx2, lx3))
 !> dummy data
 !! root has only a subarray like workers.
@@ -106,7 +106,7 @@ allocate(A3(dx1, lx2, lx3))
 
 if (mpi_id == mpi_root_id) call system_clock(count=tic)
 
-call generate_and_send(Nmpi, mpi_id, mpi_root_id, dx1, lx1, lx2, lx3, mt%a2, mt%a3, mpi_h5comm, noise, A2, A3)
+call generate_and_send(Nmpi, mpi_id, mpi_root_id, dx1, lx1, lx2, lx3, mt%a3, mpi_h5comm, noise, gensig, A3)
 
 if (mpi_id == mpi_root_id) then
   call system_clock(count=toc)
@@ -118,10 +118,7 @@ main : do i = 1, Nrun
   if(mpi_id == mpi_root_id) call system_clock(count=tic)
 
   call h5%open(trim(h5fn), action="w", mpi=.true., comp_lvl=comp_lvl, debug=debug)
-
-  if(test2d) call h5%write("/A2", A2, [lx1, lx2])
   call h5%write("/A3", A3, [lx1, lx2, lx3])
-
   call h5%close()
 
   if(mpi_id == mpi_root_id) then
@@ -136,12 +133,8 @@ if (debug) print '(a,i0)', "mpi write:done: worker: ", mpi_id
 !> sanity check file shape
 
 if(mpi_id == mpi_root_id) then
-  call h5%open(trim(h5fn), action="r", mpi=.false.)
 
-  if(test2d) then
-    call h5%shape("/A2", d2)
-    if(any(d2 /= [lx1, lx2])) error stop "slab_mpi: file shape 2D mismatch"
-  endif
+  call h5%open(trim(h5fn), action="r", mpi=.false.)
 
   call h5%shape("/A3", d3)
   if(any(d3 /= [lx1, lx2, lx3])) error stop "slab_mpi: file shape mismatch"

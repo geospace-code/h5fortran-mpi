@@ -16,8 +16,7 @@ external :: mpi_bcast, mpi_init, mpi_finalize
 
 type(hdf5_file) :: h5
 
-real, allocatable :: A2(:,:), A3(:,:,:)
-real, allocatable :: t2(:,:), t3(:,:,:)
+real, allocatable :: A3(:,:,:), t3(:,:,:)
 
 character(1000) :: argv, h5fn, refh5fn
 
@@ -26,7 +25,6 @@ integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
 
 logical :: debug = .false.
-logical :: test2d = .false.
 
 integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
@@ -98,18 +96,16 @@ call mpi_bcast(lx2, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
 if(ierr/=0) error stop "failed to broadcast lx2"
 call mpi_bcast(lx3, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
 if(ierr/=0) error stop "failed to broadcast lx3"
-if(lx3 < 1 .or. lx2 < 1 .or. lx1 < 1) then
+if(lx3 < 0 .or. lx2 < 1 .or. lx1 < 1) then
   write(stderr,"(A,i0,A,i0,1x,i0,1x,i0)") "ERROR: MPI ID: ", mpi_id, " failed to receive lx1, lx2, lx3: ", lx1, lx2, lx3
   error stop
 endif
 !! init workers with sentinel values to catch broken MPI library or mpiexec.
-
 if (debug) print '(a,i0,a,i0,1x,i0,1x,i0)', 'MPI worker: ', mpi_id, ' lx1, lx2, lx3 = ', lx1, lx2, lx3
 
 !! 1-D decompose in rows (neglect ghost cells)
 dx1 = lx1 / Nmpi
 
-if(test2d) allocate(A2(dx1, lx2))
 allocate(A3(dx1, lx2, lx3))
 
 !> benchmark loop
@@ -117,10 +113,7 @@ allocate(A3(dx1, lx2, lx3))
 main : do i = 1, Nrun
   if(mpi_id == mpi_root_id) call system_clock(count=tic)
   call h5%open(trim(h5fn), action="r", mpi=.true., debug=debug)
-
-  if(test2d) call h5%read("/A2", A2)
   call h5%read("/A3", A3)
-
   call h5%close()
   if(mpi_id == mpi_root_id) then
     call system_clock(count=toc)
@@ -131,19 +124,11 @@ end do main
 
 !> Check vs. serial read
 if(mpi_id == mpi_root_id) then
-  if(test2d)  allocate(t2(lx1, lx2))
   allocate(t3(lx1, lx2, lx3))
-
   call h5%open(trim(refh5fn), action="r", mpi=.false.)
-
-  if(test2d) call h5%read("/A2", t2)
   call h5%read("/A3", t3)
-
   call h5%close()
 
-  if(test2d) then
-    if (any(abs(t2 - A2) > 0.1)) error stop "2D ref mismatch " // trim(refh5fn) // " /= " // trim(h5fn)
-  endif
   if (any(abs(t3 - A3) > 0.1)) error stop "3D ref mismatch " // trim(refh5fn) // " /= " // trim(h5fn)
 endif
 
