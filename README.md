@@ -2,6 +2,7 @@
 
 [![ci](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci.yml)
 [![ci_macos](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci_macos.yml/badge.svg)](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci_macos.yml)
+[![intel-oneapi](https://github.com/scivision/hdf5-benchmark/actions/workflows/intel-oneapi.yml/badge.svg)](https://github.com/scivision/hdf5-benchmark/actions/workflows/intel-oneapi.yml)
 
 benchmarking speed of HDF5 writes from MPI parallel workers.
 Once the program is built as in the following sections, run benchmarks in the [scripts](./scripts) directory like:
@@ -10,28 +11,14 @@ Once the program is built as in the following sections, run benchmarks in the [s
 python bench_slab.py
 ```
 
-## Build HDF5 Parallel library
-
 Most systems default to the serial HDF5 API, which lacks the HDF5 parallel MPI layer.
-The CMakeLists.txt in this project detects this and errors before building.
-
-To build the HDF5 parallel library, regardless of what OS or compiler you're using, use the script from our h5fortran repo:
-
-```sh
-git clone https://github.com/geospace-code/h5fortran
-cd h5fortran/scripts
-cmake -B build -DCMAKE_INSTALL_PREFIX=~/lib_par
-cmake --build build
-```
-
-that will build and install HDF5 under ~/lib_par (or other directory of your choice).
-
----
-
-Alternatively, some Linux distros do have a parallel HDF5 package:
+The CMakeLists.txt in this project detects this and automatically builds HDF5-MPI if needed.
+The system must have a working MPI library installed already.
+Some OS have a parallel HDF5 package:
 
 * Ubuntu: `apt install libhdf5-openmpi-dev`
 * CentOS: `yum install hdf5-openmpi-devel`
+* MacOS: `brew install hdf5-mpi`
 
 ## Compressed parallel HDF5
 
@@ -57,3 +44,18 @@ cmake --build build
 
 The test program "build/slab" writes a file "out.h5" that contains arrays "A2" and "A3" which are 2D and 3D respectively.
 The workers partition the writing by rows.
+
+## Notes
+
+To build and install the HDF5 parallel library use the script from our h5fortran repo:
+
+```sh
+git clone https://github.com/geospace-code/h5fortran
+cd h5fortran/scripts
+
+cmake -B build -DCMAKE_INSTALL_PREFIX=~/lib_par -Dhdf5_parallel=on
+
+cmake --build build
+```
+
+that will build and install HDF5 under ~/lib_par (or other directory of your choice).

@@ -2,7 +2,7 @@ include(ExternalProject)
 
 set(hwloc_external true CACHE BOOL "autobuild HWLOC")
 
-if(NOT HWLOC_VERSION)
+if(HWLOC_VERSION VERSION_LESS 2.6)
   set(HWLOC_VERSION 2.7.0)
 endif()
 
@@ -37,7 +37,11 @@ if(WIN32)
   INACTIVITY_TIMEOUT 15
   )
 else()
-  find_package(Autotools REQUIRED)
+  find_program(MAKE_EXECUTABLE
+  NAMES gmake make
+  NAMES_PER_DIR
+  DOC "GNU Make"
+  REQUIRED)
 
   find_package(LibXml2)
   if(NOT LibXml2_FOUND)

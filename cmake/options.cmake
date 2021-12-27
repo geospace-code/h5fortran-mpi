@@ -1,10 +1,11 @@
-option(autobuild "autobuild HWLOC" true)
+option(autobuild "autobuild libraries if not available" true)
+option(hdf5_parallel "enable parallel HDF5" true)
 option(dev "Development mode")
 
 option(ourFindMPI "Use our FindMPI")
 
+option(zlib_legacy "legacy ZLIB 1.x")
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 set(CMAKE_TLS_VERIFY true)
 

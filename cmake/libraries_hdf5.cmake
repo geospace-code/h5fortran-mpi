@@ -1,0 +1,10 @@
+if(zlib_legacy)
+  string(JSON zlib_url GET ${_libj} zlib1 url)
+  string(JSON zlib_sha256 GET ${_libj} zlib1 sha256)
+else()
+  string(JSON zlib_url GET ${_libj} zlib2 url)
+  string(JSON zlib_sha256 GET ${_libj} zlib2 sha256)
+endif()
+
+string(JSON hdf5_url GET ${_libj} hdf5 ${HDF5_VERSION} url)
+string(JSON hdf5_sha256 GET ${_libj} hdf5 ${HDF5_VERSION} sha256)
