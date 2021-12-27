@@ -22,7 +22,7 @@ HINTS ${HDF5_ROOT}
 )
 
 
-set(Nrun 2)
+set(Nrun 1)
 
 # set(lx3 512 128 96)
 set(lx3 8 6 1)
