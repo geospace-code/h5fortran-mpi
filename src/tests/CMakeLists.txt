@@ -68,7 +68,7 @@ RUN_SERIAL true
 )
 
 add_test(NAME COMPARE_MPI_root-Slab
-COMMAND ${H5DIFF} ${mpi_rootfn} ${serialfn}
+COMMAND ${H5DIFF} -v ${mpi_rootfn} ${serialfn}
 )
 set_tests_properties(COMPARE_MPI_root-Slab PROPERTIES
 FIXTURES_REQUIRED "write_serial-Slab;write_mpi_root-Slab"
@@ -111,7 +111,7 @@ RUN_SERIAL true
 )
 
 add_test(NAME COMPARE_MPI-Slab
-COMMAND ${H5DIFF} ${mpifn} ${serialfn}
+COMMAND ${H5DIFF} -v ${mpifn} ${serialfn}
 )
 set_tests_properties(COMPARE_MPI-Slab PROPERTIES
 FIXTURES_REQUIRED "write_serial-Slab;write_mpi-Slab"
