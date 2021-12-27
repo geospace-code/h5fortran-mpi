@@ -135,8 +135,8 @@ i0 = mpi_id * dx1 + 1
 i1 = (mpi_id + 1) * dx1
 if(debug) then
   print '(a,i0,a,3i4,a,3i4,a,2I4)', "TRACE: mpi id ", mpi_id, " shape(A3) ", shape(A3), " shape(t3) ", shape(t3), "i0,i1: ", i0, i1
-  print '(a,i0,a,16f4.0)', "TRACE: mpi_id ", mpi_id, " ref subarray: ", t3(i0:i1,:,:)
-  print '(a,i0,a,16f4.0)', "TRACE: mpi_id ", mpi_id, " worker subarray: ", A3
+  print '(a,i0,a,50f4.0)', "TRACE: mpi_id ", mpi_id, " ref subarray: ", t3(i0:i1,:,:)
+  print '(a,i0,a,50f4.0)', "TRACE: mpi_id ", mpi_id, " worker subarray: ", A3
 endif
 
 if (any(abs(t3(i0:i1,:,:) - A3) > 0.01)) error stop "3D ref mismatch " // trim(refh5fn) // " /= " // trim(h5fn)
