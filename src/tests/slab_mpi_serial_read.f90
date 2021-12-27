@@ -151,7 +151,7 @@ if(mpi_id == mpi_root_id) then
   call h5%read("/A3", t3)
   call h5%close()
 
-  if (any(abs(t3 - A3) > 0.01)) error stop "3D ref mismatch " // refh5fn // " /= " // h5fn
+  if (any(abs(t3 - A3) > 0.01)) error stop "3D ref mismatch " // trim(refh5fn) // " /= " // trim(h5fn)
 endif
 
 

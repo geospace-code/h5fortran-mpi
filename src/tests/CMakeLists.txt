@@ -159,7 +159,7 @@ if(NOT DEFINED PySkip)
 endif()
 
 
-set(pyargs ${PROJECT_SOURCE_DIR}/scripts/bench_slab.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -B $<TARGET_FILE_DIR:slab_mpi_write> -Nrun ${Nrun} -lx ${lx3})
+set(pyargs ${PROJECT_SOURCE_DIR}/scripts/bench_slab.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -B $<TARGET_FILE_DIR:slab_mpi_write> -Nrun ${Nrun} -lx ${lx3} -gen=-1. --debug)
 add_test(NAME PythonRunner COMMAND Python::Interpreter ${pyargs})
 set_tests_properties(PythonRunner PROPERTIES
 FIXTURES_REQUIRED "read_serial-Slab;read_mpi_root-Slab;read_mpi-Slab"

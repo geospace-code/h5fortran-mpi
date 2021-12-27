@@ -28,6 +28,7 @@ def serial_runner(
     *,
     comp_lvl: int = None,
     np: int = None,
+    siggen: float = None,
     debug: bool = False,
 ):
     """
@@ -47,6 +48,8 @@ def serial_runner(
 
     if debug:
         args.append("-debug")
+    if siggen is not None:
+        args += ["-gen", str(siggen)]
     if lx:
         args += ["-lx"] + list(map(str, lx))
     if comp_lvl:
@@ -70,6 +73,7 @@ def mpi_runner(
     comp_lvl: int = None,
     np: int = None,
     ref_fn: Path = None,
+    siggen: float = None,
     debug: bool = False,
 ):
     """
@@ -100,6 +104,8 @@ def mpi_runner(
 
     if debug:
         args.append("-debug")
+    if siggen is not None:
+        args += ["-gen", str(siggen)]
     if lx:
         args += ["-lx"] + list(map(str, lx))
     if np:
@@ -121,6 +127,7 @@ def slab_bench(
     np: int,
     bin_dir: Path,
     data_dir: Path,
+    siggen: float,
     debug: bool,
 ):
 
@@ -141,6 +148,7 @@ def slab_bench(
                 lx,
                 comp_lvl=c,
                 np=np,
+                siggen=siggen,
                 debug=debug,
             )
 
@@ -165,6 +173,7 @@ def slab_bench(
                 lx,
                 comp_lvl=c,
                 np=np,
+                siggen=siggen,
                 debug=debug,
             )
 
@@ -194,6 +203,7 @@ def slab_bench(
                 lx,
                 comp_lvl=c,
                 np=np,
+                siggen=siggen,
                 debug=debug,
             )
 
@@ -228,5 +238,6 @@ if __name__ == "__main__":
         P["np"],
         P["bin_dir"],
         P["data_dir"],
+        siggen=P["siggen"],
         debug=P["debug"],
     )
