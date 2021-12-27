@@ -28,6 +28,7 @@ def serial_runner(
     *,
     comp_lvl: int = None,
     np: int = None,
+    debug: bool = False,
 ):
     """
     Serial without MPI
@@ -44,6 +45,8 @@ def serial_runner(
         str(Nrun),
     ]
 
+    if debug:
+        args.append("-debug")
     if lx:
         args += ["-lx"] + list(map(str, lx))
     if comp_lvl:
@@ -67,6 +70,7 @@ def mpi_runner(
     comp_lvl: int = None,
     np: int = None,
     ref_fn: Path = None,
+    debug: bool = False,
 ):
     """
     Runner frontend uses HWLOC to compute physical core count
@@ -82,6 +86,7 @@ def mpi_runner(
     mpiexec = shutil.which("mpiexec")
     if not mpiexec:
         raise FileNotFoundError("mpiexec not found")
+
     args = [
         "-exe",
         exe,
@@ -92,6 +97,9 @@ def mpi_runner(
         "-Nrun",
         str(Nrun),
     ]
+
+    if debug:
+        args.append("-debug")
     if lx:
         args += ["-lx"] + list(map(str, lx))
     if np:
@@ -113,6 +121,7 @@ def slab_bench(
     np: int,
     bin_dir: Path,
     data_dir: Path,
+    debug: bool,
 ):
 
     for c in comp_lvls:
@@ -132,6 +141,7 @@ def slab_bench(
                 lx,
                 comp_lvl=c,
                 np=np,
+                debug=debug,
             )
 
             serial_runner(
@@ -140,6 +150,7 @@ def slab_bench(
                 serialfn,
                 Nrun,
                 np=np,
+                debug=debug,
             )
 
         if "mpi_root" in tests:
@@ -154,6 +165,7 @@ def slab_bench(
                 lx,
                 comp_lvl=c,
                 np=np,
+                debug=debug,
             )
 
             mpi_runner(
@@ -164,6 +176,7 @@ def slab_bench(
                 lx,
                 np=np,
                 ref_fn=serialfn,
+                debug=debug,
             )
 
             if not keep:
@@ -181,6 +194,7 @@ def slab_bench(
                 lx,
                 comp_lvl=c,
                 np=np,
+                debug=debug,
             )
 
             mpi_runner(
@@ -191,6 +205,7 @@ def slab_bench(
                 lx,
                 np=np,
                 ref_fn=serialfn,
+                debug=debug,
             )
 
             if not keep:
@@ -205,5 +220,13 @@ if __name__ == "__main__":
     P = cli()
 
     slab_bench(
-        P["tests"], P["comp"], P["keep"], P["lx"], P["Nrun"], P["np"], P["bin_dir"], P["data_dir"]
+        P["tests"],
+        P["comp"],
+        P["keep"],
+        P["lx"],
+        P["Nrun"],
+        P["np"],
+        P["bin_dir"],
+        P["data_dir"],
+        debug=P["debug"],
     )

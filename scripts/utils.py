@@ -30,6 +30,7 @@ def cli() -> dict[str, T.Any]:
     p.add_argument(
         "-c", "--comp", help="compression levels", nargs="+", type=int, default=[0, 1, 3, 9]
     )
+    p.add_argument("-d", "--debug", help="debug mode", action="store_true")
     P = p.parse_args()
 
     bin_dir = Path(P.binary_dir).resolve()
@@ -52,6 +53,7 @@ def cli() -> dict[str, T.Any]:
         "keep": P.keep,
         "tests": P.tests,
         "comp": P.comp,
+        "debug": P.debug,
     }
 
     return params
