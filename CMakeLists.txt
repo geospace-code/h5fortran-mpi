@@ -26,18 +26,15 @@ check_mpi_version()
 
 if(NOT hdf5_external)
   if(autobuild)
-    find_package(HDF5 COMPONENTS Fortran HL parallel)
+    find_package(HDF5 1.10.2...2 COMPONENTS Fortran HL parallel)
   else()
-    find_package(HDF5 COMPONENTS Fortran HL parallel REQUIRED)
+    find_package(HDF5 1.10.2...2 COMPONENTS Fortran HL parallel REQUIRED)
   endif()
 endif()
 
-if(NOT HDF5_FOUND OR HDF5_VERSION VERSION_LESS 1.10.2)
-  set(HDF5_VERSION 1.12.1 CACHE STRING "HDF5 version built")
-  set(hdf5_external true CACHE BOOL "build HDF5-MPI")
-endif()
-
 if(NOT HDF5_FOUND OR hdf5_external)
+  set(HDF5_VERSION 1.12.1)  # not CACHE to override old FindHDF5 HDF5_VERSION variable
+
   include(cmake/libraries_hdf5.cmake)
   include(cmake/hdf5.cmake)
 endif()
