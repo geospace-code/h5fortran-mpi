@@ -267,36 +267,36 @@ set(CMAKE_REQUIRED_LINK_OPTIONS ${MPI_C_LINK_FLAGS})
 set(CMAKE_REQUIRED_LIBRARIES ${MPI_C_LIBRARY})
 list(APPEND CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
-if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/get_mpi_version.c)
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/get_mpi_version.c
-[=[
-#include <mpi.h>
-#include <stdio.h>
-
-int main(void) {
-int version, subversion;
-
-int ierr = MPI_Get_version(&version, &subversion);
-if (ierr != 0) return 1;
-printf("CMAKE_MPI_VERSION %d.%d\n", version, subversion);
-
-return 0;
-}
-]=]
-)
-endif()
-
 if(NOT MPI_VERSION)
   message(CHECK_START "Checking MPI API level")
 
+  if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/get_mpi_version.c)
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/get_mpi_version.c
+    [=[
+    #include <mpi.h>
+    #include <stdio.h>
+
+    int main(void) {
+    int version, subversion;
+
+    int ierr = MPI_Get_version(&version, &subversion);
+    if (ierr != 0) return 1;
+    printf("CMAKE_MPI_VERSION %d.%d\n", version, subversion);
+
+    return 0;
+    }
+    ]=]
+    )
+  endif()
+
   try_run(mpi_run_code mpi_build_code
-    ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/build
-    ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/get_mpi_version.c
-    CMAKE_FLAGS -DINCLUDE_DIRECTORIES=${MPI_C_INCLUDE_DIR}
-    LINK_OPTIONS ${MPI_C_LINK_FLAGS}
-    LINK_LIBRARIES ${MPI_C_LIBRARY}
-    RUN_OUTPUT_VARIABLE MPI_VERSION_STRING
-    COMPILE_OUTPUT_VARIABLE mpi_vers_build_out
+  ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/build
+  ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/get_mpi_version.c
+  CMAKE_FLAGS -DINCLUDE_DIRECTORIES=${MPI_C_INCLUDE_DIR}
+  LINK_OPTIONS ${MPI_C_LINK_FLAGS}
+  LINK_LIBRARIES ${MPI_C_LIBRARY}
+  RUN_OUTPUT_VARIABLE MPI_VERSION_STRING
+  COMPILE_OUTPUT_VARIABLE mpi_vers_build_out
   )
 
   if(NOT mpi_build_code)

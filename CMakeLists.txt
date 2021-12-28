@@ -21,6 +21,9 @@ include(cmake/libraries.cmake)
 
 # --- external libraries:  HDF5, HWLOC
 
+include(cmake/check_mpi.cmake)
+check_mpi_version()
+
 if(NOT hdf5_external)
   if(autobuild)
     find_package(HDF5 COMPONENTS Fortran HL parallel)
