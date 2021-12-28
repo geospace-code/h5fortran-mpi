@@ -10,6 +10,11 @@ if(hdf5_parallel)
   find_package(MPI REQUIRED COMPONENTS C)
 endif()
 
+# pass MPI hints to HDF5
+if(NOT MPI_ROOT AND DEFINED ENV{MPI_ROOT})
+  set(MPI_ROOT $ENV{MPI_ROOT})
+endif()
+
 # need to be sure _ROOT isn't empty, DEFINED is not enough
 if(NOT HDF5_ROOT)
   set(HDF5_ROOT ${CMAKE_INSTALL_PREFIX})
@@ -55,9 +60,11 @@ ${zlib_root}
 -DUSE_LIBAEC:bool=true
 -DHDF5_BUILD_TOOLS:BOOL=$<NOT:$<BOOL:${hdf5_parallel}>>
 -DHDF5_ENABLE_PARALLEL:BOOL=$<BOOL:${hdf5_parallel}>
--DMPI_ROOT:PATH=${MPI_ROOT}
 )
 # https://github.com/HDFGroup/hdf5/issues/818  for broken ph5diff in HDF5_BUILD_TOOLS
+if(MPI_ROOT)
+  list(APPEND hdf5_cmake_args -DMPI_ROOT:PATH=${MPI_ROOT})
+endif()
 
 ExternalProject_Add(HDF5
 URL ${hdf5_url}
