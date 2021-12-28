@@ -23,6 +23,9 @@ character(1000) :: argv, h5fn
 
 integer :: ierr, lx1, lx2, lx3, dx1, i, comp_lvl, real_bits
 integer(HSIZE_T), allocatable, dimension(:) ::  d3
+
+integer(HSIZE_T), dimension(rank(A3)) :: istart, iend
+
 integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
 
@@ -35,7 +38,9 @@ call mpi_init(ierr)
 if(ierr/=0) error stop "mpi_init"
 
 call mpi_comm_size(mpi_h5comm, Nmpi, ierr)
+if(ierr/=0) error stop "mpi_comm_size"
 call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
+if(ierr/=0) error stop "mpi_comm_rank"
 
 Nrun = 1
 h5fn = ""
@@ -88,13 +93,13 @@ call mpi_bcast(lx2, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
 if(ierr/=0) error stop "failed to broadcast lx2"
 call mpi_bcast(lx3, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
 if(ierr/=0) error stop "failed to broadcast lx3"
-if(lx2 < 1 .or. lx1 < 1) then
+if(lx3 < 1 .or. lx2 < 1 .or. lx1 < 1) then
   write(stderr,"(A,i0,A,i0,1x,i0,1x,i0)") "ERROR: MPI ID: ", mpi_id, " failed to receive lx1, lx2, lx3: ", lx1, lx2, lx3
   error stop
 endif
 !! init workers with sentinel values to catch broken MPI library or mpiexec.
 
-if (debug) print '(a,i0,a,i0,1x,i0,1x,i0)', 'MPI worker: ', mpi_id, ' lx1, lx2, lx3 = ', lx1, lx2, lx3
+if (debug) print '(a,i0,a,i0,1x,i0,1x,i0)', 'mpi_writer: mpi_id: ', mpi_id, ' lx1, lx2, lx3 = ', lx1, lx2, lx3
 
 !! 1-D decompose in rows (neglect ghost cells)
 dx1 = lx1 / Nmpi
@@ -110,15 +115,29 @@ call generate_and_send(Nmpi, mpi_id, mpi_root_id, dx1, lx1, lx2, lx3, mt%a3, mpi
 
 if (mpi_id == mpi_root_id) then
   call system_clock(count=toc)
-  if (debug) print '(a,i0,a,f10.3)', "MPI worker: ", mpi_id, " time to initialize (milliseconds) ", sysclock2ms(toc-tic)
+  if (debug) print '(a,i0,a,f10.3)', "mpi_writer: mpi_id: ", mpi_id, " time to initialize (milliseconds) ", sysclock2ms(toc-tic)
 endif
+
+!> assign each worker hyperslab
+!! Each process defines dataset in memory and writes it to the hyperslab in the file.
+
+!! Only chunking along first dim, but can make test chunk on any/all dimension(s)
+istart(1) = mpi_id * dx1 + 1
+istart(2) = 1
+istart(3) = 1
+iend(1) = istart(1) + dx1 - 1
+iend(2) = lx2
+iend(3) = lx3
+
+if(debug) print '(a,i0,a,i0,a,i0)', "mpi_writer: mpi_id: ", mpi_id, " istart: ", istart(1), " iend: ", iend(1)
+
 !> benchmark loop
 
 main : do i = 1, Nrun
   if(mpi_id == mpi_root_id) call system_clock(count=tic)
 
   call h5%open(trim(h5fn), action="w", mpi=.true., comp_lvl=comp_lvl, debug=debug)
-  call h5%write("/A3", A3, [lx1, lx2, lx3])
+  call h5%write("/A3", A3, [lx1, lx2, lx3], istart=istart, iend=iend)
   call h5%close()
 
   if(mpi_id == mpi_root_id) then

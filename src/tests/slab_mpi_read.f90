@@ -31,6 +31,7 @@ integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
 
 integer(HSIZE_T), allocatable :: dims_full(:)
+integer(HSIZE_T), dimension(rank(A3)) :: istart, iend
 
 call mpi_init(ierr)
 if(ierr/=0) error stop "mpi_init"
@@ -97,7 +98,7 @@ call mpi_bcast(lx2, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
 if(ierr/=0) error stop "failed to broadcast lx2"
 call mpi_bcast(lx3, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
 if(ierr/=0) error stop "failed to broadcast lx3"
-if(lx3 < 0 .or. lx2 < 1 .or. lx1 < 1) then
+if(lx3 < 1 .or. lx2 < 1 .or. lx1 < 1) then
   write(stderr,"(A,i0,A,i0,1x,i0,1x,i0)") "ERROR: MPI ID: ", mpi_id, " failed to receive lx1, lx2, lx3: ", lx1, lx2, lx3
   error stop
 endif
@@ -109,12 +110,25 @@ dx1 = lx1 / Nmpi
 
 allocate(A3(dx1, lx2, lx3))
 
+!> assign each worker hyperslab
+!! Each process defines dataset in memory and writes it to the hyperslab in the file.
+
+!! Only chunking along first dim, but can make test chunk on any/all dimension(s)
+istart(1) = mpi_id * dx1 + 1
+istart(2) = 1
+istart(3) = 1
+iend(1) = istart(1) + dx1 - 1
+iend(2) = lx2
+iend(3) = lx3
+
+if(debug) print '(a,i0,a,i0,a,i0)', "mpi_writer: mpi_id: ", mpi_id, " istart: ", istart(1), " iend: ", iend(1)
+
 !> benchmark loop
 
 main : do i = 1, Nrun
   if(mpi_id == mpi_root_id) call system_clock(count=tic)
   call h5%open(trim(h5fn), action="r", mpi=.true., debug=debug)
-  call h5%read("/A3", A3)
+  call h5%read("/A3", A3, istart=istart, iend=iend)
   call h5%close()
   if(mpi_id == mpi_root_id) then
     call system_clock(count=toc)

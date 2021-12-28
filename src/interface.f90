@@ -12,7 +12,7 @@ H5F_ACC_RDONLY_F, H5F_ACC_TRUNC_F, H5F_ACC_RDWR_F, H5F_SCOPE_GLOBAL_F, &
 H5FD_MPIO_COLLECTIVE_F, &
 H5P_DEFAULT_F, H5P_FILE_ACCESS_F, H5P_DATASET_CREATE_F, H5P_DATASET_XFER_F, &
 H5S_ALL_F, H5S_SELECT_SET_F, &
-h5dcreate_f, h5dclose_f, h5dget_space_f, &
+h5dcreate_f, h5dopen_f, h5dclose_f, h5dget_space_f, &
 h5fopen_f, h5fclose_f, h5fcreate_f, h5fget_filesize_f, h5fflush_f, &
 h5pcreate_f, h5pclose_f, h5pset_chunk_f, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, &
 h5sselect_hyperslab_f, h5screate_simple_f, h5sclose_f, &
@@ -71,13 +71,14 @@ check, hdf_wrapup, hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hypersla
 hdf5version, HSIZE_T
 
 interface !< write.f90
-module subroutine hdf_create(self, dname, dtype, dims, dset_dims, filespace, memspace, dset_id, xfer_id, chunk_size)
+module subroutine hdf_create(self, dname, dtype, dims, dset_dims, filespace, memspace, dset_id, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 integer(HID_T), intent(in) :: dtype
 integer(HSIZE_T), intent(in) :: dims(:)
 integer(HSIZE_T), intent(in) :: dset_dims(:)
-integer(HID_T), intent(out), optional :: filespace, memspace, dset_id, xfer_id
+integer(HID_T), intent(out), optional :: filespace, memspace, dset_id
+integer(HSIZE_T), dimension(size(dims)), intent(in), optional :: istart, iend
 integer, intent(in), optional :: chunk_size(:)
 end subroutine hdf_create
 end interface
@@ -97,53 +98,60 @@ character(*), intent(in) :: dname
 class(*), intent(in) :: value
 end subroutine h5write_scalar
 
-module subroutine ph5write_1d(self, dname, value, dset_dims)
+module subroutine ph5write_1d(self, dname, value, dset_dims, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:)
-class(*), intent(in), optional :: dset_dims(1)  !< integer or integer(HSIZE_T) full disk shape (not just per worker)
+class(*), intent(in), dimension(1), optional :: dset_dims  !< integer or integer(HSIZE_T) full disk shape (not just per worker)
+integer(HSIZE_T), intent(in), dimension(1), optional :: istart, iend, chunk_size
 end subroutine ph5write_1d
 
-module subroutine ph5write_2d(self, dname, value, dset_dims)
+module subroutine ph5write_2d(self, dname, value, dset_dims, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:)
 class(*), intent(in), optional :: dset_dims(2)
+integer(HSIZE_T), intent(in), dimension(2), optional :: istart, iend, chunk_size
 end subroutine ph5write_2d
 
-module subroutine ph5write_3d(self, dname, value, dset_dims)
+module subroutine ph5write_3d(self, dname, value, dset_dims, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:)
 class(*), intent(in), optional :: dset_dims(3)
+integer(HSIZE_T), intent(in), dimension(3), optional :: istart, iend, chunk_size
 end subroutine ph5write_3d
 
-module subroutine ph5write_4d(self, dname, value, dset_dims)
+module subroutine ph5write_4d(self, dname, value, dset_dims, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:)
 class(*), intent(in), optional :: dset_dims(4)
+integer(HSIZE_T), intent(in), dimension(4), optional :: istart, iend, chunk_size
 end subroutine ph5write_4d
 
-module subroutine ph5write_5d(self, dname, value, dset_dims)
+module subroutine ph5write_5d(self, dname, value, dset_dims, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:)
 class(*), intent(in), optional :: dset_dims(5)
+integer(HSIZE_T), intent(in), dimension(5), optional :: istart, iend, chunk_size
 end subroutine ph5write_5d
 
-module subroutine ph5write_6d(self, dname, value, dset_dims)
+module subroutine ph5write_6d(self, dname, value, dset_dims, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:,:)
 class(*), intent(in), optional :: dset_dims(6)
+integer(HSIZE_T), intent(in), dimension(6), optional :: istart, iend, chunk_size
 end subroutine ph5write_6d
 
-module subroutine ph5write_7d(self, dname, value, dset_dims)
+module subroutine ph5write_7d(self, dname, value, dset_dims, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:,:,:)
 class(*), intent(in), optional :: dset_dims(7)
+integer(HSIZE_T), intent(in), dimension(7), optional :: istart, iend, chunk_size
 end subroutine ph5write_7d
 
 end interface
@@ -151,11 +159,12 @@ end interface
 
 interface !< read.f90
 
-module subroutine h5open_read(self, dname, dims, filespace, memspace, dset_id, xfer_id)
+module subroutine h5open_read(self, dname, dims, dset_dims, filespace, memspace, dset_id)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 integer(HSIZE_T), intent(in) :: dims(:)
-integer(HID_T), intent(out) :: filespace, memspace, dset_id, xfer_id
+integer(HSIZE_T), intent(out) :: dset_dims(size(dims))
+integer(HID_T), intent(out) :: filespace, memspace, dset_id
 end subroutine h5open_read
 
 module integer function get_class(self, dname)
@@ -179,46 +188,53 @@ character(*), intent(in)         :: dname
 class(*), intent(inout)        :: value
 end subroutine h5read_scalar
 
-module subroutine ph5read_1d(self, dname, value)
+module subroutine ph5read_1d(self, dname, value, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
 class(*), intent(inout) :: value(:)
+integer(HSIZE_T), intent(in), dimension(1), optional :: istart, iend
 end subroutine ph5read_1d
 
-module subroutine ph5read_2d(self, dname, value)
+module subroutine ph5read_2d(self, dname, value, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
 class(*), intent(inout) :: value(:,:)
+integer(HSIZE_T), intent(in), dimension(2), optional :: istart, iend
 end subroutine ph5read_2d
 
-module subroutine ph5read_3d(self, dname, value)
+module subroutine ph5read_3d(self, dname, value, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
 class(*), intent(inout) :: value(:,:,:)
+integer(HSIZE_T), intent(in), dimension(3), optional :: istart, iend
 end subroutine ph5read_3d
 
-module subroutine ph5read_4d(self, dname, value)
+module subroutine ph5read_4d(self, dname, value, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
 class(*), intent(inout) :: value(:,:,:,:)
+integer(HSIZE_T), intent(in), dimension(4), optional :: istart, iend
 end subroutine ph5read_4d
 
-module subroutine ph5read_5d(self, dname, value)
+module subroutine ph5read_5d(self, dname, value, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
 class(*), intent(inout) :: value(:,:,:,:,:)
+integer(HSIZE_T), intent(in), dimension(5), optional :: istart, iend
 end subroutine ph5read_5d
 
-module subroutine ph5read_6d(self, dname, value)
+module subroutine ph5read_6d(self, dname, value, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
 class(*), intent(inout) :: value(:,:,:,:,:,:)
+integer(HSIZE_T), intent(in), dimension(6), optional :: istart, iend
 end subroutine ph5read_6d
 
-module subroutine ph5read_7d(self, dname, value)
+module subroutine ph5read_7d(self, dname, value, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
 class(*), intent(inout) :: value(:,:,:,:,:,:,:)
+integer(HSIZE_T), intent(in), dimension(7), optional :: istart, iend
 end subroutine ph5read_7d
 
 end interface
@@ -350,15 +366,18 @@ self%is_open = .false.
 end subroutine ph5close
 
 
-subroutine mpi_hyperslab(dims, dset_dims, dset_id, filespace, memspace, dname)
+subroutine mpi_hyperslab(dims, dset_dims, dset_id, filespace, memspace, dname, istart, iend)
+!! Each process defines dataset in memory and writes it to the hyperslab in the file.
 
 integer(HSIZE_T), dimension(:), intent(in) :: dims, dset_dims
 integer(HID_T), intent(in) :: dset_id
 integer(HID_T), intent(inout) :: filespace, memspace
 character(*), intent(in) :: dname !< for error messages
+integer(HSIZE_T), dimension(:), intent(in) :: istart
+integer(HSIZE_T), dimension(size(istart)), intent(in) :: iend
 
-integer(HSIZE_T), dimension(size(dims)) :: cnt, stride, blk, offset
-integer :: ierr, mpi_id
+integer(HSIZE_T), dimension(size(dims)) :: mem_dims, i0
+integer :: ierr
 
 
 if(filespace == H5S_ALL_F) then
@@ -371,30 +390,29 @@ endif
 call h5dget_space_f(dset_id, filespace, ierr)
 if (ierr/=0) error stop "h5dget_space: " // dname
 
-!! Each process defines dataset in memory and writes it to the hyperslab in the file.
-call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
-if(ierr /= 0) error stop "hdf_create: could not get MPI rank"
+! blk(1) = 1
+! blk(2:) = dset_dims(2:)
 
-!> chunk choices are arbitrary, but must be the same on all processes
-!> TODO: only chunking along first dim
-cnt(1) = dims(1)
-cnt(2:) = 1
-offset(1) = mpi_id*cnt(1)
-offset(2:) = 0
-stride = 1
-blk(1) = 1
-blk(2:) = dset_dims(2:)
+!! NOTE: 0-based hyperslab vs. 1-based Fortran
+i0 = istart - 1
+mem_dims = iend - i0
+
+! print *, 'TRACE:mpi_hyperslab: ' // dname //': istart', i0, ' mem_dims: ', mem_dims
+
+if(any(mem_dims < 1)) error stop "h5mpi:hyperslab:non-positive hyperslab: " // dname
 
 call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
-  start=offset, &
-  count=cnt, hdferr=ierr, &
-  stride=stride, &
-  block=blk)
+start=i0, &
+count=mem_dims, &
+hdferr=ierr)
+! stride=1, &  !< for now we don't stride data
+! block=blk  !< would this help performance?
+
 if (ierr/=0) error stop "h5sselect_hyperslab: " // dname
 
 !> create memory dataspace
 call h5screate_simple_f(rank=size(dims), dims=dims, space_id=memspace, hdferr=ierr)
-if (ierr/=0) error stop "h5screate_simple:memspace " // dname
+if (ierr/=0) error stop "h5fortran:h5screate_simple:memspace " // dname
 
 end subroutine mpi_hyperslab
 
@@ -574,23 +592,26 @@ subroutine hdf_shape_check(self, dname, dims, dset_dims)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 integer(HSIZE_T), intent(in) :: dims(:)
-integer(HSIZE_T), intent(out) :: dset_dims(size(dims))
+integer(HSIZE_T), intent(out), optional :: dset_dims(size(dims))
 
 integer :: ierr, type_class
 integer(SIZE_T) :: type_size
+integer(HSIZE_T) :: dsdims(size(dims))
 
 call hdf_rank_check(self, dname, size(dims))
 
 !> check for matching size, else bad reads can occur.
 
-call h5ltget_dataset_info_f(self%file_id, dname, dims=dset_dims, &
+call h5ltget_dataset_info_f(self%file_id, dname, dims=dsdims, &
     type_class=type_class, type_size=type_size, errcode=ierr)
 if (ierr/=0) error stop 'h5fortran:shape_check: get_dataset_info ' // dname // ' read ' // self%filename
 
+if(present(dset_dims)) dset_dims = dsdims
+
 if(self%use_mpi) return
 
-if(any(int(dims, int64) /= dset_dims)) then
-  write(stderr,*) 'h5fortran:shape_check: shape mismatch ' // dname // ' = ', dset_dims, '  variable shape =', dims
+if(any(int(dims, int64) /= dsdims)) then
+  write(stderr,*) 'h5fortran:shape_check: shape mismatch ' // dname // ' = ', dsdims, '  variable shape =', dims
   error stop
 endif
 

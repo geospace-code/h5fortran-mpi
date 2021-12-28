@@ -12,10 +12,9 @@ module procedure hdf_create
 
 logical :: exists
 integer :: ierr
-integer(HID_T) :: plist_id
+integer(HID_T) :: plist_id, ds_id
 
 plist_id = H5P_DEFAULT_F
-xfer_id = H5P_DEFAULT_F
 memspace = H5S_ALL_F
 
 if(.not.self%is_open) error stop 'h5fortran:write: file handle is not open: ' // self%filename
@@ -27,10 +26,33 @@ if (ierr /= 0) error stop 'ERROR:h5fortran:create: variable path invalid: ' // d
 
 if(self%debug) print *,'h5fortran:TRACE:create:exists: ' // dname, exists
 
+if(exists) then
+  if (.not.present(istart)) then
+    if (size(dims) == 0) then
+      !! scalar
+      call hdf_rank_check(self, dname, size(dims))
+    else
+      call hdf_shape_check(self, dname, dims)
+    endif
+  endif
+  !! FIXME: read and write slice shape not checked; but should check in future versions
+
+  !> open dataset
+  call h5dopen_f(self%file_id, dname, ds_id, ierr)
+  if (ierr /= 0) error stop 'ERROR:h5fortran:create: could not open ' // dname // ' in ' // self%filename
+
+  if(present(dset_id)) dset_id = ds_id
+  if(present(filespace)) then
+    call h5dget_space_f(ds_id, filespace, ierr)
+    if(ierr /= 0) error stop 'h5fortran:create could not get dataset ' // dname // ' in ' // self%filename
+  end if
+  return
+endif
+
 !> compression
 if(size(dims) >= 2) then
   call set_deflate(self, dims, plist_id, ierr, chunk_size)
-  if (ierr/=0) error stop 'ERROR:h5fortran:create: problem setting deflate on ' // dname
+  if (ierr/=0) error stop 'ERROR:h5fortran:create: problem setting deflate on ' // dname // ' in ' // self%filename
 endif
 
 !> create dataset dataspace
@@ -39,16 +61,10 @@ if (ierr/=0) error stop "h5screate_simple:filespace " // dname // " " // self%fi
 
 !> create dataset
 call h5dcreate_f(self%file_id, dname, dtype, space_id=filespace, dset_id=dset_id, hdferr=ierr, dcpl_id=plist_id)
-if (ierr/=0) error stop "h5dcreate: " // dname // " " // self%filename
+if (ierr/=0) error stop "h5fortran:h5dcreate: " // dname // " " // self%filename
 
 call h5pclose_f(plist_id, ierr)
 if (ierr/=0) error stop "h5pclose: " // dname // ' in ' // self%filename
-
-if(.not. self%use_mpi) return
-
-call mpi_hyperslab(dims, dset_dims, dset_id, filespace, memspace, dname)
-
-xfer_id = mpi_collective(dname)
 
 end procedure hdf_create
 

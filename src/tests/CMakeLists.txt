@@ -61,14 +61,14 @@ add_test(NAME WRITE_MPI_root-Slab
 COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_serial_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpi_rootfn} -gen -1. -debug
 )
 set_tests_properties(WRITE_MPI_root-Slab PROPERTIES
-TIMEOUT 30
+TIMEOUT 15
 FIXTURES_SETUP write_mpi_root-Slab
 LABELS "mpi_root;write"
 RUN_SERIAL true
 )
 
 add_test(NAME COMPARE_MPI_root-Slab
-COMMAND ${H5DIFF} -v ${mpi_rootfn} ${serialfn}
+COMMAND ${H5DIFF} -v --delta=0.01 ${mpi_rootfn} ${serialfn}
 )
 set_tests_properties(COMPARE_MPI_root-Slab PROPERTIES
 FIXTURES_REQUIRED "write_serial-Slab;write_mpi_root-Slab"
@@ -104,14 +104,14 @@ add_test(NAME WRITE_MPI-Slab
 COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpifn} -gen -1. -debug
 )
 set_tests_properties(WRITE_MPI-Slab PROPERTIES
-TIMEOUT 30
+TIMEOUT 15
 FIXTURES_SETUP write_mpi-Slab
 LABELS "mpi_hdf5;write"
 RUN_SERIAL true
 )
 
 add_test(NAME COMPARE_MPI-Slab
-COMMAND ${H5DIFF} -v ${mpifn} ${serialfn}
+COMMAND ${H5DIFF} -v --delta=0.01 ${mpifn} ${serialfn}
 )
 set_tests_properties(COMPARE_MPI-Slab PROPERTIES
 FIXTURES_REQUIRED "write_serial-Slab;write_mpi-Slab"

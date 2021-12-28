@@ -1,10 +1,17 @@
-integer(HSIZE_T) :: dims(rank(value))
+integer(HSIZE_T), dimension(rank(value)) :: dims, dset_dims
 integer(HID_T) :: dset_id, file_space_id, mem_space_id, xfer_id
 integer :: dclass, ier
 
+xfer_id = H5P_DEFAULT_F
+
 dims = shape(value, HSIZE_T)
 
-call h5open_read(self, dname, dims, file_space_id, mem_space_id, dset_id, xfer_id)
+call h5open_read(self, dname, dims, dset_dims, file_space_id, mem_space_id, dset_id)
+
+if(self%use_mpi) then
+  call mpi_hyperslab(dims, dset_dims, dset_id, file_space_id, mem_space_id, dname, istart=istart, iend=iend)
+  xfer_id = mpi_collective(dname)
+endif
 
 call get_dset_class(self, dname, dclass, dset_id)
 
