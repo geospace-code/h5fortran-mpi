@@ -78,7 +78,7 @@ integer(HID_T), intent(in) :: dtype
 integer(HSIZE_T), intent(in) :: dims(:)
 integer(HSIZE_T), intent(in) :: dset_dims(:)
 integer(HID_T), intent(out), optional :: filespace, memspace, dset_id
-integer(HSIZE_T), dimension(size(dims)), intent(in), optional :: istart, iend
+integer(HSIZE_T), dimension(:), intent(in), optional :: istart, iend
 integer, intent(in), optional :: chunk_size(:)
 end subroutine hdf_create
 end interface
@@ -163,7 +163,7 @@ module subroutine h5open_read(self, dname, dims, dset_dims, filespace, memspace,
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 integer(HSIZE_T), intent(in) :: dims(:)
-integer(HSIZE_T), intent(out) :: dset_dims(size(dims))
+integer(HSIZE_T), intent(out) :: dset_dims(:)
 integer(HID_T), intent(out) :: filespace, memspace, dset_id
 end subroutine h5open_read
 
