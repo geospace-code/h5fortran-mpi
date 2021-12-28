@@ -51,11 +51,12 @@ jobs:
       run: cat build/CMakeFiles/CMakeError.log
 
     - name: Release build
-      run: MPI_ROOT=$I_MPI_ROOT cmake --build --preset release
+      run: cmake --build --preset release || cmake --build --preset release
+      # double build command is to workaround bug in HDF5 package itself with Intel oneAPI + MPI when used as CMake ExternalProject, for 1.10 and 1.12
     - name: Release unit test
       run: ctest --preset release --output-junit test-release-oneapi.xml
 
     - name: debug build
-      run: MPI_ROOT=$I_MPI_ROOT cmake --build --preset debug
+      run: cmake --build --preset debug || cmake --build --preset debug
     - name: debug unit test
       run: ctest --preset debug --output-junit test-debug-oneapi.xml
