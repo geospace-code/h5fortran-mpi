@@ -4,7 +4,7 @@ env:
   CTEST_PARALLEL_LEVEL: 2
   CMAKE_BUILD_TYPE: Release
   CC: icx
-  FC: ifx
+  FC: ifort
 
 on:
   push:
@@ -51,11 +51,11 @@ jobs:
       run: cat build/CMakeFiles/CMakeError.log
 
     - name: Release build
-      run: cmake --build --preset release
+      run: MPI_ROOT=$I_MPI_ROOT cmake --build --preset release
     - name: Release unit test
       run: ctest --preset release --output-junit test-release-oneapi.xml
 
     - name: debug build
-      run: cmake --build --preset debug
+      run: MPI_ROOT=$I_MPI_ROOT cmake --build --preset debug
     - name: debug unit test
       run: ctest --preset debug --output-junit test-debug-oneapi.xml
