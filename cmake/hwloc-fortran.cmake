@@ -12,9 +12,9 @@ if(NOT hwloc_external)
   endif()
 
   if(autobuild)
-    find_package(HWLOC)
+    find_package(HWLOC 2.4...4)
   else()
-    find_package(HWLOC REQUIRED)
+    find_package(HWLOC 2.4...4 REQUIRED)
   endif()
 endif()
 
