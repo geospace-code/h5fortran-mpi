@@ -29,7 +29,7 @@ jobs:
     - name: install hdf5
       run: |
         sudo apt update -yq
-        sudo apt install -yq --no-install-recommends ninja-build libhdf5-mpi-dev
+        sudo apt install -yq --no-install-recommends ninja-build libhdf5-mpi-dev hdf5-tools
 
     - name: Python pkgs
       run: pip install --user -r requirements.txt
