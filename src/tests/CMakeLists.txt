@@ -16,9 +16,11 @@ target_link_libraries(slab_serial_write PRIVATE h5mpi cli perf test_utils kernel
 add_executable(slab_serial_read slab_serial_read.f90)
 target_link_libraries(slab_serial_read PRIVATE h5mpi cli perf HDF5::HDF5 MPI::MPI_Fortran)
 
+cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
+cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
 find_program(H5DIFF
 NAMES h5diff
-HINTS ${HDF5_ROOT}
+HINTS ${HDF5_ROOT} ${HDF5_DIR}
 )
 
 
