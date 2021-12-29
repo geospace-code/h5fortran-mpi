@@ -19,6 +19,12 @@
     "configuration": "Release"
   },
   {
+    "name": "reldeb",
+    "configurePreset": "multi",
+    "configuration": "RelWithDebInfo",
+    "displayName": "Release with Debug Info"
+  },
+  {
     "name": "debug",
     "configurePreset": "multi",
     "configuration": "Debug"
@@ -41,6 +47,12 @@
   "name": "release", "inherits": "default",
   "configurePreset": "multi",
   "configuration": "Release"
+},
+{
+  "name": "reldeb", "inherits": "default",
+  "configurePreset": "multi",
+  "configuration": "RelWithDebInfo",
+  "displayName": "Release with Debug Info"
 },
 {
   "name": "debug", "inherits": "default",
