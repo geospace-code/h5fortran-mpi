@@ -1,11 +1,11 @@
 module perf
 
 use, intrinsic :: iso_fortran_env, only : int64, stderr=>error_unit, stdout=>output_unit, compiler_version
-use median_mod, only : median
-
-use h5mpi, only : hdf5_file, hdf5version
-use hdf5, only : HSIZE_T
 use mpi, only : mpi_get_version, MPI_Get_library_version
+
+use h5mpi, only : hdf5_file, hdf5version, HSIZE_T
+
+use median_mod, only : median
 
 implicit none (type, external)
 

@@ -5,8 +5,9 @@ program read_slab_mpi_root
 
 use, intrinsic :: iso_fortran_env, only : int32, int64, real64, stderr=>error_unit
 use mpi, only : mpi_comm_rank, mpi_comm_size, mpi_integer, mpi_real, mpi_status_ignore
-use hdf5, only : HSIZE_T
-use h5mpi, only : mpi_h5comm, hdf5_file, mpi_tags
+
+use h5mpi, only : mpi_h5comm, hdf5_file, mpi_tags, HSIZE_T
+
 use cli, only : get_cli
 use perf, only : print_timing, sysclock2ms
 
@@ -111,7 +112,7 @@ endif
 allocate(t_elapsed(Nrun))
 
 !> benchmark loop
-
+tic = 0
 main : do j = 1, Nrun
   !! Root: serial read HDF5 file
   if(mpi_id == mpi_root_id) then

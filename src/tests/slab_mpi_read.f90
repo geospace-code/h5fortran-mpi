@@ -5,8 +5,9 @@ program read_slab_mpi
 
 use, intrinsic :: iso_fortran_env, only : int32, int64, real64, stderr=>error_unit
 use mpi, only : mpi_comm_size, mpi_comm_rank, mpi_integer
-use hdf5, only : HSIZE_T
-use h5mpi, only : mpi_h5comm, hdf5_file
+
+use h5mpi, only : mpi_h5comm, hdf5_file, HSIZE_T
+
 use cli, only : get_cli
 use perf, only : print_timing, sysclock2ms
 
