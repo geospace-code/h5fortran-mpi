@@ -16,9 +16,9 @@ public :: generate_and_send
 
 contains
 
-subroutine generate_and_send(Nmpi, mpi_id, mpi_root_id, dx1, lx1, lx2, lx3, tagA3, mpi_h5comm, noise, gensig, A3)
+subroutine generate_and_send(Nmpi, mpi_id, mpi_root_id, dx2, lx1, lx2, lx3, tagA3, mpi_h5comm, noise, gensig, A3)
 
-integer, intent(in) :: Nmpi, mpi_id, mpi_root_id, dx1, lx1, lx2, lx3, tagA3, mpi_h5comm
+integer, intent(in) :: Nmpi, mpi_id, mpi_root_id, dx2, lx1, lx2, lx3, tagA3, mpi_h5comm
 real(real32), intent(in) :: noise, gensig
 real(real32), intent(inout), allocatable :: A3(:,:,:)
 
@@ -33,25 +33,25 @@ A3 = NaN
 
 if(mpi_id == mpi_root_id) then
   !> root creates synthetic data for this benchmark
-  allocate(t3(lx1,lx2,lx3))
-  call random_number(A3)
+  allocate(t3(lx1, lx2, lx3))
+  call random_number(t3)
   t3 = noise*t3 + spread(phantom(lx1, lx2, gensig), 3, lx3)
 endif
 
 !> dummy data from root to workers
 if(mpi_id == mpi_root_id) then
   do i = 1, Nmpi-1
-    i0 = i*dx1+1
-    i1 = (i+1)*dx1
+    i0 = i*dx2 + 1
+    i1 = (i + 1)*dx2
     ! print '(a,i0,1x,i0)', "TRACE: generate istart, iend: ", i0, i1
-    call mpi_send(t3(i0:i1, :, :), dx1*lx2*lx3, MPI_REAL, i, tagA3, mpi_h5comm, ierr)
+    call mpi_send(t3(:, i0:i1, :), lx1*dx2*lx3, MPI_REAL, i, tagA3, mpi_h5comm, ierr)
     if (ierr /= 0) error stop "generate: root => worker: mpi_send 3D"
   end do
 
   !> root's subarray
-  A3(1:dx1, :, :) = t3(1:dx1, :, :)
+  A3(:, 1:dx2, :) = t3(:, 1:dx2, :)
 else
-  call mpi_recv(A3, dx1*lx2*lx3, MPI_REAL, mpi_root_id, tagA3, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
+  call mpi_recv(A3, lx1*dx2*lx3, MPI_REAL, mpi_root_id, tagA3, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
   if (ierr /= 0) error stop "generate: root => worker: mpi_recv 3D"
 endif
 

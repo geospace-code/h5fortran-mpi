@@ -22,7 +22,7 @@ lx1 = -1
 lx2 = -1
 lx3 = -1
 lid = -1
-gensig = 0
+gensig = -1.
 mpiexec = "mpiexec"
 exe = ""
 outfn = ""
@@ -69,7 +69,7 @@ inquire(file=exe, exist=exists)
 if(.not. exists) error stop trim(exe) // " is not a file."
 
 if(Ncpu < 1) Ncpu = get_cpu_count()
-lid = max_gcd(lx1, Ncpu)
+lid = max_gcd(lx2, Ncpu)
 
 print '(A,I0)', 'MPI images: ', lid
 

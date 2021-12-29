@@ -3,9 +3,13 @@ program write_slab_mpi_root
 !! this is noticably less efficient than using HDF5 MPI built-in interface.
 !! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90
 
+use, intrinsic :: ieee_arithmetic, only : ieee_is_finite
 use, intrinsic :: iso_fortran_env, only : int64, real32, real64, stderr=>error_unit
+
 use mpi, only : mpi_comm_rank, mpi_comm_size, mpi_integer, mpi_real, mpi_status_ignore
+
 use h5mpi, only : mpi_h5comm, hdf5_file, mpi_tags
+
 use cli, only : get_cli, get_simsize
 use perf, only : print_timing, sysclock2ms
 use test_utils, only : generate_and_send
@@ -18,11 +22,11 @@ type(mpi_tags) :: mt
 
 type(hdf5_file) :: h5
 
-real(real32), allocatable :: A3(:,:,:), t3(:,:,:)
+real(real32), allocatable :: A3(:,:,:), t3(:,:,:), V3(:), dv3(:)
 real(real32) :: noise, gensig
 character(1000) :: argv, h5fn
 
-integer :: ierr, lx1, lx2, lx3, dx1, i, j, i0, i1, comp_lvl, real_bits
+integer :: ierr, lx1, lx2, lx3, dx2, i, j, i0, i1, comp_lvl, real_bits
 integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
 
@@ -41,7 +45,7 @@ Nrun = 1
 h5fn = ""
 comp_lvl = 0
 noise = 0.
-gensig = 1.
+gensig = -1.
 
 do i = 1, command_argument_count()
   call get_command_argument(i, argv, status=ierr)
@@ -95,19 +99,38 @@ endif
 if (debug) print '(a,i0,a,i0,1x,i0,1x,i0)', 'MPI worker: ', mpi_id, ' lx1, lx2, lx3 = ', lx1, lx2, lx3
 
 !! 1-D decompose in rows (neglect ghost cells)
-dx1 = lx1 / Nmpi
+dx2 = lx2 / Nmpi
 
 !! root has the full array, and all other processes have a subarray
 if(mpi_id == mpi_root_id) then
   allocate(A3(lx1, lx2, lx3))
 else
-  allocate(A3(dx1, lx2, lx3))
+  allocate(A3(lx1, dx2, lx3))
 endif
 
 tic = 0
 if (mpi_id == mpi_root_id) call system_clock(count=tic)
 
-call generate_and_send(Nmpi, mpi_id, mpi_root_id, dx1, lx1, lx2, lx3, mt%a3, mpi_h5comm, noise, gensig, A3)
+call generate_and_send(Nmpi, mpi_id, mpi_root_id, dx2, lx1, lx2, lx3, mt%a3, mpi_h5comm, noise, gensig, A3)
+
+!> sanity check generated data on the worker
+
+if(gensig < 0) then
+  allocate(V3(lx1*dx2), dv3(lx1*dx2))
+  V3 = pack(A3(:, :dx2, :), .true.)
+
+  dv3 = V3 - eoshift(V3, -1, V3(1) - 1)
+  if (any(dV3 > 1.01) .or. any(dv3 < 0.99)) then
+    !! not formatted in case of weird data
+    write(stderr, *) "ERROR: MPI ID: ", mpi_id, " failed generate (sequence): ", A3
+    write(stderr, *) "diff mpi_id: ", mpi_id, dV3
+    error stop
+  endif
+endif
+if(.not.all(ieee_is_finite(A3(:, :dx2, :)))) then
+  write(stderr, '(a,i0,a,100f5.1)') "ERROR: MPI ID: ", mpi_id, " failed generate (NaN): ", A3
+  error stop
+endif
 
 if (mpi_id == mpi_root_id) then
   call system_clock(count=toc)
@@ -124,14 +147,14 @@ main : do j = 1, Nrun
     !! root's own subarray i=0 is already initialized
     !! worker i=1..Nmpi subarrays
     do i = 1, Nmpi-1
-      i0 = i*dx1+1
-      i1 = (i+1)*dx1
-      call mpi_recv(A3(i0:i1,:,:), dx1*lx2*lx3, MPI_REAL, i, mt%a3, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
+      i0 = i*dx2 + 1
+      i1 = (i + 1)*dx2
+      call mpi_recv(A3(:, i0:i1, :), lx1*dx2*lx3, MPI_REAL, i, mt%a3, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
       if(ierr/=0) error stop "worker => root: mpi_recv 3D"
     end do
   else
     !! workers send data to root
-    call mpi_send(A3, dx1*lx2*lx3, MPI_REAL, mpi_root_id, mt%a3, mpi_h5comm, ierr)
+    call mpi_send(A3, lx1*dx2*lx3, MPI_REAL, mpi_root_id, mt%a3, mpi_h5comm, ierr)
     if(ierr/=0) error stop "worker => root: mpi_send 3D"
   endif
 
@@ -162,8 +185,8 @@ if(mpi_id == mpi_root_id) then
 
   if (any(abs(t3 - A3) > 0.01)) then
     write(stderr,'(a,i0,1x,i0)') "ERROR: 3D disk vs. memory mismatch."
-    write(stderr,'(a,25f4.0)') "disk: ", t3
-    write(stderr,'(a,25f4.0)') "memory: ", A3
+    write(stderr,'(a,100f5.1)') "disk: ", t3
+    write(stderr,'(a,100f5.1)') "memory: ", A3
     error stop trim(h5fn)
   endif
 endif

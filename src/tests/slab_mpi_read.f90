@@ -21,7 +21,7 @@ real, allocatable :: A3(:,:,:), t3(:,:,:)
 
 character(1000) :: argv, h5fn, refh5fn
 
-integer :: ierr, lx1, lx2, lx3, dx1, i, i0, i1
+integer :: ierr, lx1, lx2, lx3, dx2, i, i0, i1
 integer :: comp_lvl, real_bits
 integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
@@ -107,19 +107,19 @@ endif
 if (debug) print '(a,i0,a,i0,1x,i0,1x,i0)', 'MPI worker: ', mpi_id, ' lx1, lx2, lx3 = ', lx1, lx2, lx3
 
 !! 1-D decompose in rows (neglect ghost cells)
-dx1 = lx1 / Nmpi
+dx2 = lx2 / Nmpi
 
-allocate(A3(dx1, lx2, lx3))
+allocate(A3(lx1, dx2, lx3))
 
 !> assign each worker hyperslab
 !! Each process defines dataset in memory and writes it to the hyperslab in the file.
 
 !! Only chunking along first dim, but can make test chunk on any/all dimension(s)
-istart(1) = mpi_id * dx1 + 1
-istart(2) = 1
+istart(1) = 1
+istart(2) = mpi_id * dx2 + 1
 istart(3) = 1
-iend(1) = istart(1) + dx1 - 1
-iend(2) = lx2
+iend(1) = lx1
+iend(2) = istart(2) + dx2 - 1
 iend(3) = lx3
 
 if(debug) print '(a,i0,a,i0,a,i0)', "mpi_writer: mpi_id: ", mpi_id, " istart: ", istart(1), " iend: ", iend(1)
@@ -146,15 +146,15 @@ call h5%open(trim(refh5fn), action="r", mpi=.false.)
 call h5%read("/A3", t3)
 call h5%close()
 
-i0 = mpi_id * dx1 + 1
-i1 = (mpi_id + 1) * dx1
+i0 = mpi_id * dx2 + 1
+i1 = (mpi_id + 1) * dx2
 if(debug) then
   print '(a,i0,a,3i4,a,3i4,a,2I4)', "TRACE: mpi id ", mpi_id, " shape(A3) ", shape(A3), " shape(t3) ", shape(t3), "i0,i1: ", i0, i1
-  print '(a,i0,a,50f4.0)', "TRACE: mpi_id ", mpi_id, " ref subarray: ", t3(i0:i1,:,:)
-  print '(a,i0,a,50f4.0)', "TRACE: mpi_id ", mpi_id, " worker subarray: ", A3
+  print '(a,i0,a,100f5.1)', "TRACE: mpi_id ", mpi_id, " ref subarray: ", t3(:, i0:i1, :)
+  print '(a,i0,a,100f5.1)', "TRACE: mpi_id ", mpi_id, " worker subarray: ", A3
 endif
 
-if (any(abs(t3(i0:i1,:,:) - A3) > 0.01)) error stop "3D ref mismatch " // trim(refh5fn) // " /= " // trim(h5fn)
+if (any(abs(t3(:, i0:i1, :) - A3) > 0.01)) error stop "3D ref mismatch " // trim(refh5fn) // " /= " // trim(h5fn)
 
 !> RESULTS
 

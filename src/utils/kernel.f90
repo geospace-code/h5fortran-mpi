@@ -21,7 +21,7 @@ if (gensig >= 0) then
 else
   do j = 1,N
     do i = 1,M
-      phantom(i, j) = j + (i-1)*N
+      phantom(i, j) = i + (j-1)*M
     end do
   end do
 endif

@@ -35,7 +35,7 @@ outfn = ""
 real_bits = 32
 comp_lvl = 0
 noise = 0.
-gensig = 1.
+gensig = -1.
 
 do i = 1, command_argument_count()
   call get_command_argument(i, argv, status=ierr)

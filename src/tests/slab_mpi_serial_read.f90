@@ -22,7 +22,7 @@ type(hdf5_file) :: h5
 real, allocatable ::  A3(:,:,:), t3(:,:,:)
 character(1000) :: argv, h5fn, refh5fn
 
-integer :: ierr, dx1, i, j, comp_lvl, real_bits
+integer :: ierr, dx2, i, j, i0, i1, comp_lvl, real_bits
 integer :: lx1, lx2, lx3
 integer(HSIZE_T), allocatable, dimension(:) :: dims_full
 integer :: Nmpi, mpi_id, Nrun
@@ -100,13 +100,13 @@ endif
 if (debug) print '(a,i0,a,i0,1x,i0,1x,i0)', 'MPI worker: ', mpi_id, ' lx1, lx2, lx3 = ', lx1, lx2, lx3
 
 !! 1-D decompose in rows (neglect ghost cells)
-dx1 = lx1 / Nmpi
+dx2 = lx2 / Nmpi
 
 !! root has the full array, and all other processes have a subarray
 if(mpi_id == mpi_root_id) then
-  allocate(A3(lx1, lx2, lx3), t3(dx1, lx2, lx3))  !< root-only working subarray
+  allocate(A3(lx1, lx2, lx3), t3(lx1, dx2, lx3))  !< root-only working subarray
 else
-  allocate(A3(dx1, lx2, lx3))
+  allocate(A3(lx1, dx2, lx3))
 endif
 
 allocate(t_elapsed(Nrun))
@@ -125,15 +125,17 @@ main : do j = 1, Nrun
   !! workers receive data from root
   if(mpi_id == mpi_root_id) then
     !! root's own subarray
-    t3 = A3(1:dx1, :, :)
+    t3 = A3(:, 1:dx2, :)
     !! worker subarrays
     do i = 1, Nmpi-1
-      call mpi_send(A3(i*dx1+1:(i+1)*dx1,:,:), dx1*lx2*lx3, MPI_REAL, i, mt%a3, mpi_h5comm, ierr)
+      i0 = mpi_id * dx2 + 1
+      i1 = (mpi_id + 1) * dx2
+      call mpi_send(A3(:, i0:i1, :), lx1*dx2*lx3, MPI_REAL, i, mt%a3, mpi_h5comm, ierr)
       if(ierr/=0) error stop "root => worker: mpi_send 3D"
     end do
   else
     !! workers receive data from root
-    call mpi_recv(A3, dx1*lx2*lx3, MPI_REAL, mpi_root_id, mt%a3, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
+    call mpi_recv(A3, lx1*dx2*lx3, MPI_REAL, mpi_root_id, mt%a3, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
     if(ierr/=0) error stop "root => worker: mpi_recv 3D"
   endif
 

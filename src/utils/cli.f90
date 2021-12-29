@@ -68,8 +68,8 @@ if (any([lx1, lx2] < 1)) error stop "must input -lx lx1 lx2 lx3"
 if(.not.present(Nmpi)) return
 
 !> MPI sanity check
-if (Nmpi > lx1) error stop "too many MPI workers"
-if (modulo(lx1, Nmpi) /= 0) error stop "number of MPI workers must evenly divide problem size."
+if (Nmpi > lx2) error stop "too many MPI workers"
+if (modulo(lx2, Nmpi) /= 0) error stop "number of MPI workers must evenly divide problem size."
 
 end subroutine get_simsize
 

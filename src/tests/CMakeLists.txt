@@ -33,7 +33,7 @@ set(lx3 8 6 1)
 
 set(serialfn ${CMAKE_CURRENT_BINARY_DIR}/outserial.h5)
 add_test(NAME WRITE_serial-Slab
-COMMAND slab_serial_write -lx ${lx3} -Nrun ${Nrun} -o ${serialfn} -gen -1. -debug
+COMMAND slab_serial_write -lx ${lx3} -Nrun ${Nrun} -o ${serialfn} -debug
 )
 set_tests_properties(WRITE_serial-Slab PROPERTIES
 TIMEOUT ${write_timeout}
@@ -63,7 +63,7 @@ TIMEOUT ${read_timeout}
 # --- MPI-ROOT
 set(mpi_rootfn ${CMAKE_CURRENT_BINARY_DIR}/mpi_root.h5)
 add_test(NAME WRITE_MPI_root-Slab
-COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_serial_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpi_rootfn} -gen -1. -debug
+COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_serial_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpi_rootfn} -debug
 )
 set_tests_properties(WRITE_MPI_root-Slab PROPERTIES
 TIMEOUT ${write_timeout}
@@ -106,7 +106,7 @@ TIMEOUT ${read_timeout}
 
 set(mpifn ${CMAKE_CURRENT_BINARY_DIR}/outmpi.h5)
 add_test(NAME WRITE_MPI-Slab
-COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpifn} -gen -1. -debug
+COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpifn} -debug
 )
 set_tests_properties(WRITE_MPI-Slab PROPERTIES
 TIMEOUT ${write_timeout}
@@ -164,7 +164,7 @@ if(NOT DEFINED PySkip)
 endif()
 
 
-set(pyargs ${PROJECT_SOURCE_DIR}/scripts/bench_slab.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -B $<TARGET_FILE_DIR:slab_mpi_write> -Nrun ${Nrun} -lx ${lx3} -gen=-1. --debug)
+set(pyargs ${PROJECT_SOURCE_DIR}/scripts/bench_slab.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -B $<TARGET_FILE_DIR:slab_mpi_write> -Nrun ${Nrun} -lx ${lx3} --debug)
 add_test(NAME PythonRunner COMMAND Python::Interpreter ${pyargs})
 set_tests_properties(PythonRunner PROPERTIES
 FIXTURES_REQUIRED "read_serial-Slab;read_mpi_root-Slab;read_mpi-Slab"
