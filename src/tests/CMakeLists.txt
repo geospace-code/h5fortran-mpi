@@ -24,6 +24,8 @@ HINTS ${HDF5_ROOT} ${HDF5_DIR}
 )
 
 
+set(write_timeout 30)  # 15 timed out MacOS Github actions on Debug
+set(read_timeout 15)
 set(Nrun 1)
 
 # set(lx3 512 128 96)
@@ -34,7 +36,7 @@ add_test(NAME WRITE_serial-Slab
 COMMAND slab_serial_write -lx ${lx3} -Nrun ${Nrun} -o ${serialfn} -gen -1. -debug
 )
 set_tests_properties(WRITE_serial-Slab PROPERTIES
-TIMEOUT 15
+TIMEOUT ${write_timeout}
 FIXTURES_SETUP write_serial-Slab
 LABELS "serial_hdf5;write"
 RUN_SERIAL true
@@ -44,7 +46,7 @@ add_test(NAME READ_serial-Slab
 COMMAND slab_serial_read -Nrun ${Nrun} -o ${serialfn} -debug
 )
 set_tests_properties(READ_serial-Slab PROPERTIES
-TIMEOUT 10
+TIMEOUT ${read_timeout}
 FIXTURES_REQUIRED write_serial-Slab
 FIXTURES_SETUP read_serial-Slab
 REQUIRED_FILES ${serialfn}
@@ -55,7 +57,8 @@ RUN_SERIAL true
 add_test(NAME serial-cleanup COMMAND ${CMAKE_COMMAND} -E rm ${serialfn})
 set_tests_properties(serial-cleanup PROPERTIES
 FIXTURES_REQUIRED "read_serial-Slab;read_mpi_root-Slab;read_mpi-Slab"
-TIMEOUT 5)
+TIMEOUT ${read_timeout}
+)
 
 # --- MPI-ROOT
 set(mpi_rootfn ${CMAKE_CURRENT_BINARY_DIR}/mpi_root.h5)
@@ -63,7 +66,7 @@ add_test(NAME WRITE_MPI_root-Slab
 COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_serial_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpi_rootfn} -gen -1. -debug
 )
 set_tests_properties(WRITE_MPI_root-Slab PROPERTIES
-TIMEOUT 15
+TIMEOUT ${write_timeout}
 FIXTURES_SETUP write_mpi_root-Slab
 LABELS "mpi_root;write"
 RUN_SERIAL true
@@ -77,7 +80,7 @@ FIXTURES_REQUIRED "write_serial-Slab;write_mpi_root-Slab"
 FIXTURES_SETUP compare_mpi_root-Slab
 REQUIRED_FILES "${mpi_rootfn};${serialfn}"
 LABELS "mpi_root;compare"
-TIMEOUT 10
+TIMEOUT ${read_timeout}
 DISABLED $<NOT:$<BOOL:${H5DIFF}>>
 )
 
@@ -85,7 +88,7 @@ add_test(NAME READ_MPI_root-Slab
 COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_serial_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpi_rootfn} -ref ${serialfn} -debug
 )
 set_tests_properties(READ_MPI_root-Slab PROPERTIES
-TIMEOUT 10
+TIMEOUT ${read_timeout}
 FIXTURES_REQUIRED "compare_mpi_root-Slab;write_serial-Slab;write_mpi_root-Slab"
 FIXTURES_SETUP read_mpi_root-Slab
 REQUIRED_FILES "${mpi_rootfn};${serialfn}"
@@ -96,7 +99,7 @@ RUN_SERIAL true
 add_test(NAME root-cleanup COMMAND ${CMAKE_COMMAND} -E rm ${mpi_rootfn})
 set_tests_properties(root-cleanup PROPERTIES
 FIXTURES_REQUIRED read_mpi_root-Slab
-TIMEOUT 5
+TIMEOUT ${read_timeout}
 )
 
 # --- MPI-HDF5
@@ -106,7 +109,7 @@ add_test(NAME WRITE_MPI-Slab
 COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpifn} -gen -1. -debug
 )
 set_tests_properties(WRITE_MPI-Slab PROPERTIES
-TIMEOUT 15
+TIMEOUT ${write_timeout}
 FIXTURES_SETUP write_mpi-Slab
 LABELS "mpi_hdf5;write"
 RUN_SERIAL true
@@ -120,7 +123,7 @@ FIXTURES_REQUIRED "write_serial-Slab;write_mpi-Slab"
 FIXTURES_SETUP compare_mpi_hdf5-Slab
 REQUIRED_FILES "${mpifn};${serialfn}"
 LABELS "mpi_hdf5;compare"
-TIMEOUT 10
+TIMEOUT ${read_timeout}
 DISABLED $<NOT:$<BOOL:${H5DIFF}>>
 )
 
@@ -128,7 +131,7 @@ add_test(NAME READ_MPI-Slab
 COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_read> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpifn} -ref ${serialfn} -debug
 )
 set_tests_properties(READ_MPI-Slab PROPERTIES
-TIMEOUT 10
+TIMEOUT ${read_timeout}
 FIXTURES_REQUIRED "compare_mpi_hdf5-Slab;write_mpi-Slab;write_serial-Slab"
 FIXTURES_SETUP read_mpi-Slab
 REQUIRED_FILES "${mpifn};${serialfn}"
@@ -139,7 +142,7 @@ RUN_SERIAL true
 add_test(NAME mpi-cleanup COMMAND ${CMAKE_COMMAND} -E rm ${mpifn})
 set_tests_properties(mpi-cleanup PROPERTIES
 FIXTURES_REQUIRED read_mpi-Slab
-TIMEOUT 5
+TIMEOUT ${read_timeout}
 )
 
 
