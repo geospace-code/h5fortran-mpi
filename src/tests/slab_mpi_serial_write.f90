@@ -19,12 +19,11 @@ type(mpi_tags) :: mt
 
 type(hdf5_file) :: h5
 
-real(real32), allocatable :: A3(:,:,:)
+real(real32), allocatable :: A3(:,:,:), t3(:,:,:)
 real(real32) :: noise, gensig
-character(1000) :: argv, outfn
+character(1000) :: argv, h5fn
 
-integer :: ierr, lx1, lx2, lx3, dx1, i, j, comp_lvl, real_bits
-integer(HSIZE_T), allocatable, dimension(:) :: d3
+integer :: ierr, lx1, lx2, lx3, dx1, i, j, i0, i1, comp_lvl, real_bits
 integer :: Nmpi, mpi_id, Nrun
 integer, parameter :: mpi_root_id = 0
 
@@ -40,7 +39,7 @@ call mpi_comm_size(mpi_h5comm, Nmpi, ierr)
 call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
 
 Nrun = 1
-outfn = ""
+h5fn = ""
 comp_lvl = 0
 noise = 0.
 gensig = 1.
@@ -51,7 +50,7 @@ do i = 1, command_argument_count()
 
   select case(argv)
   case("-o")
-    call get_cli(i, argv, outfn)
+    call get_cli(i, argv, h5fn)
   case("-Nrun")
     call get_cli(i, argv, Nrun)
   case("-realbits")
@@ -67,7 +66,7 @@ do i = 1, command_argument_count()
   end select
 end do
 
-if(len_trim(outfn) == 0) error stop "please specify -o filename to write"
+if(len_trim(h5fn) == 0) error stop "please specify -o filename to write"
 
 lx1 = -1
 lx2 = -1
@@ -106,7 +105,7 @@ else
   allocate(A3(dx1, lx2, lx3))
 endif
 
-
+tic = 0
 if (mpi_id == mpi_root_id) call system_clock(count=tic)
 
 call generate_and_send(Nmpi, mpi_id, mpi_root_id, dx1, lx1, lx2, lx3, mt%a3, mpi_h5comm, noise, gensig, A3)
@@ -126,7 +125,9 @@ main : do j = 1, Nrun
     !! root's own subarray i=0 is already initialized
     !! worker i=1..Nmpi subarrays
     do i = 1, Nmpi-1
-      call mpi_recv(A3(i*dx1+1:(i+1)*dx1,:,:), dx1*lx2*lx3, MPI_REAL, i, mt%a3, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
+      i0 = i*dx1+1
+      i1 = (i+1)*dx1
+      call mpi_recv(A3(i0:i1,:,:), dx1*lx2*lx3, MPI_REAL, i, mt%a3, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
       if(ierr/=0) error stop "worker => root: mpi_recv 3D"
     end do
   else
@@ -142,7 +143,7 @@ main : do j = 1, Nrun
 
   if(mpi_id == mpi_root_id) then
     !! Root: serial write HDF5 file
-    call h5%open(trim(outfn), action="w", mpi=.false., comp_lvl=comp_lvl, debug=debug)
+    call h5%open(trim(h5fn), action="w", mpi=.false., comp_lvl=comp_lvl, debug=debug)
     call h5%write("/A3", A3)
     call h5%close()
 
@@ -152,20 +153,27 @@ main : do j = 1, Nrun
 
 end do main
 
-!> sanity check file shape
-
+!> sanity check file contents vs memory
 if(mpi_id == mpi_root_id) then
-  call h5%open(trim(outfn), action="r", mpi=.false.)
-  call h5%shape("/A3", d3)
-  if(any(d3 /= [lx1, lx2, lx3])) error stop "slab_mpi: file shape 3D mismatch"
+  allocate(t3(lx1, lx2, lx3))
+
+  call h5%open(trim(h5fn), action="r", mpi=.false.)
+  call h5%read("/A3", t3)
   call h5%close()
+
+  if (any(abs(t3 - A3) > 0.01)) then
+    write(stderr,'(a,i0,1x,i0)') "ERROR: 3D disk vs. memory mismatch."
+    write(stderr,'(a,25f4.0)') "disk: ", t3
+    write(stderr,'(a,25f4.0)') "memory: ", A3
+    error stop trim(h5fn)
+  endif
 endif
 
 !> RESULTS
 
 if(mpi_id == mpi_root_id) then
   call print_timing(Nmpi, h5%comp_lvl, storage_size(A3), int([lx1, lx2, lx3]), t_elapsed, h5%filesize(), debug, &
-    trim(outfn) // ".write_stat.h5")
+    trim(h5fn) // ".write_stat.h5")
 endif
 
 if (debug) print '(a,i0)', "mpi finalize: worker: ", mpi_id

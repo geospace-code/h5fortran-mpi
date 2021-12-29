@@ -22,7 +22,7 @@ integer, intent(in) :: Nmpi, mpi_id, mpi_root_id, dx1, lx1, lx2, lx3, tagA3, mpi
 real(real32), intent(in) :: noise, gensig
 real(real32), intent(inout), allocatable :: A3(:,:,:)
 
-integer :: i, ierr
+integer :: i, ierr, i0, i1
 real(real32), allocatable :: t3(:,:,:)
 !! this allows distinct sizes for different use cases (mpi_root vs mpi_hdf5)
 
@@ -41,7 +41,10 @@ endif
 !> dummy data from root to workers
 if(mpi_id == mpi_root_id) then
   do i = 1, Nmpi-1
-    call mpi_send(t3(i*dx1+1:(i+1)*dx1, :, :), dx1*lx2*lx3, MPI_REAL, i, tagA3, mpi_h5comm, ierr)
+    i0 = i*dx1+1
+    i1 = (i+1)*dx1
+    ! print '(a,i0,1x,i0)', "TRACE: generate istart, iend: ", i0, i1
+    call mpi_send(t3(i0:i1, :, :), dx1*lx2*lx3, MPI_REAL, i, tagA3, mpi_h5comm, ierr)
     if (ierr /= 0) error stop "generate: root => worker: mpi_send 3D"
   end do
 

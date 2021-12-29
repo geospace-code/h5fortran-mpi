@@ -17,12 +17,11 @@ external :: mpi_bcast, mpi_init, mpi_finalize
 type(hdf5_file) :: h5
 type(mpi_tags) :: mt
 
-real, allocatable :: A3(:,:,:)
+real, allocatable :: A3(:,:,:), t3(:,:,:)
 real :: noise, gensig
 character(1000) :: argv, h5fn
 
-integer :: ierr, lx1, lx2, lx3, dx1, i, comp_lvl, real_bits
-integer(HSIZE_T), allocatable, dimension(:) ::  d3
+integer :: ierr, lx1, lx2, lx3, dx1, i, i0, i1, comp_lvl, real_bits
 
 integer(HSIZE_T), dimension(rank(A3)) :: istart, iend
 
@@ -108,7 +107,7 @@ allocate(A3(dx1, lx2, lx3))
 !> dummy data
 !! root has only a subarray like workers.
 !! Here we generate synthetic data on root; real programs wouldn't do this
-
+tic = 0
 if (mpi_id == mpi_root_id) call system_clock(count=tic)
 
 call generate_and_send(Nmpi, mpi_id, mpi_root_id, dx1, lx1, lx2, lx3, mt%a3, mpi_h5comm, noise, gensig, A3)
@@ -149,17 +148,20 @@ end do main
 
 if (debug) print '(a,i0)', "mpi write:done: worker: ", mpi_id
 
-!> sanity check file shape
+!> sanity check file contents vs memory
+allocate(t3(lx1, lx2, lx3))
 
-if(mpi_id == mpi_root_id) then
-
-  call h5%open(trim(h5fn), action="r", mpi=.false.)
-
-  call h5%shape("/A3", d3)
-  if(any(d3 /= [lx1, lx2, lx3])) error stop "slab_mpi: file shape mismatch"
-
-  call h5%close()
-
+call h5%open(trim(h5fn), action="r", mpi=.false.)
+call h5%read("/A3", t3)
+call h5%close()
+i0 = mpi_id*dx1+1
+i1 = (mpi_id+1)*dx1
+if (any(abs(t3(i0:i1, :, :) - A3) > 0.01)) then
+  write(stderr, '(a,i0,a,i0,1x,i0)') "ERROR: mpi_writer: mpi_id: ", mpi_id, " failed to write to file between i0,i1: ", i0, i1
+  write(stderr,'(a,i0,1x,i0)') "ERROR: 3D disk vs. memory mismatch."
+  write(stderr,'(a,i0,1x,25f4.0)') "disk worker ",mpi_id, t3(i0:i1, :, :)
+  write(stderr,'(a,i0,1x,25f4.0)') "memory worker: ", mpi_id, A3
+  error stop trim(h5fn)
 endif
 
 !> RESULTS
