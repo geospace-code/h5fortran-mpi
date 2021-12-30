@@ -297,7 +297,7 @@ find_library(HDF5_CXX_HL_LIBRARY
 find_path(HDF5_CXX_INCLUDE_DIR
   NAMES hdf5.h
   HINTS ${hdf5_inc_dirs} ${pc_hdf5_INCLUDE_DIRS}
-  PATH_SUFFIXES ${_psuf}
+  PATH_SUFFIXES ${hdf5_isuf}
   DOC "HDF5 C header")
 
 if(HDF5_CXX_LIBRARY AND HDF5_CXX_HL_LIBRARY AND HDF5_CXX_INCLUDE_DIR)
@@ -339,7 +339,7 @@ find_library(HDF5_C_HL_LIBRARY
 find_path(HDF5_C_INCLUDE_DIR
   NAMES hdf5.h
   HINTS ${hdf5_inc_dirs} ${pc_hdf5_INCLUDE_DIRS}
-  PATH_SUFFIXES ${_psuf}
+  PATH_SUFFIXES ${hdf5_isuf}
   DOC "HDF5 C header")
 
 if(HDF5_C_HL_LIBRARY AND HDF5_C_LIBRARY AND HDF5_C_INCLUDE_DIR)
@@ -357,7 +357,7 @@ function(hdf5_fortran_wrap lib_var inc_var)
 set(lib_dirs)
 set(inc_dirs)
 
-set(wrapper_names h5pfc)
+set(wrapper_names h5pfc h5pfc.openmpi h5pfc.mpich)
 if(NOT parallel IN_LIST HDF5_FIND_COMPONENTS)
   list(PREPEND wrapper_names h5fc h5fc-64)
 endif()
@@ -410,6 +410,8 @@ function(hdf5_cxx_wrap lib_var inc_var)
 set(lib_dirs)
 set(inc_dirs)
 
+set(wrapper_names h5c++ h5c++.openmpi h5c++.mpich)
+
 if(HDF5_ROOT OR DEFINED ENV{HDF5_ROOT})
   find_program(HDF5_CXX_COMPILER_EXECUTABLE
     NAMES ${wrapper_names}
@@ -452,7 +454,7 @@ function(hdf5_c_wrap lib_var inc_var)
 set(lib_dirs)
 set(inc_dirs)
 
-set(wrapper_names h5pcc)
+set(wrapper_names h5pcc h5pcc.openmpi h5pcc.mpich)
 if(NOT parallel IN_LIST HDF5_FIND_COMPONENTS)
   list(PREPEND wrapper_names h5cc h5cc-64)
 endif()
@@ -640,29 +642,42 @@ if(NOT HDF5_ROOT AND NOT HDF5_FOUND)
   endif()
 endif()
 
+# --- library suffixes
+
 set(hdf5_lsuf hdf5)
 if(parallel IN_LIST HDF5_FIND_COMPONENTS)
-  list(PREPEND hdf5_lsuf hdf5/openmpi hdf5/mpich)
+  list(PREPEND hdf5_lsuf
+  hdf5/openmpi hdf5/mpich
+  openmpi/lib mpich/lib)  # Ubuntu; CentOS
 else()
-  list(PREPEND hdf5_lsuf hdf5/serial)
+  list(PREPEND hdf5_lsuf hdf5/serial)  # Ubuntu
 endif()
 
+# --- include and modules suffixes
+
 if(BUILD_SHARED_LIBS)
-  set(_psuf shared)
+  set(hdf5_isuf shared)
   set(hdf5_msuf shared)
 else()
-  set(_psuf static)
+  set(hdf5_isuf static)
   set(hdf5_msuf static)
 endif()
 
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64|AMD64)")
+  list(APPEND hdf5_isuf openmpi-x86_64 mpich-x86_64)  # CentOS
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(aarch64|arm64)")
+  list(APPEND hdf5_isuf openmpi-aarch64 mpich-aarch64)  # CentOS
+endif()
 
 if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
+  # CentOS paths
   list(APPEND hdf5_msuf gfortran/modules)
   if(NOT HDF5_ROOT AND parallel IN_LIST HDF5_FIND_COMPONENTS)
     list(PREPEND hdf5_msuf gfortran/modules/openmpi gfortran/modules/mpich)
   endif()
 endif()
 
+# --- binary prefix / suffix
 set(hdf5_binpref)
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   set(hdf5_binpref /usr/lib64)
@@ -670,12 +685,14 @@ endif()
 
 set(hdf5_binsuf bin)
 if(NOT HDF5_ROOT AND parallel IN_LIST HDF5_FIND_COMPONENTS)
+  # CentOS paths
   list(APPEND hdf5_binsuf openmpi/bin mpich/bin)
 endif()
-# Not immediately clear the benefits of this, as we'd have to foreach()
-# a priori names, kind of like we already do with find_library()
+
+# ----
+# May not help, as we'd have to foreach() a priori names, like we already do with find_library()
 # find_package(hdf5 CONFIG)
-# message(STATUS "hdf5 found ${hdf5_FOUND}")
+# ----
 
 # C is always needed
 find_hdf5_c()
