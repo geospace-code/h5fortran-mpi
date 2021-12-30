@@ -31,7 +31,9 @@ set(Nrun 1)
 # set(lx3 512 128 96)
 set(lx3 8 6 1)
 
-set(serialfn ${CMAKE_CURRENT_BINARY_DIR}/outserial.h5)
+set(test_file_dir $<TARGET_FILE_DIR:slab_serial_write>)
+
+set(serialfn ${test_file_dir}/outserial.h5)
 add_test(NAME WRITE_serial-Slab
 COMMAND slab_serial_write -lx ${lx3} -Nrun ${Nrun} -o ${serialfn} -debug
 )
@@ -57,11 +59,12 @@ RUN_SERIAL true
 add_test(NAME serial-cleanup COMMAND ${CMAKE_COMMAND} -E rm ${serialfn})
 set_tests_properties(serial-cleanup PROPERTIES
 FIXTURES_REQUIRED "read_serial-Slab;read_mpi_root-Slab;read_mpi-Slab"
+REQUIRED_FILES ${serialfn}
 TIMEOUT ${read_timeout}
 )
 
 # --- MPI-ROOT
-set(mpi_rootfn ${CMAKE_CURRENT_BINARY_DIR}/mpi_root.h5)
+set(mpi_rootfn ${test_file_dir}/mpi_root.h5)
 add_test(NAME WRITE_MPI_root-Slab
 COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_serial_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpi_rootfn} -debug
 )
@@ -99,12 +102,13 @@ RUN_SERIAL true
 add_test(NAME root-cleanup COMMAND ${CMAKE_COMMAND} -E rm ${mpi_rootfn})
 set_tests_properties(root-cleanup PROPERTIES
 FIXTURES_REQUIRED read_mpi_root-Slab
+REQUIRED_FILES ${mpi_rootfn}
 TIMEOUT ${read_timeout}
 )
 
 # --- MPI-HDF5
 
-set(mpifn ${CMAKE_CURRENT_BINARY_DIR}/outmpi.h5)
+set(mpifn ${test_file_dir}/outmpi.h5)
 add_test(NAME WRITE_MPI-Slab
 COMMAND runner -lx ${lx3} -exe $<TARGET_FILE:slab_mpi_write> -mpiexec ${MPIEXEC_EXECUTABLE} -Nrun ${Nrun} -o ${mpifn} -debug
 )
@@ -142,6 +146,7 @@ RUN_SERIAL true
 add_test(NAME mpi-cleanup COMMAND ${CMAKE_COMMAND} -E rm ${mpifn})
 set_tests_properties(mpi-cleanup PROPERTIES
 FIXTURES_REQUIRED read_mpi-Slab
+REQUIRED_FILES ${mpifn}
 TIMEOUT ${read_timeout}
 )
 
