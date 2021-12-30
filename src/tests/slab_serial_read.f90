@@ -14,11 +14,14 @@ type(hdf5_file) :: h5
 
 real(real32), allocatable :: S3(:,:,:)
 real(real64), allocatable :: D3(:,:,:)
+character(1000) :: argv
 
-character(1000) :: argv, h5fn
+!> default parameters
+integer :: real_bits = 32, Nrun = 1
+character(1000) :: h5fn = ""
+integer(HSIZE_T) :: lx1 = -1, lx2 = -1, lx3 = -1
 
-integer :: ierr, i, real_bits
-integer :: Nrun
+integer :: ierr, i
 
 logical :: debug = .false.
 
@@ -26,12 +29,7 @@ integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
 
 integer(HSIZE_T), allocatable :: dims_full(:)
-integer(HSIZE_T) :: lx1, lx2, lx3
 
-!> output HDF5 file to write
-Nrun = 1
-h5fn = ""
-real_bits = 32
 
 do i = 1, command_argument_count()
   call get_command_argument(i, argv, status=ierr)

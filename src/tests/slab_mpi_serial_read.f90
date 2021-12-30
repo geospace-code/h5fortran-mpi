@@ -20,12 +20,16 @@ type(mpi_tags) :: mt
 type(hdf5_file) :: h5
 
 real, allocatable ::  A3(:,:,:), t3(:,:,:)
-character(1000) :: argv, h5fn, refh5fn
+character(1000) :: argv
 
-integer :: ierr, dx2, i, j, i0, i1, comp_lvl, real_bits
-integer :: lx1, lx2, lx3
+!> default parameters
+integer :: real_bits = 32, Nrun = 1
+character(1000) :: h5fn = "", refh5fn = ""
+integer :: lx1 = -1, lx2 = -1, lx3 = -1
+
+integer :: ierr, dx2, i, j, i0, i1
 integer(HSIZE_T), allocatable, dimension(:) :: dims_full
-integer :: Nmpi, mpi_id, Nrun
+integer :: Nmpi, mpi_id
 integer, parameter :: mpi_root_id = 0
 
 logical :: debug = .false.
@@ -39,11 +43,6 @@ if(ierr/=0) error stop "mpi_init"
 
 call mpi_comm_size(mpi_h5comm, Nmpi, ierr)
 call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
-
-Nrun = 1
-h5fn = ""
-refh5fn = ""
-comp_lvl = 0
 
 do i = 1, command_argument_count()
   call get_command_argument(i, argv, status=ierr)
@@ -65,10 +64,6 @@ end do
 
 if(len_trim(h5fn) == 0) error stop "please specify -o HDF5 filename"
 if(len_trim(refh5fn) == 0) error stop "please specify -ref reference HDF5 filename"
-
-lx1 = -1
-lx2 = -1
-lx3 = -1
 
 if(mpi_id == mpi_root_id) then
   !> get simsize
@@ -146,7 +141,7 @@ main : do j = 1, Nrun
 
 end do main
 
-!> Check vs. serial read
+!> Check writtenfile vs. serial read
 if(mpi_id == mpi_root_id) then
   deallocate(t3)
   allocate(t3(lx1, lx2, lx3))

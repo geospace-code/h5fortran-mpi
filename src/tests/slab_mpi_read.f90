@@ -3,7 +3,7 @@ program read_slab_mpi
 !! use HDF5-MPI layer for best efficiency
 !! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90
 
-use, intrinsic :: iso_fortran_env, only : int32, int64, real64, stderr=>error_unit
+use, intrinsic :: iso_fortran_env, only : int32, int64, real64, real32, stderr=>error_unit
 use mpi, only : mpi_comm_size, mpi_comm_rank, mpi_integer
 
 use h5mpi, only : mpi_h5comm, hdf5_file, HSIZE_T
@@ -17,13 +17,17 @@ external :: mpi_bcast, mpi_init, mpi_finalize
 
 type(hdf5_file) :: h5
 
-real, allocatable :: A3(:,:,:), t3(:,:,:)
+real(real32), allocatable :: A3(:,:,:), t3(:,:,:)
 
-character(1000) :: argv, h5fn, refh5fn
+!> default parameters
+integer :: real_bits = 32, Nrun = 1
+character(1000) :: h5fn = "", refh5fn = ""
+integer :: lx1 = -1, lx2 = -1, lx3 = -1
 
-integer :: ierr, lx1, lx2, lx3, dx2, i, i0, i1
-integer :: comp_lvl, real_bits
-integer :: Nmpi, mpi_id, Nrun
+character(1000) :: argv
+
+integer :: ierr,  dx2, i, i0, i1
+integer :: Nmpi, mpi_id
 integer, parameter :: mpi_root_id = 0
 
 logical :: debug = .false.
@@ -39,12 +43,6 @@ if(ierr/=0) error stop "mpi_init"
 
 call mpi_comm_size(mpi_h5comm, Nmpi, ierr)
 call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
-
-tic = 0
-Nrun = 1
-h5fn = ""
-refh5fn = ""
-comp_lvl = 0
 
 do i = 1, command_argument_count()
   call get_command_argument(i, argv, status=ierr)
@@ -69,10 +67,6 @@ if(len_trim(refh5fn) == 0) error stop "please specify -ref reference HDF5 filena
 
 allocate(t_elapsed(Nrun))
 
-lx1 = -1
-lx2 = -1
-lx3 = -1
-
 if(mpi_id == mpi_root_id) then
   !> get simsize
   call h5%open(trim(h5fn), action="r", mpi=.false., debug=debug)
@@ -82,11 +76,6 @@ if(mpi_id == mpi_root_id) then
   lx2 = int(dims_full(2), int32)
   lx3 = int(dims_full(3), int32)
   print '(a,i0,a,i0,1x,i0,1x,i0)', "MPI-root: ", Nmpi, " total MPI processes. shape: ", lx1, lx2, lx3
-endif
-
-if(mpi_id == mpi_root_id) then
-  print '(a,i0,a,i0,1x,i0,1x,i0)', "MPI-HDF5 parallel. ", Nmpi, " total MPI processes. shape: ", &
-  lx1, lx2, lx3
 endif
 
 ! call mpi_ibcast(lx1, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, mpi_req, ierr)
@@ -149,9 +138,9 @@ call h5%close()
 i0 = mpi_id * dx2 + 1
 i1 = (mpi_id + 1) * dx2
 if(debug) then
-  print '(a,i0,a,3i4,a,3i4,a,2I4)', "TRACE: mpi id ", mpi_id, " shape(A3) ", shape(A3), " shape(t3) ", shape(t3), "i0,i1: ", i0, i1
-  print '(a,i0,a,100f5.1)', "TRACE: mpi_id ", mpi_id, " ref subarray: ", t3(:, i0:i1, :)
-  print '(a,i0,a,100f5.1)', "TRACE: mpi_id ", mpi_id, " worker subarray: ", A3
+  print '(a,i0,a,3i4,a,3i4,a,2I4)', "mpi id ", mpi_id, " shape(A3) ", shape(A3), " shape(t3) ", shape(t3), "i0,i1: ", i0, i1
+  print '(a,i0,a,100f5.1)', "mpi_id ", mpi_id, " ref subarray: ", t3(:, i0:i1, :)
+  print '(a,i0,a,100f5.1)', "mpi_id ", mpi_id, " worker subarray: ", A3
 endif
 
 if (any(abs(t3(:, i0:i1, :) - A3) > 0.01)) error stop "3D ref mismatch " // trim(refh5fn) // " /= " // trim(h5fn)

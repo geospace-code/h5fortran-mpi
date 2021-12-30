@@ -1,6 +1,6 @@
 module test_utils
 
-use, intrinsic :: ieee_arithmetic, only : ieee_value, ieee_quiet_nan
+use, intrinsic :: ieee_arithmetic, only : ieee_value, ieee_quiet_nan, ieee_is_finite
 use, intrinsic :: iso_fortran_env, only : real32
 
 use mpi, only : MPI_STATUS_IGNORE, MPI_REAL
@@ -29,13 +29,21 @@ real(real32), allocatable :: t3(:,:,:)
 real(real32) :: NaN
 NaN = ieee_value(0._real32, ieee_quiet_nan)
 
+if (.not. (ieee_is_finite(gensig) .and. ieee_is_finite(noise)) ) error stop "unset noise or gensig"
+
 A3 = NaN
 
 if(mpi_id == mpi_root_id) then
   !> root creates synthetic data for this benchmark
   allocate(t3(lx1, lx2, lx3))
-  call random_number(t3)
-  t3 = noise*t3 + spread(phantom(lx1, lx2, gensig), 3, lx3)
+  t3 = 0.
+
+  if(gensig >= 0) then
+    call random_number(t3)
+    t3 = noise*t3
+  endif
+
+  t3 = t3 + spread(phantom(lx1, lx2, gensig), 3, lx3)
 endif
 
 !> dummy data from root to workers
