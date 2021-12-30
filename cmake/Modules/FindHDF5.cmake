@@ -503,11 +503,7 @@ endif()
 endfunction(hdf5_c_wrap)
 
 
-function(check_hdf5_link)
-
-if(NOT HDF5_C_FOUND)
-  return()
-endif()
+function(hdf5_c_links)
 
 list(PREPEND CMAKE_REQUIRED_LIBRARIES ${HDF5_C_LIBRARIES})
 set(CMAKE_REQUIRED_INCLUDES ${HDF5_C_INCLUDE_DIR})
@@ -554,14 +550,12 @@ endif(HDF5_parallel_FOUND)
 
 check_source_compiles(C "${src}" HDF5_C_links)
 
-if(NOT HDF5_C_links)
-  return()
-endif()
+endfunction(hdf5_c_links)
 
 
-if(HDF5_Fortran_FOUND)
+function(hdf5_fortran_links)
 
-list(PREPEND CMAKE_REQUIRED_LIBRARIES ${HDF5_Fortran_LIBRARIES})
+list(PREPEND CMAKE_REQUIRED_LIBRARIES ${HDF5_Fortran_LIBRARIES} ${HDF5_C_LIBRARIES})
 set(CMAKE_REQUIRED_INCLUDES ${HDF5_Fortran_INCLUDE_DIR} ${HDF5_C_INCLUDE_DIR})
 
 if(HDF5_parallel_FOUND)
@@ -604,11 +598,28 @@ endif()
 
 check_source_compiles(Fortran ${src} HDF5_Fortran_links)
 
-if(NOT HDF5_Fortran_links)
+endfunction(hdf5_fortran_links)
+
+
+function(check_hdf5_link)
+
+if(NOT HDF5_C_FOUND)
   return()
 endif()
 
-endif(HDF5_Fortran_FOUND)
+hdf5_c_links()
+
+if(NOT HDF5_C_links)
+  return()
+endif()
+
+if(HDF5_Fortran_FOUND)
+  hdf5_fortran_links()
+
+  if(NOT HDF5_Fortran_links)
+    return()
+  endif()
+endif()
 
 set(HDF5_links true PARENT_SCOPE)
 
