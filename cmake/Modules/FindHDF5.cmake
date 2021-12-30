@@ -241,7 +241,7 @@ if(HDF5_Fortran_HL_stub AND HDF5_Fortran_stub)
   list(APPEND HDF5_Fortran_LIBRARIES ${HDF5_Fortran_HL_stub} ${HDF5_Fortran_stub})
 endif()
 
-if(HDF5_ROOT OR DEFINED ENV{HDF5_ROOT})
+if(HDF5_ROOT)
   find_path(HDF5_Fortran_INCLUDE_DIR
     NAMES hdf5.mod
     NO_DEFAULT_PATH
@@ -362,7 +362,7 @@ if(NOT parallel IN_LIST HDF5_FIND_COMPONENTS)
   list(PREPEND wrapper_names h5fc h5fc-64)
 endif()
 
-if(HDF5_ROOT OR DEFINED ENV{HDF5_ROOT})
+if(HDF5_ROOT)
   find_program(HDF5_Fortran_COMPILER_EXECUTABLE
     NAMES ${wrapper_names}
     NAMES_PER_DIR
@@ -412,7 +412,7 @@ set(inc_dirs)
 
 set(wrapper_names h5c++ h5c++.openmpi h5c++.mpich)
 
-if(HDF5_ROOT OR DEFINED ENV{HDF5_ROOT})
+if(HDF5_ROOT)
   find_program(HDF5_CXX_COMPILER_EXECUTABLE
     NAMES ${wrapper_names}
     NAMES_PER_DIR
@@ -459,7 +459,7 @@ if(NOT parallel IN_LIST HDF5_FIND_COMPONENTS)
   list(PREPEND wrapper_names h5cc h5cc-64)
 endif()
 
-if(HDF5_ROOT OR DEFINED ENV{HDF5_ROOT})
+if(HDF5_ROOT)
   find_program(HDF5_C_COMPILER_EXECUTABLE
     NAMES ${wrapper_names}
     NAMES_PER_DIR
