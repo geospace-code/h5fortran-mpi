@@ -194,6 +194,11 @@ function(find_hdf5_fortran)
 # NOTE: the "lib*" are for Windows Intel compiler, even for self-built HDF5.
 # CMake won't look for lib prefix automatically.
 
+if(parallel IN_LIST HDF5_FIND_COMPONENTS AND NOT HDF5_parallel_FOUND)
+  # this avoids expensive Fortran find when MPI isn't linked properly
+  return()
+endif()
+
 hdf5_fortran_wrap(hdf5_lib_dirs hdf5_inc_dirs)
 
 set(_names hdf5_fortran)
@@ -243,20 +248,54 @@ endif()
 
 if(HDF5_ROOT)
   find_path(HDF5_Fortran_INCLUDE_DIR
-    NAMES hdf5.mod
-    NO_DEFAULT_PATH
-    HINTS ${HDF5_C_INCLUDE_DIR} ${HDF5_ROOT} ENV HDF5_ROOT
-    PATH_SUFFIXES include
-    DOC "HDF5 Fortran module path"
+  NAMES hdf5.mod
+  NO_DEFAULT_PATH
+  HINTS ${HDF5_C_INCLUDE_DIR} ${HDF5_ROOT} ENV HDF5_ROOT
+  PATH_SUFFIXES include
+  DOC "HDF5 Fortran module path"
   )
 else()
-  find_path(HDF5_Fortran_INCLUDE_DIR
+  if(parallel IN_LIST HDF5_FIND_COMPONENTS)
+    # HDF5-MPI system library presents a unique challenge, as when non-MPI HDF5 is
+    # also installed, which is typically necessary for other system libraries, the
+    # HDF5-MPI compiler wrapper often includes that wrong non-MPI include dir first.
+    # The most general approach seemed to be the following:
+    # search in a for loop and do a link check.
+    if(NOT HDF5_Fortran_INCLUDE_DIR)
+      foreach(i IN LISTS HDF5_C_INCLUDE_DIR hdf5_inc_dirs pc_hdf5_INCLUDE_DIRS)
+        find_path(HDF5_Fortran_INCLUDE_DIR NAMES hdf5.mod NO_DEFAULT_PATH HINTS ${i} DOC "HDF5 Fortran module path")
+        message(VERBOSE "FindHDF5: trying hdf5.mod in ${i} - got: ${HDF5_Fortran_INCLUDE_DIR}")
+        if(HDF5_Fortran_INCLUDE_DIR)
+          check_fortran_links()
+          if(HDF5_Fortran_links)
+            break()
+          else()
+            unset(HDF5_Fortran_INCLUDE_DIR CACHE)
+            unset(HDF5_Fortran_links CACHE)
+          endif()
+        endif()
+      endforeach()
+    endif()
+
+    if(NOT HDF5_Fortran_INCLUDE_DIR)
+      # last resort, might give incompatible non-MPI hdf5.mod
+      find_path(HDF5_Fortran_INCLUDE_DIR
+      NAMES hdf5.mod
+      HINTS ${HDF5_C_INCLUDE_DIR} ${hdf5_inc_dirs} ${pc_hdf5_INCLUDE_DIRS}
+      PATHS ${hdf5_binpref}
+      PATH_SUFFIXES ${hdf5_msuf}
+      DOC "HDF5 Fortran module path"
+      )
+    endif()
+  else()
+    find_path(HDF5_Fortran_INCLUDE_DIR
     NAMES hdf5.mod
     HINTS ${HDF5_C_INCLUDE_DIR} ${hdf5_inc_dirs} ${pc_hdf5_INCLUDE_DIRS}
     PATHS ${hdf5_binpref}
     PATH_SUFFIXES ${hdf5_msuf}
     DOC "HDF5 Fortran module path"
-  )
+    )
+  endif()
 endif()
 
 if(HDF5_Fortran_LIBRARY AND HDF5_Fortran_HL_LIBRARY AND HDF5_Fortran_INCLUDE_DIR)
@@ -503,7 +542,7 @@ endif()
 endfunction(hdf5_c_wrap)
 
 
-function(hdf5_c_links)
+function(check_c_links)
 
 list(PREPEND CMAKE_REQUIRED_LIBRARIES ${HDF5_C_LIBRARIES})
 set(CMAKE_REQUIRED_INCLUDES ${HDF5_C_INCLUDE_DIR})
@@ -550,10 +589,10 @@ endif(HDF5_parallel_FOUND)
 
 check_source_compiles(C "${src}" HDF5_C_links)
 
-endfunction(hdf5_c_links)
+endfunction(check_c_links)
 
 
-function(hdf5_fortran_links)
+function(check_fortran_links)
 
 list(PREPEND CMAKE_REQUIRED_LIBRARIES ${HDF5_Fortran_LIBRARIES} ${HDF5_C_LIBRARIES})
 set(CMAKE_REQUIRED_INCLUDES ${HDF5_Fortran_INCLUDE_DIR} ${HDF5_C_INCLUDE_DIR})
@@ -598,7 +637,7 @@ endif()
 
 check_source_compiles(Fortran ${src} HDF5_Fortran_links)
 
-endfunction(hdf5_fortran_links)
+endfunction(check_fortran_links)
 
 
 function(check_hdf5_link)
@@ -607,14 +646,18 @@ if(NOT HDF5_C_FOUND)
   return()
 endif()
 
-hdf5_c_links()
+if(parallel IN_LIST HDF5_FIND_COMPONENTS AND NOT HDF5_parallel_FOUND)
+  return()
+endif()
+
+check_c_links()
 
 if(NOT HDF5_C_links)
   return()
 endif()
 
 if(HDF5_Fortran_FOUND)
-  hdf5_fortran_links()
+  check_fortran_links()
 
   if(NOT HDF5_Fortran_links)
     return()
