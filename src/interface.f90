@@ -423,17 +423,17 @@ end function hdf_is_chunked
 
 
 
-subroutine mpi_hyperslab(dims, dset_dims, dset_id, filespace, memspace, dname, istart, iend)
+subroutine mpi_hyperslab(mem_dims, dset_dims, dset_id, filespace, memspace, dname, istart, iend)
 !! Each process defines dataset in memory and writes it to the hyperslab in the file.
 
-integer(HSIZE_T), dimension(:), intent(in) :: dims, dset_dims
+integer(HSIZE_T), dimension(:), intent(in) :: mem_dims, dset_dims
 integer(HID_T), intent(in) :: dset_id
 integer(HID_T), intent(inout) :: filespace, memspace
 character(*), intent(in) :: dname !< for error messages
 integer(HSIZE_T), dimension(:), intent(in) :: istart
 integer(HSIZE_T), dimension(size(istart)), intent(in) :: iend
 
-integer(HSIZE_T), dimension(size(dims)) :: mem_dims, i0
+integer(HSIZE_T), dimension(size(mem_dims)) :: c_mem_dims, i0
 integer :: ierr
 
 
@@ -452,15 +452,21 @@ if (ierr/=0) error stop "h5dget_space: " // dname
 
 !! NOTE: 0-based hyperslab vs. 1-based Fortran
 i0 = istart - 1
-mem_dims = iend - i0
+c_mem_dims = iend - i0
 
-! print *, 'TRACE:mpi_hyperslab: ' // dname //': istart', i0, ' mem_dims: ', mem_dims
+if(any(c_mem_dims /= mem_dims)) then
+  write(stderr,*) "ERROR:h5fortran:mpi_hyperslab: memory size /= dataset size: check variable slice (index). " // &
+    " Dset_dims:", dset_dims, "C Mem_dims", c_mem_dims
+  error stop "ERROR:h5fortran:mpi_hyperslab"
+endif
 
-if(any(mem_dims < 1)) error stop "h5mpi:hyperslab:non-positive hyperslab: " // dname
+! print *, 'TRACE:mpi_hyperslab: ' // dname //': istart', i0, 'C mem_dims: ', c_mem_dims, 'mem_dims', mem_dims
+
+if(any(c_mem_dims < 1)) error stop "h5mpi:hyperslab:non-positive hyperslab: " // dname
 
 call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
 start=i0, &
-count=mem_dims, &
+count=c_mem_dims, &
 hdferr=ierr)
 ! stride=1, &  !< for now we don't stride data
 ! block=blk  !< would this help performance?
@@ -468,7 +474,7 @@ hdferr=ierr)
 if (ierr/=0) error stop "h5sselect_hyperslab: " // dname
 
 !> create memory dataspace
-call h5screate_simple_f(rank=size(dims), dims=dims, space_id=memspace, hdferr=ierr)
+call h5screate_simple_f(rank=size(c_mem_dims), dims=c_mem_dims, space_id=memspace, hdferr=ierr)
 if (ierr/=0) error stop "h5fortran:h5screate_simple:memspace " // dname
 
 end subroutine mpi_hyperslab
