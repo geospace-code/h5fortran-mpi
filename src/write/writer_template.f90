@@ -1,10 +1,10 @@
 integer(HID_T) :: file_space_id, mem_space_id, dset_id, xfer_id, dtype
-integer(HSIZE_T), dimension(rank(value)) :: dims, dims_dset
+integer(HSIZE_T), dimension(rank(value)) :: mem_dims, dims_dset
 integer :: ier
 
 xfer_id = H5P_DEFAULT_F
 
-dims = shape(value, HSIZE_T)
+mem_dims = shape(value, HSIZE_T)
 if(present(dset_dims)) then
   select type (dset_dims)
   type is (integer(HSIZE_T))
@@ -14,10 +14,11 @@ if(present(dset_dims)) then
   class default
     error stop "write: expecting dset_dims to be integer"
   end select
-else
-  if(self%use_mpi) error stop "h5mpi:write: must specify dset_dims if using MPI"
+elseif(self%use_mpi) then
+  error stop "h5mpi:write: must specify dset_dims if using MPI"
   !! FIXME: there may be a way to do indepedent write rather than simply fail
-  dims_dset = dims
+else
+  dims_dset = mem_dims
 endif
 
 select type (value)
@@ -34,12 +35,12 @@ class default
 end select
 
 !> create or open dataset
-call hdf_create(self, dname, dtype, dims, dset_dims=dims_dset, &
+call hdf_create(self, dname, dtype, mem_dims, dset_dims=dims_dset, &
 filespace=file_space_id, memspace=mem_space_id, dset_id=dset_id, &
 istart=istart, iend=iend)
 
 if(self%use_mpi) then
-  call mpi_hyperslab(dims, dims_dset, dset_id, file_space_id, mem_space_id, dname, istart=istart, iend=iend)
+  call mpi_hyperslab(mem_dims, dims_dset, dset_id, file_space_id, mem_space_id, dname, istart=istart, iend=iend)
   xfer_id = mpi_collective(dname)
 endif
 
