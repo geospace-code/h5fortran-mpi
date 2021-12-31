@@ -269,8 +269,14 @@ if (present(mpi)) self%use_mpi = mpi
 
 if(present(debug)) self%debug = debug
 
+!> compression parameter
+if(present(comp_lvl)) self%comp_lvl = comp_lvl
+if(self%comp_lvl < 0 .or. self%comp_lvl > 9) error stop "compression level must be in range [0..9]"
+
 call get_hdf5_config(self%parallel_compression)
-if(self%parallel_compression .and. present(comp_lvl)) self%comp_lvl = comp_lvl
+if(self%use_mpi .and. .not. self%parallel_compression .and. self%comp_lvl > 0) then
+  write(stderr, *) "h5fortran: parallel compression is NOT available"
+endif
 
 call h5open_f(ierr)
 if(ierr/=0) error stop "h5open: could not open HDF5 library"
