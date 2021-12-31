@@ -97,7 +97,7 @@ if(hdf5_parallel)
     set(hdf5_parallel_compression ".true." CACHE STRING "configure variable for HDF5 parallel compression")
   else()
     message(STATUS "Building HDF5-MPI: MPI-3 NOT available => HDF5 parallel compression disabled")
-    set(hdf5_parallel_compression ".false." CACHE STRING "configure variable for HDF5 parallel compression")
+    set(hdf5_parallel_compression ".false." CACHE STRING "configure variable for HDF5 parallel compression: MPI < 3")
   endif()
 endif(hdf5_parallel)
 

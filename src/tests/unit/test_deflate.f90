@@ -1,25 +1,40 @@
 program test_deflate
 !! unit tests and registration tests of HDF5 deflate compression write
 use, intrinsic:: iso_fortran_env, only: int32, real32, real64, stderr=>error_unit
+
+use hdf5, only : H5D_CHUNKED_F, H5D_CONTIGUOUS_F, hsize_t
+use mpi, only : mpi_init
+
 use h5mpi, only: hdf5_file
-use hdf5, only: H5D_CHUNKED_F, H5D_CONTIGUOUS_F, hsize_t
 
 implicit none (type, external)
 
+external :: mpi_finalize
+
 character(*), parameter :: fn1='deflate1.h5', fn2='deflate2.h5', fn3='deflate3.h5', fn4='deflate4.h5'
 integer, parameter :: N=1000
+integer :: ierr
+
+call mpi_init(ierr)
+if (ierr /= 0) error stop "mpi_init"
 
 call test_deflate_props(fn1, N)
 print *,'OK: HDF5 compression props'
 
 call test_deflate_whole(fn2, N)
+print *,'OK: HDF5 compress whole'
 
 call test_deflate_slice(fn3, N)
+print *,'OK: HDF5 compress slice'
 
 call test_deflate_chunk_size(fn4)
+print *,'OK: HDF5 compress whole with chunk size'
 
 call test_get_deflate(fn1)
 print *, 'OK: HDF5 get deflate'
+
+call mpi_finalize(ierr)
+if (ierr /= 0) error stop "mpi_finalize"
 
 contains
 
@@ -38,7 +53,7 @@ allocate(big2(N,N))
 
 big2 = 0
 
-call h5f%open(fn, action='w', comp_lvl=1, debug=.true.)
+call h5f%open(fn, action='w', comp_lvl=1, debug=.true., mpi=.true.)
 call h5f%write('/big2', big2) !, chunk_size=[100,100])
 call h5f%write('/small_contig', big2(:5,:5))
 call h5f%close()

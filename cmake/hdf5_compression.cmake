@@ -20,14 +20,14 @@ message(CHECK_START "Checking if HDF5 configured for parallel compression")
 
 if(HDF5_VERSION VERSION_LESS 1.10.2)
   # https://www.hdfgroup.org/2018/04/why-should-i-care-about-the-hdf5-1-10-2-release/
-  set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression")
+  set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression: HDF5 < 1.10.2")
   message(CHECK_FAIL "NO - HDF5 version ${HDF5_VERSION} < 1.10.2")
   return()
 endif()
 
 if(MPI_VERSION VERSION_LESS 3)
   message(CHECK_FAIL "NO - MPI version ${MPI_VERSION} < 3")
-  set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression")
+  set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression: MPI < 3")
   return()
 endif()
 
