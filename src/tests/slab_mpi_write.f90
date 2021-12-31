@@ -138,7 +138,7 @@ endif
 !> assign each worker hyperslab
 !! Each process defines dataset in memory and writes it to the hyperslab in the file.
 
-!! Only chunking along first dim, but can make test chunk on any/all dimension(s)
+!! can make test chunk on any/all dimension(s)
 istart(1) = 1
 istart(2) = mpi_id * dx2 + 1
 istart(3) = 1

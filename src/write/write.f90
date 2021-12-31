@@ -28,11 +28,11 @@ if(self%debug) print *,'h5fortran:TRACE:create:exists: ' // dname, exists
 
 if(exists) then
   if (.not.present(istart)) then
-    if (size(dims) == 0) then
+    if (size(mem_dims) == 0) then
       !! scalar
-      call hdf_rank_check(self, dname, size(dims))
+      call hdf_rank_check(self, dname, size(mem_dims))
     else
-      call hdf_shape_check(self, dname, dims)
+      call hdf_shape_check(self, dname, mem_dims)
     endif
   endif
   !! FIXME: read and write slice shape not checked; but should check in future versions
@@ -50,8 +50,8 @@ if(exists) then
 endif
 
 !> compression
-if(size(dims) >= 2) then
-  call set_deflate(self, dims, plist_id, ierr, chunk_size)
+if(size(mem_dims) >= 2) then
+  call set_deflate(self, mem_dims, plist_id, ierr, chunk_size)
   if (ierr/=0) error stop 'ERROR:h5fortran:create: problem setting deflate on ' // dname // ' in ' // self%filename
 endif
 
@@ -81,13 +81,13 @@ integer(HSIZE_T) :: cs(size(dims))
 ierr = 0
 plist_id = H5P_DEFAULT_F
 
-if (self%use_mpi .and. .not. self%parallel_compression) return
-if (self%comp_lvl < 1 .or. self%comp_lvl > 9) return
-
 if (present(chunk_size)) then
   cs = chunk_size
   where (cs > dims) cs = dims
   if(self%debug) print *,'TRACE: user request chunk_size ',cs
+elseif (self%comp_lvl < 1 .or. self%comp_lvl > 9) then
+  ! didn't request chunk_size and didn't request compression
+  return
 else
   !! guess chunk size, keeping in mind 1 Megabyte recommended maximum chunk size
   call guess_chunk_size(dims, cs)
@@ -102,6 +102,15 @@ if (check(ierr, "h5pcreate: " // self%filename)) return
 
 call h5pset_chunk_f(plist_id, size(dims), cs, ierr)
 if (check(ierr, "h5pset_chunk: " // self%filename)) return
+
+if (self%use_mpi .and. .not. self%parallel_compression) then
+  write(stderr, '(a)') 'h5fortran:set_deflate: parallel filters (compression) not supported'
+  return
+endif
+
+if (self%comp_lvl < 1 .or. self%comp_lvl > 9) return
+
+!> enable filters
 
 call h5pset_shuffle_f(plist_id, ierr)
 if (check(ierr, "h5pset_shuffle: " // self%filename)) return

@@ -75,15 +75,14 @@ check, hdf_wrapup, hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hypersla
 hdf5version, HSIZE_T
 
 interface !< write.f90
-module subroutine hdf_create(self, dname, dtype, dims, dset_dims, filespace, memspace, dset_id, istart, iend, chunk_size)
+module subroutine hdf_create(self, dname, dtype, mem_dims, dset_dims, filespace, memspace, dset_id, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 integer(HID_T), intent(in) :: dtype
-integer(HSIZE_T), intent(in) :: dims(:)
-integer(HSIZE_T), intent(in) :: dset_dims(:)
+integer(HSIZE_T), dimension(:), intent(in) :: mem_dims, dset_dims
 integer(HID_T), intent(out), optional :: filespace, memspace, dset_id
 integer(HSIZE_T), dimension(:), intent(in), optional :: istart, iend
-integer, intent(in), optional :: chunk_size(:)
+integer, dimension(:), intent(in), optional :: chunk_size
 end subroutine hdf_create
 end interface
 
@@ -107,55 +106,62 @@ class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:)
 class(*), intent(in), dimension(1), optional :: dset_dims  !< integer or integer(HSIZE_T) full disk shape (not just per worker)
-integer(HSIZE_T), intent(in), dimension(1), optional :: istart, iend, chunk_size
+integer(HSIZE_T), intent(in), dimension(1), optional :: istart, iend
+integer, intent(in), dimension(1), optional :: chunk_size
 end subroutine ph5write_1d
 
 module subroutine ph5write_2d(self, dname, value, dset_dims, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:)
-class(*), intent(in), optional :: dset_dims(2)
-integer(HSIZE_T), intent(in), dimension(2), optional :: istart, iend, chunk_size
+class(*), intent(in), dimension(2), optional :: dset_dims
+integer(HSIZE_T), intent(in), dimension(2), optional :: istart, iend
+integer, intent(in), dimension(2), optional :: chunk_size
 end subroutine ph5write_2d
 
 module subroutine ph5write_3d(self, dname, value, dset_dims, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:)
-class(*), intent(in), optional :: dset_dims(3)
-integer(HSIZE_T), intent(in), dimension(3), optional :: istart, iend, chunk_size
+class(*), intent(in), dimension(3), optional :: dset_dims
+integer(HSIZE_T), intent(in), dimension(3), optional :: istart, iend
+integer, intent(in), dimension(3), optional :: chunk_size
 end subroutine ph5write_3d
 
 module subroutine ph5write_4d(self, dname, value, dset_dims, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:)
-class(*), intent(in), optional :: dset_dims(4)
-integer(HSIZE_T), intent(in), dimension(4), optional :: istart, iend, chunk_size
+class(*), intent(in), dimension(4), optional :: dset_dims
+integer(HSIZE_T), intent(in), dimension(4), optional :: istart, iend
+integer, intent(in), dimension(4), optional :: chunk_size
 end subroutine ph5write_4d
 
 module subroutine ph5write_5d(self, dname, value, dset_dims, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:)
-class(*), intent(in), optional :: dset_dims(5)
-integer(HSIZE_T), intent(in), dimension(5), optional :: istart, iend, chunk_size
+class(*), intent(in), dimension(5), optional :: dset_dims
+integer(HSIZE_T), intent(in), dimension(5), optional :: istart, iend
+integer, intent(in), dimension(5), optional :: chunk_size
 end subroutine ph5write_5d
 
 module subroutine ph5write_6d(self, dname, value, dset_dims, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:,:)
-class(*), intent(in), optional :: dset_dims(6)
-integer(HSIZE_T), intent(in), dimension(6), optional :: istart, iend, chunk_size
+class(*), intent(in), dimension(6), optional :: dset_dims
+integer(HSIZE_T), intent(in), dimension(6), optional :: istart, iend
+integer, intent(in), dimension(6), optional :: chunk_size
 end subroutine ph5write_6d
 
 module subroutine ph5write_7d(self, dname, value, dset_dims, istart, iend, chunk_size)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:,:,:)
-class(*), intent(in), optional :: dset_dims(7)
-integer(HSIZE_T), intent(in), dimension(7), optional :: istart, iend, chunk_size
+class(*), intent(in), dimension(7), optional :: dset_dims
+integer(HSIZE_T), intent(in), dimension(7), optional :: istart, iend
+integer, intent(in), dimension(7), optional :: chunk_size
 end subroutine ph5write_7d
 
 end interface
@@ -295,8 +301,9 @@ if(present(comp_lvl)) self%comp_lvl = comp_lvl
 
 call get_hdf5_config(self%parallel_compression)
 if(self%use_mpi .and. .not. self%parallel_compression .and. self%comp_lvl > 0) then
-  write(stderr, '(a)') "h5fortran:open: parallel compression is NOT available, setting comp_lvl = 0"
-  self%comp_lvl = 0
+  write(stderr, '(a)') "h5fortran:open: parallel compression is NOT available"
+  !! don't set to 0 because non-MPI writes can compress.
+  !! We warn again and disable compression for each attempted MPI compress write.
 endif
 
 if(self%comp_lvl < 0) then

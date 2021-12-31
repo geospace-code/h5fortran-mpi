@@ -1,11 +1,11 @@
 program test_deflate
 !! unit tests and registration tests of HDF5 deflate compression write
-use, intrinsic:: iso_fortran_env, only: int32, real32, real64, stderr=>error_unit
+use, intrinsic:: iso_fortran_env, only: int32, int64, real32, real64, stderr=>error_unit
 
 use hdf5, only : H5D_CHUNKED_F, H5D_CONTIGUOUS_F, hsize_t
-use mpi, only : mpi_init
+use mpi, only : mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 
-use h5mpi, only: hdf5_file
+use h5mpi, only: hdf5_file, HSIZE_T
 
 implicit none (type, external)
 
@@ -18,7 +18,7 @@ integer :: ierr
 call mpi_init(ierr)
 if (ierr /= 0) error stop "mpi_init"
 
-call test_deflate_props(fn1, N)
+call test_deflate_props(fn1, [50, 1000])
 print *,'OK: HDF5 compression props'
 
 call test_deflate_whole(fn2, N)
@@ -41,34 +41,71 @@ contains
 subroutine test_deflate_props(fn, N)
 
 character(*), intent(in) :: fn
-integer, intent(in) :: N
+integer, intent(in) :: N(2)
 
 type(hdf5_file) :: h5f
-integer(hsize_t) :: crat, chunks(3)
+integer(HSIZE_T) :: chunks(3)
 integer ::  fsize, layout
+integer(int64) :: crat
 
-real(real32), allocatable :: big2(:,:)
+integer(HSIZE_T) :: i0(2), i1(2), dx2
+integer :: Nmpi, mpi_id
 
-allocate(big2(N,N))
+real(real32), allocatable :: A(:,:)
 
-big2 = 0
+!> MPI partition
+call mpi_comm_size(MPI_COMM_WORLD, Nmpi, ierr)
+if(ierr/=0) error stop "mpi_comm_size"
+call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
+if(ierr/=0) error stop "mpi_comm_rank"
 
-call h5f%open(fn, action='w', comp_lvl=1, debug=.true., mpi=.true.)
-call h5f%write('/big2', big2) !, chunk_size=[100,100])
-call h5f%write('/small_contig', big2(:5,:5))
+if(mpi_id == 0) then
+  if (Nmpi > 1 .and. (modulo(N(2), Nmpi) /= 0 .or. Nmpi > N(2))) then
+    write(stderr, '(a,1x,i0,1x,i0)') "test_deflate_props: MPI worker count must be multiple of N", N(2), Nmpi
+    error stop fn
+  endif
+end if
+
+dx2 = N(2) / Nmpi
+
+allocate(A(N(1), dx2))
+
+A = 0  !< simplest data
+
+i0(1) = 1
+i0(2) = mpi_id * dx2 + 1
+i1(1) = size(A, 1)
+i1(2) = i0(2) + dx2 - 1
+
+!> write
+if(mpi_id == 0) then
+  call h5f%open(fn, action='w', comp_lvl=1, mpi=.false.)
+  call h5f%write('/small_contig', A(:4,:4))
+  call h5f%close()
+endif
+
+print '(a,i0,1x,2i5,2x,2i5)', "#1 partition: mpi_id, i0, i1 ", mpi_id, i0, i1
+
+call h5f%open(fn, action='a', comp_lvl=1, mpi=.true., debug=.true.)
+call h5f%write('/A', A, N, istart=i0, iend=i1)
 call h5f%close()
 
+!> check
 inquire(file=fn, size=fsize)
-crat = (N*N*storage_size(big2)/8) / fsize
+crat = (N(1) * N(2) * storage_size(A) / 8) / fsize
 print '(A,F6.2,A,I6)','filesize (Mbytes): ',fsize/1e6, '   2D compression ratio:',crat
-if (h5f%comp_lvl > 0 .and. crat < 10) error stop '2D low compression'
+if (h5f%parallel_compression) then
+  if(crat < 10) error stop '2D low compression'
+else
+  print *, "MPI commpression was disabled, so " // fn // " was not compressed."
+endif
 
 call h5f%open(fn, action='r', debug=.false.)
 
-layout = h5f%layout('/big2')
-if(layout /= H5D_CHUNKED_F) error stop '#1 not chunked layout'
-if(.not.h5f%is_chunked('/big2')) error stop '#1 not chunked layout'
-call h5f%chunks('/big2', chunks(:2))
+layout = h5f%layout('/A')
+if(layout /= H5D_CHUNKED_F) error stop '#1 not chunked layout: ' // fn
+if(.not.h5f%is_chunked('/A')) error stop '#1 not chunked layout: ' // fn
+call h5f%chunks('/A', chunks(:2))
 ! if(any(chunks(:2) /= [100, 100])) then
 if(any(chunks(:2) /= [63, 63])) then
   write(stderr, '(a,2I5)') "expected chunks: 63, 63 but got chunks ", chunks(:2)
@@ -182,7 +219,7 @@ type(hdf5_file) :: h5f
 
 call h5f%open(fn, action='r', debug=.true.)
 
-if (.not. h5f%deflate("/big2")) error stop "expected deflate"
+if (.not. h5f%deflate("/A")) error stop "expected deflate"
 
 call h5f%close()
 
