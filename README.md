@@ -16,22 +16,19 @@ The CMakeLists.txt in this project detects this and automatically builds HDF5-MP
 The system must have a working MPI library installed already.
 Some OS have a parallel HDF5 package:
 
-* Ubuntu: `apt install libhdf5-openmpi-dev`
+* Ubuntu: `apt install libhdf5-mpi-dev`
 * CentOS: `yum install hdf5-openmpi-devel`
 * MacOS: `brew install hdf5-mpi`
 
 ## Compressed parallel HDF5
 
-Compression is useful in general to save significant disk space and speed up write/read, but requires HDF5 >= 1.10.2 and MPI-3.
+Compression is useful in general to save significant disk space and speed up write/read.
+HDF5-MPI file compression requires HDF5 >= 1.10.2 and MPI-3.
+Currently Windows MS-MPI is MPI-2.
+Intel oneAPI, including on Windows has MPI-3.
+Thus Windows users can use Intel oneAPI with compression, or GCC+MS-MPI without compression.
 
-### Windows
-
-At least through HDF5 1.10.7 and 1.21.1, parallel HDF5 writes *with compression* are not supported on Windows, with GCC or Intel compiler.
-This is despite the Intel compiler having MPI-3 API.
-This appears to be an undocumented limitation on Windows of HDF5.
-
-Windows users may instead use Windows Subsystem for Linux and install `libhdf5-openmpi-dev` in Ubuntu.
-Or simply use uncompressed parallel HDF5, but compression is important enough that WSL may be the best general solution for Windows users.
+Windows users that need file compression may use Windows Subsystem for Linux (e.g. Ubuntu) and install `libhdf5-mpi-dev`.
 
 ## Build this project
 

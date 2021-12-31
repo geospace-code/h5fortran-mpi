@@ -12,6 +12,7 @@ H5F_ACC_RDONLY_F, H5F_ACC_TRUNC_F, H5F_ACC_RDWR_F, H5F_SCOPE_GLOBAL_F, &
 H5FD_MPIO_COLLECTIVE_F, &
 H5P_DEFAULT_F, H5P_FILE_ACCESS_F, H5P_DATASET_CREATE_F, H5P_DATASET_XFER_F, &
 H5S_ALL_F, H5S_SELECT_SET_F, &
+H5D_CHUNKED_F, H5D_CONTIGUOUS_F, H5D_COMPACT_F, &
 h5dcreate_f, h5dopen_f, h5dclose_f, h5dget_space_f, &
 h5fopen_f, h5fclose_f, h5fcreate_f, h5fget_filesize_f, h5fflush_f, &
 h5pcreate_f, h5pclose_f, h5pset_chunk_f, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, &
@@ -41,9 +42,12 @@ integer :: comp_lvl = 0
 contains
 
 procedure, public :: open => ph5open, close => ph5close, &
-  flush => hdf_flush, shape => h5get_shape, exist => hdf_exist, &
-  create => hdf_create, filesize => hdf_filesize, &
-  class => get_class, dtype => get_native_dtype
+flush => hdf_flush, shape => h5get_shape, exist => hdf_exist, &
+create => hdf_create, filesize => hdf_filesize, &
+class => get_class, dtype => get_native_dtype, &
+deflate => get_deflate, &
+layout => hdf_get_layout, chunks => hdf_get_chunk, &
+is_contig => hdf_is_contig, is_chunked => hdf_is_chunked, is_compact => hdf_is_compact
 !! procedures without mapping
 
 generic, public :: write => h5write_scalar,ph5write_1d, ph5write_2d, ph5write_3d, ph5write_4d, ph5write_5d, ph5write_6d, ph5write_7d
@@ -166,6 +170,23 @@ integer(HSIZE_T), intent(in) :: dims(:)
 integer(HSIZE_T), intent(out) :: dset_dims(:)
 integer(HID_T), intent(out) :: filespace, memspace, dset_id
 end subroutine h5open_read
+
+module logical function get_deflate(self, dname)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+end function get_deflate
+
+module integer function hdf_get_layout(self, dname) result(layout)
+!! H5D_CONTIGUOUS_F, H5D_CHUNKED_F, H5D_VIRTUAL_F, H5D_COMPACT_F
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+end function hdf_get_layout
+
+module subroutine hdf_get_chunk(self, dname, chunk_size)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+integer(hsize_t), intent(out) :: chunk_size(:)
+end subroutine hdf_get_chunk
 
 module integer function get_class(self, dname)
 class(hdf5_file), intent(in) :: self
@@ -370,6 +391,28 @@ self%file_id = 0
 self%is_open = .false.
 
 end subroutine ph5close
+
+
+logical function hdf_is_contig(self, dname)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+hdf_is_contig = self%layout(dname) == H5D_CONTIGUOUS_F
+end function hdf_is_contig
+
+
+logical function hdf_is_compact(self, dname)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+hdf_is_compact = self%layout(dname) == H5D_COMPACT_F
+end function hdf_is_compact
+
+
+logical function hdf_is_chunked(self, dname)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+hdf_is_chunked = self%layout(dname) == H5D_CHUNKED_F
+end function hdf_is_chunked
+
 
 
 subroutine mpi_hyperslab(dims, dset_dims, dset_id, filespace, memspace, dname, istart, iend)
