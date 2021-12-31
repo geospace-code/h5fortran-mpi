@@ -29,7 +29,8 @@ endif()
 try_run(mpi_run_code mpi_build_code
 ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/build
 ${CMAKE_CURRENT_BINARY_DIR}/find_mpi/get_mpi_version.c
-CMAKE_FLAGS -DINCLUDE_DIRECTORIES=${MPI_C_INCLUDE_DIRS}
+CMAKE_FLAGS "-DINCLUDE_DIRECTORIES:PATH=${MPI_C_INCLUDE_DIRS}"
+# must have quotes as include_dirs is a list
 # LINK_OPTIONS ${MPI_C_LINK_FLAGS}  # breaks CentOS GCC with -Wl,-rpath
 LINK_LIBRARIES ${MPI_C_LIBRARIES}
 RUN_OUTPUT_VARIABLE MPI_VERSION_STRING
