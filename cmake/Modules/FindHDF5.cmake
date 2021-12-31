@@ -606,7 +606,7 @@ if(HDF5_parallel_FOUND)
   use mpi
 
   integer :: ierr
-  integer(HID_T) :: plist_id
+  integer(HID_T) :: plist_id, xfer_id, fid, dset_id
 
   call mpi_init(ierr)
 
@@ -614,16 +614,20 @@ if(HDF5_parallel_FOUND)
 
   call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, ierr)
   call h5pset_fapl_mpio_f(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL, ierr)
-
+  call h5fopen_f('junk.h5', H5F_ACC_RDONLY_F, fid, ierr, access_prp=plist_id)
   call h5pclose_f(plist_id, ierr)
+
+  call h5pcreate_f(H5P_DATASET_XFER_F, xfer_id, ierr)
+  call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_COLLECTIVE_F, ierr)
+
+  call h5fclose_f(fid, ierr)
+  call h5pclose_f(xfer_id, ierr)
+
+  call h5close_f(ierr)
 
   call mpi_finalize(ierr)
 
   end program")
-
-  if(NOT DEFINED HDF5_Fortran_links)
-    message(STATUS "Checking Fortran HDF5 MPI h5pset_fapl_mpio_f")
-  endif()
 else()
   set(src "program test_minimal
   use hdf5, only : h5open_f, h5close_f
