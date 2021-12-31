@@ -56,7 +56,7 @@ jobs:
 
     - name: Release build
       run: cmake --build --preset release || cmake --build --preset release
-      # double build command is to workaround bug in HDF5 package itself with Intel oneAPI + MPI when used as CMake ExternalProject, for 1.10 and 1.12
+      # double build command is to workaround bug in HDF5 package itself when used as CMake ExternalProject, for 1.10 and 1.12
     - name: Release unit test
       run: ctest --preset release --output-junit test-release-oneapi.xml
 
