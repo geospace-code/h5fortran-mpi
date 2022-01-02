@@ -13,25 +13,30 @@ external :: mpi_finalize
 
 character(*), parameter :: fn1='deflate1.h5', fn2='deflate2.h5', fn3='deflate3.h5', fn4='deflate4.h5'
 integer, parameter :: N=1000
-integer :: ierr
+integer :: ierr, mpi_id
 
 call mpi_init(ierr)
 if (ierr /= 0) error stop "mpi_init"
 
+call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
+if(ierr/=0) error stop "mpi_comm_rank"
+
 call test_deflate_props(fn1, [50, 1000])
 print *,'OK: HDF5 compression props'
 
-call test_deflate_whole(fn2, N)
-print *,'OK: HDF5 compress whole'
+if(mpi_id == 0) then
+  call test_deflate_whole(fn2, N)
+  print *,'OK: HDF5 compress whole'
 
-call test_deflate_slice(fn3, N)
-print *,'OK: HDF5 compress slice'
+  call test_deflate_slice(fn3, N)
+  print *,'OK: HDF5 compress slice'
 
-call test_deflate_chunk_size(fn4)
-print *,'OK: HDF5 compress whole with chunk size'
+  call test_deflate_chunk_size(fn4)
+  print *,'OK: HDF5 compress whole with chunk size'
 
-call test_get_deflate(fn1)
-print *, 'OK: HDF5 get deflate'
+  call test_get_deflate(fn1)
+  print *, 'OK: HDF5 get deflate'
+endif
 
 call mpi_finalize(ierr)
 if (ierr /= 0) error stop "mpi_finalize"
@@ -78,16 +83,16 @@ i1(1) = size(A, 1)
 i1(2) = i0(2) + dx2 - 1
 
 !> write
-if(mpi_id == 0) then
-  call h5f%open(fn, action='w', comp_lvl=1, mpi=.false.)
-  call h5f%write('/small_contig', A(:4,:4))
-  call h5f%close()
-endif
-
 print '(a,i0,1x,2i5,2x,2i5)', "#1 partition: mpi_id, i0, i1 ", mpi_id, i0, i1
 
-call h5f%open(fn, action='a', comp_lvl=1, mpi=.true., debug=.true.)
-call h5f%write('/A', A, N, istart=i0, iend=i1)
+call h5f%open(fn, action='w', comp_lvl=1, mpi=.true., debug=.true.)
+call h5f%write('/A', A, N, istart=i0, iend=i1, chunk_size=[10, 100])
+call h5f%close()
+
+if(mpi_id /= 0) return
+
+call h5f%open(fn, action='a', comp_lvl=1, mpi=.false.)
+call h5f%write('/small_contig', A(:4,:4))
 call h5f%close()
 
 !> check
@@ -106,9 +111,8 @@ layout = h5f%layout('/A')
 if(layout /= H5D_CHUNKED_F) error stop '#1 not chunked layout: ' // fn
 if(.not.h5f%is_chunked('/A')) error stop '#1 not chunked layout: ' // fn
 call h5f%chunks('/A', chunks(:2))
-! if(any(chunks(:2) /= [100, 100])) then
-if(any(chunks(:2) /= [63, 63])) then
-  write(stderr, '(a,2I5)') "expected chunks: 63, 63 but got chunks ", chunks(:2)
+if(any(chunks(:2) /= [10, 100])) then
+  write(stderr, '(a,2I5)') "expected chunks: 10, 100 but got chunks ", chunks(:2)
   error stop '#1 get_chunk mismatch'
 endif
 layout = h5f%layout('/small_contig')
@@ -135,7 +139,7 @@ integer :: fsize
 allocate(big3(N,N,4))
 
 call h5f%open(fn, action='w',comp_lvl=1, debug=.true.)
-call h5f%write('/big3', big3) !, chunk_size=[100,100,1])
+call h5f%write('/big3', big3, chunk_size=[100, 100, 1])
 
 call h5f%write('/big3_autochunk', big3)
 call h5f%chunks('/big3_autochunk', chunks)
@@ -198,7 +202,7 @@ allocate(ibig2(N,N))
 ibig2 = 0
 
 call h5f%open(fn, action='w',comp_lvl=1, debug=.true.)
-call h5f%write('/ibig2', ibig2) !, chunk_size=[100,100])
+call h5f%write('/ibig2', ibig2, chunk_size=[100, 100])
 call h5f%close()
 
 inquire(file=fn, size=fsize)
@@ -219,10 +223,15 @@ type(hdf5_file) :: h5f
 
 call h5f%open(fn, action='r', debug=.true.)
 
-if (.not. h5f%deflate("/A")) error stop "expected deflate"
+if (h5f%parallel_compression) then
+  if (.not. h5f%deflate("/A")) error stop "expected deflate"
+else
+  write(stderr,'(a)') "MPI compression was disabled, so " // fn // " was not compressed."
+endif
 
 call h5f%close()
 
 end subroutine test_get_deflate
+
 
 end program
