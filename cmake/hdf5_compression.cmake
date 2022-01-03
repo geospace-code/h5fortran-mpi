@@ -1,4 +1,10 @@
 # verify HDF5 was configured for parallel compression
+# needs a run test as sometimes libhdf5.settings says filter collective
+# is enabled when it actually fails at runtime (Windows Intel oneAPI)
+
+include(CheckSourceRuns)
+
+
 function(hdf5_compression_flag)
 
 if(DEFINED CACHE{hdf5_parallel_compression})
@@ -38,8 +44,19 @@ REQUIRED
 file(READ ${hdf5_settings_file} hdf5_settings)
 string(REGEX MATCH "Parallel Filtered Dataset Writes:[ ]*([a-zA-Z]+)" hdf5_parallel_compression_match ${hdf5_settings})
 if(${CMAKE_MATCH_1})
-  message(CHECK_PASS "${CMAKE_MATCH_1}")
-  set(hdf5_parallel_compression .true. CACHE STRING "HDF5 configured for parallel compression")
+
+  set(CMAKE_REQUIRED_LIBRARIES HDF5::HDF5 MPI::MPI_Fortran MPI::MPI_C)
+
+  file(READ ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/Modules/check_hdf5_mpi.f90 src)
+  check_source_runs(Fortran ${src} hdf5_parallel_compression_run)
+
+  if(hdf5_parallel_compression_run)
+    message(CHECK_PASS "${CMAKE_MATCH_1}")
+    set(hdf5_parallel_compression .true. CACHE STRING "HDF5 configured for parallel compression")
+  else()
+    message(CHECK_FAIL "HDF5-MPI run check failed")
+    set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression")
+  endif()
 else()
   message(CHECK_FAIL "NO")
   set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression")
