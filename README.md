@@ -4,12 +4,11 @@
 [![ci_macos](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci_macos.yml/badge.svg)](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci_macos.yml)
 [![intel-oneapi](https://github.com/scivision/hdf5-benchmark/actions/workflows/intel-oneapi.yml/badge.svg)](https://github.com/scivision/hdf5-benchmark/actions/workflows/intel-oneapi.yml)
 
-benchmarking speed of HDF5 writes from MPI parallel workers.
-Once the program is built as in the following sections, run benchmarks in the [scripts](./scripts) directory like:
-
-```sh
-python bench_slab.py
-```
+Easy to use object-oriented Fortran HDF5 interface.
+This interface requires MPI, although it is capable of non-MPI file I/O.
+The original object-oriented Fortran HDF5 interface without MPI is [h5fortran](https://github.com/geospace-code/h5fortran).
+The non-MPI h5fortran and h5fortran-mpi APIs are by design nearly identical.
+A very similar NetCDF4 interface is [nc4fortran](https://github.com/geospace-code/nc4fortran).
 
 Many computer systems default to the serial HDF5 API, which lacks the HDF5 parallel MPI layer.
 The CMakeLists.txt in this project detects this and **automatically builds HDF5-MPI if needed**.
