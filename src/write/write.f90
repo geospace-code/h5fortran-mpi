@@ -93,9 +93,10 @@ else
   call guess_chunk_size(dims, cs)
 endif
 
-if(any(cs < 1)) return
-
 if(self%debug) print *,'DEBUG:set_deflate: dims: ',dims,'chunk size: ', cs
+
+if(any(cs == 0)) return  !< array too small to chunk
+if(any(cs < 0)) error stop "h5fortran:set_deflate: chunk_size must be strictly positive"
 
 call h5pcreate_f(H5P_DATASET_CREATE_F, plist_id, ierr)
 if (check(ierr, "h5pcreate: " // self%filename)) return
@@ -126,7 +127,9 @@ if(self%debug) print '(a,i0)','TRACE:set_deflate done, comp_lvl: ', self%comp_lv
 end subroutine set_deflate
 
 
-subroutine guess_chunk_size(dims, chunk_size)
+pure subroutine guess_chunk_size(dims, chunk_size)
+!! if array is too small to chunk, returns 0.
+
 !! based on https://github.com/h5py/h5py/blob/master/h5py/_hl/filters.py
 !! refer to https://support.hdfgroup.org/HDF5/Tutor/layout.html
 integer(HSIZE_T), intent(in) :: dims(:)
@@ -140,10 +143,10 @@ TYPESIZE = 8             !< bytes, assume real64 for simplicity
 
 integer(hsize_t) :: dset_size, target_size, chunk_bytes, i, j, ndims
 
-if (product(dims) * TYPESIZE < CHUNK_MIN) then
-  chunk_size = 0
-  return
-endif
+
+chunk_size = 0
+
+if (product(dims) * TYPESIZE < CHUNK_MIN) return
 
 ndims = size(chunk_size)
 chunk_size = dims
