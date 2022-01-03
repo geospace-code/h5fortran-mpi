@@ -8,14 +8,6 @@ endif()
 cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
 cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
 
-find_file(hdf5_settings_file
-NAMES libhdf5.settings
-HINTS ${HDF5_LIBRARY_DIR} ${HDF5_DIR}
-PATH_SUFFIXES lib share share/hdf5 share/hdf5-mpi
-NO_DEFAULT_PATH
-REQUIRED
-)
-
 message(CHECK_START "Checking if HDF5 configured for parallel compression")
 
 if(HDF5_VERSION VERSION_LESS 1.10.2)
@@ -30,6 +22,18 @@ if(MPI_VERSION VERSION_LESS 3)
   set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression: MPI < 3")
   return()
 endif()
+
+find_file(hdf5_settings_file
+NAMES libhdf5_openmpi.settings libhdf5_mpich.settings libhdf5.settings
+HINTS ${HDF5_LIBRARY_DIR} ${HDF5_DIR}
+PATH_SUFFIXES lib hdf5/openmpi hdf5/mpich share/hdf5-mpi share/hdf5 share
+NO_DEFAULT_PATH
+REQUIRED
+)
+
+# self/general: lib share
+# Ubuntu: hdf5/openmpi hdf5/mpich
+# Homebrew: share/hdf5-mpi share/hdf5
 
 file(READ ${hdf5_settings_file} hdf5_settings)
 string(REGEX MATCH "Parallel Filtered Dataset Writes:[ ]*([a-zA-Z]+)" hdf5_parallel_compression_match ${hdf5_settings})
