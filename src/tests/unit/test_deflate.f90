@@ -232,11 +232,11 @@ if(ierr/=0) error stop "mpi_comm_size"
 call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
 if(ierr/=0) error stop "mpi_comm_rank"
 
-M = [N(1) - 10, N(2) - 20, 4]
+M = [N(1), N(2) - 20, 4]
 
 dx2 = M(2) / Nmpi
 
-allocate(A(N(1), dx2, 4))
+allocate(A(N(1)+1, dx2, 4))
 
 i0(1) = 1
 i0(2) = mpi_id * dx2 + 1
