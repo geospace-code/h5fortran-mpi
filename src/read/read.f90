@@ -42,13 +42,14 @@ module procedure get_deflate
 integer :: i, j, ierr
 integer :: flags !< bit pattern
 integer(HID_T) :: dcpl, dset_id
-integer(SIZE_T) :: Naux, Lname
+integer(SIZE_T) :: Naux
 integer :: Aux(8)  !< arbitrary length
 integer :: Nf, filter_id
 character(32) :: filter_name
 
+logical :: debug = .false.
+
 Naux = size(Aux, kind=SIZE_T)
-Lname = len(filter_name)
 
 call h5dopen_f(self%file_id, dname, dset_id, ierr)
 
@@ -59,14 +60,21 @@ call h5pget_nfilters_f(dcpl, Nf, ierr)
 if (ierr/=0) error stop "h5fortran:get_deflate:h5pget_nfilters: " // dname // " in " // self%filename
 
 get_deflate = .false.
-do i = 1, Nf - 1
+do i = 1, Nf
+  filter_name = ""
+
   call h5pget_filter_f(dcpl, i, &
-  flags, Naux, Aux, Lname, filter_name, &
+  flags, &
+  Naux, Aux, &
+  len(filter_name, SIZE_T), filter_name, &
   filter_id, ierr)
   if(ierr/=0) error stop "h5fortran:get_deflate:h5pget_filter: " // dname // " in " // self%filename
+  if(filter_id < 0) write(stderr,'(a,i0)') "h5fortran:get_deflate:h5pget_filter: index error " // dname, i
 
-  j = index(filter_name, c_null_char)
-  ! print *, "TRACE:get_filter: filter name: ", filter_name(:j-1)
+  if (debug) then
+    j = index(filter_name, c_null_char)
+    if(j>0) print *, "TRACE:get_filter: filter name: ", filter_name(:j-1)
+  endif
 
   if (filter_id == H5Z_FILTER_DEFLATE_F) then
     get_deflate = .true.
@@ -74,8 +82,8 @@ do i = 1, Nf - 1
   end if
 end do
 
-call h5dclose_f(dset_id, ierr)
 call h5pclose_f(dcpl, ierr)
+call h5dclose_f(dset_id, ierr)
 
 end procedure get_deflate
 
