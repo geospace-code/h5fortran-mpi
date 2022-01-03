@@ -25,6 +25,8 @@ include(cmake/options.cmake)
 include(cmake/compilers.cmake)
 include(cmake/libraries.cmake)
 
+include(cmake/gcd.cmake)  # math functions
+
 # --- external libraries:  HDF5, HWLOC
 
 include(cmake/check_mpi.cmake)
