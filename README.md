@@ -11,36 +11,52 @@ Once the program is built as in the following sections, run benchmarks in the [s
 python bench_slab.py
 ```
 
-Most systems default to the serial HDF5 API, which lacks the HDF5 parallel MPI layer.
-The CMakeLists.txt in this project detects this and automatically builds HDF5-MPI if needed.
-The system must have a working MPI library installed already.
-Some OS have a parallel HDF5 package:
+Many computer systems default to the serial HDF5 API, which lacks the HDF5 parallel MPI layer.
+The CMakeLists.txt in this project detects this and **automatically builds HDF5-MPI if needed**.
+The system must have a working MPI library installed already (e.g. OpenMPI, MPICH, Intel MPI, MS-MPI).
+
+Some OS have an installable parallel HDF5 package:
 
 * Ubuntu: `apt install libhdf5-mpi-dev`
 * CentOS: `yum install hdf5-openmpi-devel`
 * MacOS: `brew install hdf5-mpi`
 
+While HDF5 1.10.2 is the oldest working HDF5 version, and the CI includes HDF5 1.10.4, in general for bugfixes and performance HDF5 >= 1.10.5 is [recommended](https://portal.hdfgroup.org/display/knowledge/OpenMPI+Build+Issues).
+
 ## Compressed parallel HDF5
 
 Compression is useful in general to save significant disk space and speed up write/read.
 HDF5-MPI file compression requires HDF5 >= 1.10.2 and MPI-3.
+As noted above, HDF5 >= 1.10.5 is recommended for stability and performance.
+
+### Windows limitations
+
+Microsoft Windows does not currently support native HDF5 parallel file compression.
+Windows Subsystem for Linux can be used for HDF5 parallel file compression.
+Native Windows users can read HDF5 compressed files but without using MPI.
+
+Native Windows MPI options are currently limited to MS-MPI and Intel MPI.
 Currently Windows MS-MPI is MPI-2.
-Intel oneAPI, including on Windows has MPI-3.
-Thus Windows users can use Intel oneAPI with compression, or GCC+MS-MPI without compression.
+A quirk with Intel oneAPI on Windows despite having MPI-3 is that with HDF5 1.10.x and at least through HDF5 1.12.1 the collective filtered parallel compression file I/O does not work.
+We test for this in CMake and set the compile flags appropriately.
 
 Windows users that need file compression may use Windows Subsystem for Linux (e.g. Ubuntu) and install `libhdf5-mpi-dev`.
 
 ## Build this project
 
-Once you have a HDF5 parallel library, build this project like:
+Build this project like:
+
+```sh
+cmake -B build
+cmake --build build
+```
+
+If you have previously built / installed a parallel HDF5 library, refer to it (saving build time) like:
 
 ```sh
 cmake -B build -DHDF5_ROOT=~/lib_par
 cmake --build build
 ```
-
-The test program "build/slab" writes a file "out.h5" that contains arrays "A2" and "A3" which are 2D and 3D respectively.
-The workers partition the writing by rows.
 
 ## Notes
 
@@ -50,7 +66,7 @@ To build and install the HDF5 parallel library use the script from our h5fortran
 git clone https://github.com/geospace-code/h5fortran
 cd h5fortran/scripts
 
-cmake -B build -DCMAKE_INSTALL_PREFIX=~/lib_par -Dhdf5_parallel=on
+cmake -B build --install-prefix=$HOME/lib_par -Dhdf5_parallel=on
 
 cmake --build build
 ```
