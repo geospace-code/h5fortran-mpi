@@ -363,7 +363,7 @@ end subroutine ph5open
 
 
 
-subroutine ph5close(self, ierr, close_hdf5_interface)
+subroutine ph5close(self, close_hdf5_interface)
 !! This must be called on each HDF5 file to flush buffers to disk
 !! data loss can occur if program terminates before this procedure
 !!
@@ -374,7 +374,6 @@ subroutine ph5close(self, ierr, close_hdf5_interface)
 
 class(hdf5_file), intent(inout) :: self
 logical, intent(in), optional :: close_hdf5_interface
-integer, intent(out), optional :: ierr
 integer :: ier
 
 if (.not. self%is_open) then
@@ -384,24 +383,16 @@ endif
 
 !> close hdf5 file
 call h5fclose_f(self%file_id, ier)
-if (present(ierr)) ierr = ier
-if (check(ier, 'ERROR:finalize: HDF5 file close: ' // self%filename)) then
-  if (present(ierr)) return
-  error stop
-endif
+if (ier/=0) error stop 'ERROR:finalize: HDF5 file close: ' // self%filename
 
 if (present(close_hdf5_interface)) then
   if (close_hdf5_interface) then
     call h5close_f(ier)
-    if (present(ierr)) ierr = ier
-    if (check(ier, 'ERROR: HDF5 library close')) then
-      if (present(ierr)) return
-      error stop
-    endif
+    if (ier/=0) error stop 'ERROR: HDF5 library close'
   endif
 endif
 
-!> sentinel lid
+!> sentinel file_id
 self%file_id = 0
 
 self%is_open = .false.
