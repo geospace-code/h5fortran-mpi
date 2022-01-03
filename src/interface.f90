@@ -70,7 +70,7 @@ integer :: a2=102, a3=103
 end type mpi_tags
 
 private
-public :: mpi_h5comm, hdf5_file, mpi_tags, &
+public :: mpi_h5comm, hdf5_file, mpi_tags, has_parallel_compression, &
 check, hdf_wrapup, hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hyperslab, &
 hdf5version, HSIZE_T
 
@@ -404,10 +404,15 @@ self%is_open = .false.
 
 end subroutine ph5close
 
+logical function has_parallel_compression()
+call get_hdf5_config(has_parallel_compression)
+end function has_parallel_compression
+
 
 logical function hdf_is_contig(self, dname)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
+
 hdf_is_contig = self%layout(dname) == H5D_CONTIGUOUS_F
 end function hdf_is_contig
 
@@ -415,6 +420,7 @@ end function hdf_is_contig
 logical function hdf_is_compact(self, dname)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
+
 hdf_is_compact = self%layout(dname) == H5D_COMPACT_F
 end function hdf_is_compact
 

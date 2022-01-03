@@ -9,7 +9,7 @@ use, intrinsic:: iso_fortran_env, only: int32, int64, real32, real64, stderr=>er
 use hdf5, only : H5D_CHUNKED_F, H5D_CONTIGUOUS_F, hsize_t
 use mpi, only : mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 
-use h5mpi, only: hdf5_file, HSIZE_T
+use h5mpi, only: hdf5_file, HSIZE_T, has_parallel_compression
 
 implicit none (type, external)
 
@@ -127,7 +127,7 @@ if(mpi_id == 0) then
   inquire(file=fn, size=fsize)
   crat = (N(1) * N(2) * 32 / 8) / fsize
   print '(A,F6.2,A,I6)','#1 filesize (Mbytes): ',fsize/1e6, '  compression ratio:',crat
-  if (h5f%parallel_compression) then
+  if (has_parallel_compression()) then
     if(crat < MIN_COMP) error stop '2D low compression'
   else
     print *, "MPI commpression was disabled, so " // fn // " was not compressed."
