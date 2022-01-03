@@ -34,6 +34,8 @@ logical :: is_open = .false.
 logical :: use_mpi = .false.
 logical :: debug = .false.
 logical :: parallel_compression = .false.
+logical :: fletcher32 = .false.
+logical :: shuffle = .false.
 
 integer :: comp_lvl = 0
 !! compression level (1-9)  0: disable compression
@@ -269,7 +271,7 @@ end interface
 contains
 
 
-subroutine ph5open(self, filename, action, mpi, comp_lvl, debug)
+subroutine ph5open(self, filename, action, mpi, comp_lvl, shuffle, fletcher32, debug)
 !! collective: open/create file
 !!
 !! PARAMETERS:
@@ -282,7 +284,10 @@ character(*), intent(in) :: filename
 character(*), intent(in), optional :: action
 logical, intent(in), optional :: mpi
 integer, intent(in), optional :: comp_lvl
+logical, intent(in), optional :: shuffle
+logical, intent(in), optional :: fletcher32
 logical, intent(in), optional :: debug
+
 
 character(len=2) :: laction
 integer :: ierr
@@ -296,15 +301,22 @@ if (present(mpi)) self%use_mpi = mpi
 
 if(present(debug)) self%debug = debug
 
-!> compression parameter
-if(present(comp_lvl)) self%comp_lvl = comp_lvl
-
 call get_hdf5_config(self%parallel_compression)
 if(self%use_mpi .and. .not. self%parallel_compression .and. self%comp_lvl > 0) then
   write(stderr, '(a)') "h5fortran:open: parallel compression is NOT available"
   !! don't set to 0 because non-MPI writes can compress.
   !! We warn again and disable compression for each attempted MPI compress write.
 endif
+
+!> compression parameter
+if(present(comp_lvl) .and. laction /= "r") self%comp_lvl = comp_lvl
+if(self%comp_lvl > 0) then
+  self%shuffle = .true.
+  self%fletcher32 = .true.
+endif
+
+if(present(shuffle)) self%shuffle = shuffle
+if(present(fletcher32)) self%fletcher32 = fletcher32
 
 if(self%comp_lvl < 0) then
   write(stderr, '(a)') "h5fortran:open: compression level must be >= 0, setting comp_lvl = 0"

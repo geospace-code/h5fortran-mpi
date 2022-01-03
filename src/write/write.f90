@@ -51,8 +51,7 @@ endif
 
 !> compression
 if(size(mem_dims) >= 2) then
-  call set_deflate(self, mem_dims, plist_id, ierr, chunk_size)
-  if (ierr/=0) error stop 'ERROR:h5fortran:create: problem setting deflate on ' // dname // ' in ' // self%filename
+  call set_deflate(self, mem_dims, plist_id, chunk_size)
 endif
 
 !> create dataset dataspace
@@ -69,16 +68,16 @@ if (ierr/=0) error stop "h5pclose: " // dname // ' in ' // self%filename
 end procedure hdf_create
 
 
-subroutine set_deflate(self, dims, plist_id, ierr, chunk_size)
+subroutine set_deflate(self, dims, plist_id, chunk_size)
 class(hdf5_file), intent(inout) :: self
 integer(HSIZE_T), intent(in) :: dims(:)
 integer(HID_T), intent(out) :: plist_id
-integer, intent(out) :: ierr
 integer, intent(in), optional :: chunk_size(:)
 
 integer(HSIZE_T) :: cs(size(dims))
+integer :: ierr
 
-ierr = 0
+
 plist_id = H5P_DEFAULT_F
 
 if (present(chunk_size)) then
@@ -99,28 +98,40 @@ if(any(cs == 0)) return  !< array too small to chunk
 if(any(cs < 0)) error stop "h5fortran:set_deflate: chunk_size must be strictly positive"
 
 call h5pcreate_f(H5P_DATASET_CREATE_F, plist_id, ierr)
-if (check(ierr, "h5pcreate: " // self%filename)) return
+if (ierr/=0) error stop "h5fortran:set_deflate:h5pcreate: " // self%filename
 
 call h5pset_chunk_f(plist_id, size(dims), cs, ierr)
-if (check(ierr, "h5pset_chunk: " // self%filename)) return
+if (ierr/=0) error stop "h5fortran:set_deflate:h5pset_chunk: " // self%filename
+
+if (self%fletcher32) then
+  !! fletcher32 filter adds a checksum to the data
+  if (self%use_mpi .and. .not. self%parallel_compression) then
+    write(stderr, '(a)') 'h5fortran:set_deflate: fletcher32 parallel filter not supported ' // self%filename
+  else
+    call h5pset_fletcher32_f(plist_id, ierr)
+    if (ierr/=0) error stop "h5fortran:set_deflate:h5pset_fletcher32: " // self%filename
+  endif
+endif
 
 if (self%use_mpi .and. .not. self%parallel_compression) then
-  write(stderr, '(a)') 'h5fortran:set_deflate: parallel filters (compression) not supported'
+  write(stderr, '(a)') 'h5fortran:set_deflate: deflate parallel filter not supported ' // self%filename
   return
 endif
 
 if (self%comp_lvl < 1 .or. self%comp_lvl > 9) return
 
-!> enable filters
-
-call h5pset_shuffle_f(plist_id, ierr)
-if (check(ierr, "h5pset_shuffle: " // self%filename)) return
-
-call h5pset_fletcher32_f(plist_id, ierr)
-if (check(ierr, "h5pset_fletcher32: " // self%filename)) return
+if(self%shuffle) then
+  !! shuffle filter improves compression
+  if (self%use_mpi .and. .not. self%parallel_compression) then
+    write(stderr, '(a)') 'h5fortran:set_deflate: shuffle parallel filter not supported ' // self%filename
+  else
+    call h5pset_shuffle_f(plist_id, ierr)
+    if (ierr/=0) error stop "h5fortran:set_deflate:h5pset_shuffle: " // self%filename
+  endif
+endif
 
 call h5pset_deflate_f(plist_id, self%comp_lvl, ierr)
-if (check(ierr, "h5pset_deflate: " // self%filename)) return
+if (ierr/=0) error stop "h5fortran:set_deflate:h5pset_deflate: " // self%filename
 
 if(self%debug) print '(a,i0)','TRACE:set_deflate done, comp_lvl: ', self%comp_lvl
 
