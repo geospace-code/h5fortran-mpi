@@ -236,7 +236,7 @@ M = [N(1), N(2) - 20, 4]
 
 dx2 = M(2) / Nmpi
 
-allocate(A(N(1)+1, dx2, 4))
+allocate(A(N(1)+1, dx2, 4))  !< dim 1 is deliberately not the "right" size, we will index at %write()
 
 i0(1) = 1
 i0(2) = mpi_id * dx2 + 1
