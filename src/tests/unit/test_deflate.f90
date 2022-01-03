@@ -39,10 +39,12 @@ if(mpi_id==0) print *,'OK: HDF5 compress whole'
 call test_deflate_slice(fn3, N)
 if(mpi_id==0) print *,'OK: HDF5 compress slice'
 
-if(mpi_id==0) call test_get_deflate(fn1)
-!! quirk in HDF5? only works with mpi=.false.
-!! else get file close error
-print *, 'OK: HDF5 get deflate'
+if(mpi_id==0) then
+  call test_get_deflate(fn1)
+  !! quirk in HDF5? only works with mpi=.false.
+  !! else get file close error
+  print *, 'OK: HDF5 get deflate'
+endif
 
 call mpi_finalize(ierr)
 if (ierr /= 0) error stop "mpi_finalize"
