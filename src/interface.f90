@@ -346,7 +346,7 @@ case('rw', 'a')
 case ('w')
   call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ierr, access_prp=fapl)
 case default
-  error stop 'Unsupported action: ' // laction
+  error stop 'h5fortran: Unsupported open(..., action= ' // laction
 end select
 
 if(ierr/=0) error stop "h5open/create: could not initialize HDF5 file: " // filename // " action: " // laction
@@ -374,16 +374,21 @@ subroutine ph5close(self, close_hdf5_interface)
 
 class(hdf5_file), intent(inout) :: self
 logical, intent(in), optional :: close_hdf5_interface
-integer :: ier
+integer :: ier, ierr, mpi_id
 
 if (.not. self%is_open) then
-  write(stderr,*) 'WARNING:h5fortran:finalize: file handle is already closed: '// self%filename
+  write(stderr,*) 'WARNING:h5fortran:file_close: file handle is already closed: '// self%filename
   return
 endif
 
+
 !> close hdf5 file
 call h5fclose_f(self%file_id, ier)
-if (ier/=0) error stop 'ERROR:finalize: HDF5 file close: ' // self%filename
+if (ier/=0) then
+  call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
+  write(stderr,'(a,i0)') 'ERROR:h5fortran:h5fclose: HDF5 file close: ' // self%filename // ' mpi_id: ', mpi_id
+  error stop
+endif
 
 if (present(close_hdf5_interface)) then
   if (close_hdf5_interface) then
