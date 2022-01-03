@@ -19,7 +19,8 @@ Some OS have an installable parallel HDF5 package:
 
 * Ubuntu: `apt install libhdf5-mpi-dev`
 * CentOS: `yum install hdf5-openmpi-devel`
-* MacOS: `brew install hdf5-mpi`
+* MacOS Homebrew: `brew install hdf5-mpi`
+* MacOS MacPorts: `port install hdf5 +fortran +mpich`
 
 While HDF5 1.10.2 is the oldest working HDF5 version, and the CI includes HDF5 1.10.4, in general for bugfixes and performance HDF5 >= 1.10.5 is [recommended](https://portal.hdfgroup.org/display/knowledge/OpenMPI+Build+Issues).
 
