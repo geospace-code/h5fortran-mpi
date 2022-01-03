@@ -202,7 +202,8 @@ call h5f%close()
 
 if(mpi_id == 0) then
   inquire(file=fn, size=fsize)
-  crat = (N(1) * N(2) * 4 * storage_size(A) / 8) / fsize
+  crat = (2 * N(1) * N(2) * 4 * storage_size(A) / 8) / fsize
+  !! 2* since two datasets same size
 
   print '(A,F6.2,A,I6)','#2 filesize (Mbytes): ', fsize / 1e6, '   compression ratio:', crat
 
