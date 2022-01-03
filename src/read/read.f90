@@ -66,7 +66,7 @@ do i = 1, Nf - 1
   if(ierr/=0) error stop "h5fortran:get_deflate:h5pget_filter: " // dname // " in " // self%filename
 
   j = index(filter_name, c_null_char)
-  print *, "TRACE:get_filter: filter name: ", filter_name(:j-1)
+  ! print *, "TRACE:get_filter: filter name: ", filter_name(:j-1)
 
   if (filter_id == H5Z_FILTER_DEFLATE_F) then
     get_deflate = .true.

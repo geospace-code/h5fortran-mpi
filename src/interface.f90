@@ -286,7 +286,7 @@ logical, intent(in), optional :: debug
 
 character(len=2) :: laction
 integer :: ierr
-integer(HID_T) :: plist_id
+integer(HID_T) :: fapl !< file access property list
 logical :: exists
 
 laction = "rw"
@@ -324,35 +324,35 @@ if (laction(1:1) == "r".and..not.exists) error stop "h5open: file does not exist
 
 if(self%use_mpi) then
   !! collective: setup for MPI access
-  call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, ierr)
+  call h5pcreate_f(H5P_FILE_ACCESS_F, fapl, ierr)
   if(ierr/=0) error stop "h5open:h5pcreate could not collective open property"
-  call h5pset_fapl_mpio_f(plist_id, mpi_h5comm, mpi_h5info, ierr)
+  call h5pset_fapl_mpio_f(fapl, mpi_h5comm, mpi_h5info, ierr)
   if(ierr/=0) error stop "h5open:h5pset_fapl_mpio could not collective open file"
 else
-  plist_id = H5P_DEFAULT_F
+  fapl = H5P_DEFAULT_F
 endif
 
 !> from h5fortran
 select case(laction)
 case('r')
-  call h5fopen_f(filename, H5F_ACC_RDONLY_F, self%file_id, ierr, access_prp=plist_id)
+  call h5fopen_f(filename, H5F_ACC_RDONLY_F, self%file_id, ierr, access_prp=fapl)
 case('r+')
-  call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ierr, access_prp=plist_id)
+  call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ierr, access_prp=fapl)
 case('rw', 'a')
   if(exists) then
-    call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ierr, access_prp=plist_id)
+    call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ierr, access_prp=fapl)
   else
-    call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ierr, access_prp=plist_id)
+    call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ierr, access_prp=fapl)
   endif
 case ('w')
-  call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ierr, access_prp=plist_id)
+  call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ierr, access_prp=fapl)
 case default
   error stop 'Unsupported action: ' // laction
 end select
 
 if(ierr/=0) error stop "h5open/create: could not initialize HDF5 file: " // filename // " action: " // laction
 
-if(plist_id /= H5P_DEFAULT_F) call h5pclose_f(plist_id, ierr)
+if(fapl /= H5P_DEFAULT_F) call h5pclose_f(fapl, ierr)
 if(ierr/=0) error stop "h5mpi:open:h5pclose: " // filename
 
 self%filename = filename
