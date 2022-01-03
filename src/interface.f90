@@ -332,7 +332,6 @@ else
   fapl = H5P_DEFAULT_F
 endif
 
-!> from h5fortran
 select case(laction)
 case('r')
   call h5fopen_f(filename, H5F_ACC_RDONLY_F, self%file_id, ierr, access_prp=fapl)
@@ -352,8 +351,10 @@ end select
 
 if(ierr/=0) error stop "h5open/create: could not initialize HDF5 file: " // filename // " action: " // laction
 
-if(fapl /= H5P_DEFAULT_F) call h5pclose_f(fapl, ierr)
-if(ierr/=0) error stop "h5mpi:open:h5pclose: " // filename
+if(fapl /= H5P_DEFAULT_F) then
+  call h5pclose_f(fapl, ierr)
+  if(ierr/=0) error stop "h5mpi:open:h5pclose: " // filename
+endif
 
 self%filename = filename
 self%is_open = .true.
