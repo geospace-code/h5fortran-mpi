@@ -15,7 +15,7 @@ implicit none (type, external)
 
 external :: mpi_finalize
 
-character(*), parameter :: fn1='deflate1.h5', fn2='deflate2.h5', fn3='deflate3.h5', fn4='deflate4.h5'
+character(*), parameter :: fn1='deflate1.h5', fn2='deflate2.h5', fn3='deflate3.h5'
 integer, parameter :: N(2) = [50, 1000]
 integer :: ierr, mpi_id
 
@@ -124,9 +124,9 @@ call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
 if(mpi_id == 0) then
   inquire(file=fn, size=fsize)
   crat = (N(1) * N(2) * 32 / 8) / fsize
-  print '(A,F6.2,A,I6)','filesize (Mbytes): ',fsize/1e6, '   2D compression ratio:',crat
+  print '(A,F6.2,A,I6)','#1 filesize (Mbytes): ',fsize/1e6, '   2D compression ratio:',crat
   if (h5f%parallel_compression) then
-    if(crat < 10) error stop '2D low compression'
+    if(crat < 5) error stop '2D low compression'
   else
     print *, "MPI commpression was disabled, so " // fn // " was not compressed."
   endif
@@ -181,7 +181,7 @@ i1(1) = size(A, 1)
 i1(2) = i0(2) + dx2 - 1
 i1(3) = size(A, 3)
 
-call h5f%open(fn, action='w', comp_lvl=1, mpi=.true.)
+call h5f%open(fn, action='w', comp_lvl=3, mpi=.true.)
 
 call h5f%write('/A', A, [N(1), N(2), 4], istart=i0, iend=i1, chunk_size=[4, 50, 1])
 call h5f%chunks('/A', chunks)
@@ -206,7 +206,7 @@ if(mpi_id == 0) then
   print '(A,F6.2,A,I6)','#2 filesize (Mbytes): ', fsize / 1e6, '   3D compression ratio:',crat
 
   if (h5f%parallel_compression) then
-    if(crat < 10) error stop fn // ' low compression'
+    if(crat < 5) error stop fn // ' low compression'
   else
     print *, "MPI commpression was disabled, so " // fn // " was not compressed."
   endif
@@ -264,7 +264,7 @@ if(mpi_id == 0) then
   print '(A,F6.2,A,I6)','#3 filesize (Mbytes): ',fsize / 1e6, '   3D compression ratio:',crat
 
   if (h5f%parallel_compression) then
-    if(crat < 10) error stop fn // ' low compression'
+    if(crat < 5) error stop fn // ' low compression'
   else
     print *, "MPI commpression was disabled, so " // fn // " was not compressed."
   endif
