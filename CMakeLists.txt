@@ -45,14 +45,18 @@ if(NOT HDF5_FOUND OR hdf5_external)
   include(cmake/hdf5.cmake)
 endif()
 
-include(cmake/hwloc-fortran.cmake)
+if(ENABLE_BENCHMARKS)
+  include(cmake/hwloc-fortran.cmake)
+
+  add_subdirectory(src/utils)
+  add_subdirectory(src/tests/benchmarks)
+endif()
 
 # --- HDF5-MPI object oriented API
 
 add_subdirectory(src)
 
 if(BUILD_TESTING)
-  add_subdirectory(src/utils)
   add_subdirectory(src/tests)
 endif()
 

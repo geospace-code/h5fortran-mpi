@@ -1,5 +1,9 @@
+option(ENABLE_BENCHMARKS "write / read benchmarks")
+
 option(autobuild "autobuild libraries if not available" true)
+
 option(hdf5_parallel "enable parallel HDF5" true)
+
 option(dev "Development mode")
 
 option(ourFindMPI "Use our FindMPI")
