@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 3.20...3.22)
+
+project(h5mpiExample
+LANGUAGES Fortran
+)
+
+enable_testing()
+
+find_package(h5mpi CONFIG REQUIRED)
+
+# --- example 1
+add_executable(example1 example1.f90)
+target_link_libraries(example1 h5mpi::h5mpi)
+
+add_test(NAME Example1
+COMMAND $<TARGET_FILE:example1>
+)
+set_tests_properties(Example1 PROPERTIES
+WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+TIMEOUT 10
+)
