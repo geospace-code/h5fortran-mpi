@@ -1,0 +1,35 @@
+{
+    "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+    "@type": "SoftwareSourceCode",
+    "codeRepository": "https://github.com/scivision/h5fortran-mpi",
+    "contIntegration": "https://github.com/scivision/h5fortran-mpi/actions",
+    "dateModified": "2022-01-04",
+    "downloadUrl": "https://github.com/scivision/h5fortran-mpi/releases",
+    "issueTracker": "https://github.com/scivision/h5fortran-mpi/issues",
+    "name": "h5fortran-mpi",
+    "version": "0.9.0",
+    "identifier": "",
+    "description": "Lightweight object-oriented HDF5-MPI parallel Fortran interface",
+    "applicationCategory": "file I/O",
+    "developmentStatus": "active",
+    "funder": {
+        "@type": "Organization",
+        "name": "DARPA"
+    },
+    "keywords": [
+        "hdf5",
+        "object-oriented",
+        "mpi"
+    ],
+    "programmingLanguage": [
+        "Fortran"
+    ],
+    "author": [
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-1637-6526",
+            "givenName": "Michael",
+            "familyName": "Hirsch"
+        }
+    ]
+}

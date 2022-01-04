@@ -10,6 +10,9 @@ by Michael Hirsch www.scivision.dev
 
 Finds HDF5 library for C, CXX, Fortran. Serial or parallel HDF5.
 
+Environment variable ``HDF5MPI_ROOT`` or CMake variable HDF5MPI_ROOT can
+specify the location of the HDF5-MPI parallel library.
+
 
 Result Variables
 ^^^^^^^^^^^^^^^^
@@ -90,7 +93,7 @@ set(${outvar} ${_v} PARENT_SCOPE)
 endfunction(pop_flag)
 
 macro(find_mpi)
-# non-cache set by FindMPI are visible outside function -- need macro just to see within that function
+# non-cache set by FindMPI are not visible outside function -- need macro just to see within that function
 set(mpi_comp C)
 if(Fortran IN_LIST HDF5_FIND_COMPONENTS)
   list(APPEND mpi_comp Fortran)
@@ -250,7 +253,7 @@ if(HDF5_ROOT)
   find_path(HDF5_Fortran_INCLUDE_DIR
   NAMES hdf5.mod
   NO_DEFAULT_PATH
-  HINTS ${HDF5_C_INCLUDE_DIR} ${HDF5_ROOT} ENV HDF5_ROOT
+  HINTS ${HDF5_C_INCLUDE_DIR} ${HDF5_ROOT}
   PATH_SUFFIXES include
   DOC "HDF5 Fortran module path"
   )
@@ -406,7 +409,7 @@ if(HDF5_ROOT)
     NAMES ${wrapper_names}
     NAMES_PER_DIR
     NO_DEFAULT_PATH
-    HINTS ${HDF5_ROOT} ENV HDF5_ROOT
+    HINTS ${HDF5_ROOT}
     PATH_SUFFIXES ${hdf5_binsuf}
   )
 else()
@@ -456,7 +459,7 @@ if(HDF5_ROOT)
     NAMES ${wrapper_names}
     NAMES_PER_DIR
     NO_DEFAULT_PATH
-    HINTS ${HDF5_ROOT} ENV HDF5_ROOT
+    HINTS ${HDF5_ROOT}
     PATH_SUFFIXES ${hdf5_binsuf}
   )
 else()
@@ -503,7 +506,7 @@ if(HDF5_ROOT)
     NAMES ${wrapper_names}
     NAMES_PER_DIR
     NO_DEFAULT_PATH
-    HINTS ${HDF5_ROOT} ENV HDF5_ROOT
+    HINTS ${HDF5_ROOT}
     PATH_SUFFIXES ${hdf5_binsuf}
   )
 else()
@@ -650,8 +653,16 @@ endfunction(check_hdf5_link)
 
 set(CMAKE_REQUIRED_LIBRARIES)
 
-if(NOT HDF5_ROOT AND DEFINED ENV{HDF5_ROOT})
-  set(HDF5_ROOT $ENV{HDF5_ROOT})
+if(NOT HDF5MPI_ROOT AND DEFINED ENV{HDF5MPI_ROOT})
+  set(HDF5MPI_ROOT $ENV{HDF5MPI_ROOT})
+endif()
+
+if(NOT HDF5_ROOT)
+  if(HDF5MPI_ROOT)
+    set(HDF5_ROOT ${HDF5MPI_ROOT})
+  elseif(DEFINED ENV{HDF5_ROOT})
+    set(HDF5_ROOT $ENV{HDF5_ROOT})
+  endif()
 endif()
 
 # Conda causes numerous problems with finding HDF5, so exclude from search

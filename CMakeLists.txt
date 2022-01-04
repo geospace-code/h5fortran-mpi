@@ -4,7 +4,20 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
   message(FATAL_ERROR "cmake -B <build> to specify build directory")
 endif()
 
-project(HDF5benchmark LANGUAGES C Fortran)
+get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(NOT is_multi_config AND NOT (CMAKE_BUILD_TYPE OR DEFINED ENV{CMAKE_BUILD_TYPE}))
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Release default")
+endif()
+
+file(READ ${CMAKE_CURRENT_LIST_DIR}/codemeta.json _j)
+string(JSON PROJECT_VERSION GET ${_j} version)
+
+project(h5mpi
+LANGUAGES C Fortran
+VERSION ${PROJECT_VERSION}
+DESCRIPTION "Lightweight object-oriented HDF5 MPI parallel Fortran interface"
+HOMEPAGE_URL https://github.com/scivision/h5fortran-mpi
+)
 
 include(CTest)
 
@@ -62,6 +75,15 @@ if(BUILD_TESTING)
   add_subdirectory(src/tests)
 endif()
 
+# additional Find*.cmake necessary
+install(FILES
+${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/FindHDF5.cmake
+${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/check_hdf5_mpi.f90
+${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/FindSZIP.cmake
+DESTINATION cmake
+)
+
+include(cmake/install.cmake)
 
 include(FeatureSummary)
 add_feature_info(BuildHDF5 hdf5_external "autobuild HDF5 library")

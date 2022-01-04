@@ -16,3 +16,7 @@ $<INSTALL_INTERFACE:include>
 
 add_subdirectory(read)
 add_subdirectory(write)
+
+install(TARGETS h5mpi EXPORT ${PROJECT_NAME}-targets)
+
+install(FILES ${PROJECT_BINARY_DIR}/include/h5mpi.mod TYPE INCLUDE)
