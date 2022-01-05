@@ -50,6 +50,13 @@ jobs:
       with:
         files: build/test-*.xml
 
+    - name: configure examples
+      run: cmake -S Examples -B Examples/build -Dh5mpi_ROOT=${HOME}
+    - name: build examples
+      run: cmake --build Examples/build
+    - name: Test examples
+      run: ctest --test-dir Examples/build -V
+
 
   linux-build-static:
     needs: linux-static
@@ -70,7 +77,15 @@ jobs:
     # double build command is to workaround bug in HDF5 package itself when used as CMake ExternalProject, for 1.10 and 1.12
 
     - run: ctest --test-dir build --preset default
+
     - run: cmake --install build
+
+    - name: configure examples
+      run: cmake -S Examples -B Examples/build -Dh5mpi_ROOT=${HOME}
+    - name: build examples
+      run: cmake --build Examples/build
+    - name: Test examples
+      run: ctest --test-dir Examples/build -V
 
 
   linux-gcc8:

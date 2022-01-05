@@ -35,3 +35,10 @@ jobs:
     - run: ctest --preset debug -V
 
     - run: cmake --install build
+
+    - name: configure examples
+      run: cmake -S Examples -B Examples/build -Dh5mpi_ROOT=${HOME}
+    - name: build examples
+      run: cmake --build Examples/build
+    - name: Test examples
+      run: ctest --test-dir Examples/build -V
