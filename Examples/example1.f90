@@ -1,15 +1,17 @@
 program example2
 
-use, intrinsic :: iso_fortran_env, only : real32
+use, intrinsic :: iso_fortran_env, only : real32, int32
 
-use mpi, only : mpi_init, mpi_finalize
+use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
 
 use h5mpi, only : hdf5_file, HSIZE_T
 
 implicit none (type, external)
 
+external :: mpi_finalize
+
 character(*), parameter :: filename = 'example1.h5'
-integer :: ierr, mpi_id, Nmpi
+integer(int32) :: ierr, mpi_id, Nmpi, i32
 
 type(hdf5_file) :: h5f
 

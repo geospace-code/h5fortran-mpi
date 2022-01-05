@@ -1,16 +1,17 @@
 cmake_minimum_required(VERSION 3.20...3.22)
 
 project(h5mpiExample
-LANGUAGES Fortran
+LANGUAGES C Fortran
 )
 
 enable_testing()
 
+find_package(MPI COMPONENTS C Fortran REQUIRED)
 find_package(h5mpi CONFIG REQUIRED)
 
 # --- example 1
 add_executable(example1 example1.f90)
-target_link_libraries(example1 h5mpi::h5mpi)
+target_link_libraries(example1 h5mpi::h5mpi MPI::MPI_Fortran MPI::MPI_C)
 
 add_test(NAME Example1
 COMMAND $<TARGET_FILE:example1>
