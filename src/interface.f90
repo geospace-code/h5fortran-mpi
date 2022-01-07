@@ -13,9 +13,9 @@ H5FD_MPIO_COLLECTIVE_F, &
 H5P_DEFAULT_F, H5P_FILE_ACCESS_F, H5P_DATASET_CREATE_F, H5P_DATASET_XFER_F, &
 H5S_ALL_F, H5S_SELECT_SET_F, &
 H5D_CHUNKED_F, H5D_CONTIGUOUS_F, H5D_COMPACT_F, &
-h5dcreate_f, h5dopen_f, h5dclose_f, h5dget_space_f, &
+h5dcreate_f, h5dopen_f, h5dclose_f, h5dget_space_f, h5dget_create_plist_f, &
 h5fopen_f, h5fclose_f, h5fcreate_f, h5fget_filesize_f, h5fflush_f, &
-h5pcreate_f, h5pclose_f, h5pset_chunk_f, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, &
+h5pcreate_f, h5pclose_f, h5pset_chunk_f, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, h5pall_filters_avail_f, &
 h5sselect_hyperslab_f, h5screate_simple_f, h5sclose_f, &
 h5get_libversion_f, &
 h5open_f, h5close_f
@@ -456,18 +456,36 @@ integer(HSIZE_T), dimension(:), intent(in) :: istart
 integer(HSIZE_T), dimension(size(istart)), intent(in) :: iend
 
 integer(HSIZE_T), dimension(size(mem_dims)) :: c_mem_dims, i0
+integer(HID_T) :: dcpl
 integer :: ierr
 
+logical :: filters_OK
+
+!> check that all necessary filters to access dataset are available on the system.
+call h5dget_create_plist_f(dset_id, dcpl, ierr)
+if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5dget_create_plist: " // dname
+
+call h5pall_filters_avail_f(dcpl, filters_OK, ierr)
+if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5pall_filters_avail: " // dname
+if (.not. filters_OK) then
+  error stop "h5fortran: filter(s) missing necessary for dataset " // dname // " in parallel with MPI. This is " // &
+    "typically caused by missing DEFLATE compression with HDF5-MPI."
+endif
+
+call h5pclose_f(dcpl, ierr)
+if(ierr/=0) error stop "h5fortran:mpi_hyperslab:h5pclose: " // dname
 
 if(filespace == H5S_ALL_F) then
   !> create dataspace
   call h5screate_simple_f(rank=size(dset_dims), dims=dset_dims, space_id=filespace, hdferr=ierr)
-  if (ierr/=0) error stop "h5screate_simple:filespace " // dname
+  if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5screate_simple:filespace " // dname
 endif
 
 !> Select hyperslab in the file.
 call h5dget_space_f(dset_id, filespace, ierr)
-if (ierr/=0) error stop "h5dget_space: " // dname
+if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5dget_space: " // dname
+
+
 
 ! blk(1) = 1
 ! blk(2:) = dset_dims(2:)
@@ -493,11 +511,11 @@ hdferr=ierr)
 ! stride=1, &  !< for now we don't stride data
 ! block=blk  !< would this help performance?
 
-if (ierr/=0) error stop "h5sselect_hyperslab: " // dname
+if (ierr/=0) error stop "g5fortran:mpi_hyperslab:h5sselect_hyperslab: " // dname
 
 !> create memory dataspace
 call h5screate_simple_f(rank=size(c_mem_dims), dims=c_mem_dims, space_id=memspace, hdferr=ierr)
-if (ierr/=0) error stop "h5fortran:h5screate_simple:memspace " // dname
+if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5screate_simple:memspace " // dname
 
 end subroutine mpi_hyperslab
 

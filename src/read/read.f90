@@ -1,7 +1,7 @@
 submodule (h5mpi) hdf5_read
 
 use hdf5, only : h5tget_native_type_f, h5tget_class_f, h5dget_type_f, h5tget_size_f, h5tclose_f, h5topen_f, &
-h5dread_f, h5dget_create_plist_f, &
+h5dread_f, &
 h5pget_nfilters_f, h5pget_filter_f, h5pget_layout_f, h5pget_chunk_f, &
 H5T_DIR_ASCEND_F, &
 H5Z_FILTER_DEFLATE_F

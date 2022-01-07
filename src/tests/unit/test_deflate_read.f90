@@ -64,11 +64,7 @@ if(debug) print '(a,i0,1x,2i5,2x,2i5)', "#1 partition: mpi_id, i0, i1 ", mpi_id,
 
 call h5f%open(fn, action='r', mpi=.true.)
 call h5f%read('/A', A, istart=i0, iend=i1)
-if (h5f%parallel_compression) then
-  call h5f%read('/noMPI', A, istart=i0, iend=i1)
-else
-  print *, "test_read_deflate: no parallel compression: " // fn
-endif
+call h5f%read('/noMPI', A, istart=i0, iend=i1)  !< compressed with MPI
 call h5f%close()
 
 end subroutine test_read_deflate
