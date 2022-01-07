@@ -358,7 +358,7 @@ case('rw', 'a')
 case ('w')
   call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ierr, access_prp=fapl)
 case default
-  error stop 'h5fortran: Unsupported open(..., action= ' // laction
+  error stop 'h5fortran:open Unsupported action= ' // laction
 end select
 
 if(ierr/=0) error stop "h5open/create: could not initialize HDF5 file: " // filename // " action: " // laction

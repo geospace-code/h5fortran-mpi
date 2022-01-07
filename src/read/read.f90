@@ -49,6 +49,8 @@ character(32) :: filter_name
 
 logical :: debug = .false.
 
+if(self%use_mpi) error stop "h5fortran:get_deflate: must not have mpi=.true. => %open(mpi=.false.) to use %deflate()"
+
 Naux = size(Aux, kind=SIZE_T)
 
 call h5dopen_f(self%file_id, dname, dset_id, ierr)
