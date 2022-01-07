@@ -6,10 +6,9 @@ program test_deflate
 
 use, intrinsic:: iso_fortran_env, only: int32, int64, real32, real64, stderr=>error_unit
 
-use hdf5, only : H5D_CHUNKED_F, H5D_CONTIGUOUS_F, hsize_t
 use mpi, only : mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 
-use h5mpi, only: hdf5_file, HSIZE_T, has_parallel_compression
+use h5mpi, only: hdf5_file, HSIZE_T
 
 implicit none (type, external)
 
@@ -18,20 +17,19 @@ external :: mpi_finalize
 character(*), parameter :: fn1='deflate1.h5', fn2='deflate2.h5', fn3='deflate3.h5'
 integer, parameter :: N(2) = [50, 1000], &
 MIN_COMP = 2  !< lots of CPUs, smaller arrays => poorer compression
-integer :: ierr, mpi_id
+integer :: ierr, mpi_id, Nmpi
 
 
 call mpi_init(ierr)
 if (ierr /= 0) error stop "mpi_init"
 
+call mpi_comm_size(MPI_COMM_WORLD, Nmpi, ierr)
+if(ierr/=0) error stop "mpi_comm_size"
 call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
 if(ierr/=0) error stop "mpi_comm_rank"
 
-call test_write_deflate(fn1, N)
+call test_write_deflate(fn1, N, mpi_id, Nmpi)
 if(mpi_id==0) print *,'OK: HDF5 write deflate'
-
-call test_read_deflate_props(fn1, N)
-if(mpi_id==0) print *,'OK: HDF5 read deflate properties'
 
 call test_deflate_whole(fn2, N)
 if(mpi_id==0) print *,'OK: HDF5 compress whole'
@@ -39,37 +37,22 @@ if(mpi_id==0) print *,'OK: HDF5 compress whole'
 call test_deflate_slice(fn3, N)
 if(mpi_id==0) print *,'OK: HDF5 compress slice'
 
-if(mpi_id==0) then
-  call test_get_deflate(fn1)
-  !! only works with mpi=.false. else get file close error
-  print *, 'OK: HDF5 get deflate'
-endif
-
 call mpi_finalize(ierr)
 if (ierr /= 0) error stop "mpi_finalize"
 
 contains
 
-subroutine test_write_deflate(fn, N)
+subroutine test_write_deflate(fn, N, mpi_id, Nmpi)
 
 character(*), intent(in) :: fn
-integer, intent(in) :: N(2)
+integer, intent(in) :: N(2), mpi_id, Nmpi
 
 type(hdf5_file) :: h5f
-
 integer(HSIZE_T) :: i0(2), i1(2), dx2
-integer :: Nmpi, mpi_id
-
 real(real32), allocatable :: A(:,:)
-
 logical :: debug = .false.
 
 !> MPI partition
-call mpi_comm_size(MPI_COMM_WORLD, Nmpi, ierr)
-if(ierr/=0) error stop "mpi_comm_size"
-call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
-if(ierr/=0) error stop "mpi_comm_rank"
-
 if(mpi_id == 0) then
   if (Nmpi > 1 .and. (modulo(N(2), Nmpi) /= 0 .or. Nmpi > N(2))) then
     write(stderr, '(a,1x,i0,1x,i0)') "test_deflate_props: MPI worker count must be multiple of N", N(2), Nmpi
@@ -95,65 +78,24 @@ call h5f%open(fn, action='w', comp_lvl=1, mpi=.true.)
 call h5f%write('/A', A, N, istart=i0, iend=i1, chunk_size=[5, 50])
 call h5f%close()
 
+deallocate(A)
+
 if(mpi_id == 0) then
-  !! write small dataset without MPI, with compression of noMPI dataset
+  allocate(A(N(1), N(2)))
+  A = 1  !< simplest data
+  !! write without MPI, with compression of noMPI dataset
   call h5f%open(fn, action='a', comp_lvl=1, mpi=.false.)
 
   call h5f%write('/small_contig', A(:4,:4))
   !! not compressed because too small
 
-  call h5f%write('/noMPI', A(:,:))
+  call h5f%write('/noMPI', A)
   !! write without MPI, with compression
 
   call h5f%close()
 endif
 
 end subroutine test_write_deflate
-
-
-subroutine test_read_deflate_props(fn, N)
-
-character(*), intent(in) :: fn
-integer, dimension(2), intent(in) :: N
-
-type(hdf5_file) :: h5f
-
-integer ::  fsize, layout, mpi_id
-integer(int64) :: crat
-integer(HSIZE_T) :: chunks(2)
-
-call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
-
-if(mpi_id == 0) then
-  inquire(file=fn, size=fsize)
-  crat = (N(1) * N(2) * 32 / 8) / fsize
-  print '(A,F6.2,A,I6)','#1 filesize (Mbytes): ',fsize/1e6, '  compression ratio:',crat
-  if (has_parallel_compression()) then
-    if(crat < MIN_COMP) error stop '2D low compression'
-  else
-    print *, "test_read_deflate_props: MPI commpression was disabled, so " // fn // " was not compressed."
-  endif
-endif
-
-call h5f%open(fn, action='r', mpi=.true.)
-
-layout = h5f%layout('/A')
-if(layout /= H5D_CHUNKED_F) error stop '#1 not chunked layout: ' // fn
-if(.not.h5f%is_chunked('/A')) error stop '#1 not chunked layout: ' // fn
-call h5f%chunks('/A', chunks)
-if(chunks(1) /= 5) then
-  write(stderr, '(a,2I5)') "expected chunks(1) = 5 but got chunks ", chunks
-  error stop '#1 get_chunk mismatch'
-endif
-layout = h5f%layout('/small_contig')
-if(layout /= H5D_CONTIGUOUS_F) error stop '#1 not contiguous layout'
-if(.not.h5f%is_contig('/small_contig')) error stop '#1 not contig layout'
-call h5f%chunks('/small_contig', chunks)
-if(any(chunks(:2) /= -1)) error stop '#1 get_chunk mismatch'
-
-call h5f%close()
-
-end subroutine test_read_deflate_props
 
 
 subroutine test_deflate_whole(fn, N)
@@ -269,28 +211,6 @@ if(mpi_id == 0) then
 endif
 
 end subroutine test_deflate_slice
-
-
-subroutine test_get_deflate(fn)
-
-character(*), intent(in) :: fn
-
-type(hdf5_file) :: h5f
-
-call h5f%open(fn, action='r', mpi=.false.)
-!! bug in HDF5? only works with MPI=.false.
-
-if (h5f%parallel_compression) then
-  if (.not. h5f%deflate("/A")) error stop "test_get_deflate: expected deflate MPI"
-else
-  if (h5f%deflate("/A")) error stop "test_get_deflate: expected no deflate MPI"
-endif
-
-if (.not. h5f%deflate("/noMPI")) error stop "expected deflate as dataset was written without MPI"
-
-call h5f%close()
-
-end subroutine test_get_deflate
 
 
 end program
