@@ -38,6 +38,9 @@ end procedure get_class
 
 
 module procedure get_deflate
+!! h5pget_filter_f doesn't work collectively, will crash on h5fclose_f
+!! if(mpi_id==0) with mpi_bcast does not work, same crash.
+!! better to use H5Pall_filters_avail_f when mpi=.true.
 
 integer :: i, j, ierr
 integer :: flags !< bit pattern

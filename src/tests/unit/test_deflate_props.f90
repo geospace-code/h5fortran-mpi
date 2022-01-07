@@ -29,7 +29,7 @@ if(mpi_id==0) print *,'OK: HDF5 read deflate properties'
 
 if(mpi_id==0) then
   call test_get_deflate(fn1)
-  !! only works with mpi=.false. else get file close error
+  !! only works with mpi=.false. else get h5fclose error
   print *, 'OK: HDF5 get deflate'
 endif
 
@@ -89,7 +89,6 @@ character(*), intent(in) :: fn
 type(hdf5_file) :: h5f
 
 call h5f%open(fn, action='r', mpi=.false.)
-!! bug in HDF5? only works with MPI=.false.
 
 if (h5f%parallel_compression) then
   if (.not. h5f%deflate("/A")) error stop "test_get_deflate: expected deflate MPI"
