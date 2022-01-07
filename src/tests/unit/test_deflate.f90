@@ -41,8 +41,7 @@ if(mpi_id==0) print *,'OK: HDF5 compress slice'
 
 if(mpi_id==0) then
   call test_get_deflate(fn1)
-  !! quirk in HDF5? only works with mpi=.false.
-  !! else get file close error
+  !! only works with mpi=.false. else get file close error
   print *, 'OK: HDF5 get deflate'
 endif
 
@@ -132,7 +131,7 @@ if(mpi_id == 0) then
   if (has_parallel_compression()) then
     if(crat < MIN_COMP) error stop '2D low compression'
   else
-    print *, "MPI commpression was disabled, so " // fn // " was not compressed."
+    print *, "test_read_deflate_props: MPI commpression was disabled, so " // fn // " was not compressed."
   endif
 endif
 
@@ -210,7 +209,7 @@ if(mpi_id == 0) then
   if (h5f%parallel_compression) then
     if(crat < MIN_COMP) error stop fn // ' low compression'
   else
-    print *, "MPI commpression was disabled, so " // fn // " was not compressed."
+    print *, "test_deflate_whole: MPI commpression was disabled, so " // fn // " was not compressed."
   endif
 endif
 
@@ -265,7 +264,7 @@ if(mpi_id == 0) then
   if (h5f%parallel_compression) then
     if(crat < MIN_COMP) error stop fn // ' low compression'
   else
-    print *, "MPI commpression was disabled, so " // fn // " was not compressed."
+    print *, "test_deflate_slice: MPI commpression was disabled, so " // fn // " was not compressed."
   endif
 endif
 
@@ -282,9 +281,9 @@ call h5f%open(fn, action='r', mpi=.false.)
 !! bug in HDF5? only works with MPI=.false.
 
 if (h5f%parallel_compression) then
-  if (.not. h5f%deflate("/A")) error stop "expected deflate MPI"
+  if (.not. h5f%deflate("/A")) error stop "test_get_deflate: expected deflate MPI"
 else
-  write(stderr,'(a)') "MPI compression was disabled, so " // fn // " was not compressed."
+  if (h5f%deflate("/A")) error stop "test_get_deflate: expected no deflate MPI"
 endif
 
 if (.not. h5f%deflate("/noMPI")) error stop "expected deflate as dataset was written without MPI"
