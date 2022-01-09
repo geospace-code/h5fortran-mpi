@@ -7,8 +7,8 @@ contains
 
 module procedure h5read_scalar
 
-integer(HSIZE_T) :: dims(rank(value))
-integer(hid_t) :: dset_id
+integer(HSIZE_T) :: dims(0)
+integer(HID_T) :: dset_id, xfer_id
 integer :: dclass, ier
 
 logical :: vector_scalar
@@ -43,6 +43,10 @@ call h5dopen_f(self%file_id, dname, dset_id, ier)
 if(ier/=0) error stop 'h5fortran:reader: ' // dname // ' could not be opened in ' // self%filename
 
 call get_dset_class(self, dname, dclass, dset_id)
+
+if(self%use_mpi) then
+  xfer_id = mpi_collective(dname)
+endif
 
 !> cast the dataset read from disk to the variable type presented by user h5f%read("/my_dataset", x)
 !> We only cast when needed to save memory.

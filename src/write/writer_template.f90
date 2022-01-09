@@ -37,7 +37,8 @@ end select
 !> create or open dataset
 call hdf_create(self, dname, dtype, mem_dims=mem_dims, dset_dims=dims_dset, &
 filespace=file_space_id, memspace=mem_space_id, dset_id=dset_id, &
-istart=istart, iend=iend, chunk_size=chunk_size)
+istart=istart, iend=iend, chunk_size=chunk_size, &
+compact=compact)
 
 if(self%use_mpi) then
   call mpi_hyperslab(mem_dims, dims_dset, dset_id, file_space_id, mem_space_id, dname, istart=istart, iend=iend)

@@ -77,7 +77,9 @@ check, hdf_wrapup, hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hypersla
 hdf5version, HSIZE_T
 
 interface !< write.f90
-module subroutine hdf_create(self, dname, dtype, mem_dims, dset_dims, filespace, memspace, dset_id, istart, iend, chunk_size)
+module subroutine hdf_create(self, dname, dtype, mem_dims, dset_dims, filespace, memspace, dset_id, &
+  istart, iend, chunk_size, compact)
+
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 integer(HID_T), intent(in) :: dtype
@@ -85,6 +87,7 @@ integer(HSIZE_T), dimension(:), intent(in) :: mem_dims, dset_dims
 integer(HID_T), intent(out), optional :: filespace, memspace, dset_id
 integer(HSIZE_T), dimension(:), intent(in), optional :: istart, iend
 integer, dimension(:), intent(in), optional :: chunk_size
+logical, intent(in), optional :: compact
 end subroutine hdf_create
 end interface
 
@@ -97,73 +100,81 @@ end interface
 
 interface !< writer.f90
 
-module subroutine h5write_scalar(self, dname, value)
+module subroutine h5write_scalar(self, dname, value, compact)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value
+logical, intent(in), optional :: compact
 end subroutine h5write_scalar
 
-module subroutine ph5write_1d(self, dname, value, dset_dims, istart, iend, chunk_size)
+module subroutine ph5write_1d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:)
 class(*), intent(in), dimension(1), optional :: dset_dims  !< integer or integer(HSIZE_T) full disk shape (not just per worker)
 integer(HSIZE_T), intent(in), dimension(1), optional :: istart, iend
 integer, intent(in), dimension(1), optional :: chunk_size
+logical, intent(in), optional :: compact
 end subroutine ph5write_1d
 
-module subroutine ph5write_2d(self, dname, value, dset_dims, istart, iend, chunk_size)
+module subroutine ph5write_2d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:)
 class(*), intent(in), dimension(2), optional :: dset_dims
 integer(HSIZE_T), intent(in), dimension(2), optional :: istart, iend
 integer, intent(in), dimension(2), optional :: chunk_size
+logical, intent(in), optional :: compact
 end subroutine ph5write_2d
 
-module subroutine ph5write_3d(self, dname, value, dset_dims, istart, iend, chunk_size)
+module subroutine ph5write_3d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:)
 class(*), intent(in), dimension(3), optional :: dset_dims
 integer(HSIZE_T), intent(in), dimension(3), optional :: istart, iend
 integer, intent(in), dimension(3), optional :: chunk_size
+logical, intent(in), optional :: compact
 end subroutine ph5write_3d
 
-module subroutine ph5write_4d(self, dname, value, dset_dims, istart, iend, chunk_size)
+module subroutine ph5write_4d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:)
 class(*), intent(in), dimension(4), optional :: dset_dims
 integer(HSIZE_T), intent(in), dimension(4), optional :: istart, iend
 integer, intent(in), dimension(4), optional :: chunk_size
+logical, intent(in), optional :: compact
 end subroutine ph5write_4d
 
-module subroutine ph5write_5d(self, dname, value, dset_dims, istart, iend, chunk_size)
+module subroutine ph5write_5d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:)
 class(*), intent(in), dimension(5), optional :: dset_dims
 integer(HSIZE_T), intent(in), dimension(5), optional :: istart, iend
 integer, intent(in), dimension(5), optional :: chunk_size
+logical, intent(in), optional :: compact
 end subroutine ph5write_5d
 
-module subroutine ph5write_6d(self, dname, value, dset_dims, istart, iend, chunk_size)
+module subroutine ph5write_6d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:,:)
 class(*), intent(in), dimension(6), optional :: dset_dims
 integer(HSIZE_T), intent(in), dimension(6), optional :: istart, iend
 integer, intent(in), dimension(6), optional :: chunk_size
+logical, intent(in), optional :: compact
 end subroutine ph5write_6d
 
-module subroutine ph5write_7d(self, dname, value, dset_dims, istart, iend, chunk_size)
+module subroutine ph5write_7d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:,:,:)
 class(*), intent(in), dimension(7), optional :: dset_dims
 integer(HSIZE_T), intent(in), dimension(7), optional :: istart, iend
 integer, intent(in), dimension(7), optional :: chunk_size
+logical, intent(in), optional :: compact
 end subroutine ph5write_7d
 
 end interface
@@ -587,17 +598,16 @@ end if
 end function hdf5version
 
 
-subroutine hdf_flush(self, ierr)
+subroutine hdf_flush(self)
 !! request operating system flush data to disk.
 !! The operating system can do this when it desires, which might be a while.
 class(hdf5_file), intent(in) :: self
-integer, intent(out), optional :: ierr
-integer :: ier
 
-call h5fflush_f(self%file_id, H5F_SCOPE_GLOBAL_F, ier)
+integer :: ierr
 
-if (present(ierr)) ierr = ier
-if (check(ier, 'ERROR: HDF5 flush ' // self%filename) .and. .not.present(ierr)) error stop
+call h5fflush_f(self%file_id, H5F_SCOPE_GLOBAL_F, ierr)
+
+if (ierr /= 0) error stop 'ERROR: HDF5 flush ' // self%filename
 
 end subroutine hdf_flush
 

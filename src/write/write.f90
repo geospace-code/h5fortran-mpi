@@ -1,7 +1,9 @@
 submodule (h5mpi) write
 
-use hdf5, only : h5pset_deflate_f, h5pset_fletcher32_f, h5pset_shuffle_f, &
-h5dwrite_f
+use hdf5, only : h5pset_deflate_f, h5pset_fletcher32_f, h5pset_shuffle_f, h5pset_layout_f, &
+h5dwrite_f, &
+h5screate_f, &
+H5S_SCALAR_F
 
 implicit none (type, external)
 
@@ -49,18 +51,37 @@ if(exists) then
   return
 endif
 
+!> Only new datasets go past this point
+
 !> compression
 if(size(mem_dims) >= 2) then
   call set_deflate(self, mem_dims, plist_id, chunk_size)
 endif
 
+!> compact dataset (for very small datasets to increase I/O speed)
+if(present(compact)) then
+!! datasets are EITHER compact or chunked.
+if(compact .and. plist_id == H5P_DEFAULT_F .and. product(dset_dims) * 8 < 60000)  then
+!! 64000 byte limit, here we assumed 8 bytes / element
+  call h5pcreate_f(H5P_DATASET_CREATE_F, plist_id, ierr)
+  if (check(ierr, self%filename)) error stop "h5fortran:hdf_create:h5pcreate: " // dname
+
+  call h5pset_layout_f(plist_id, H5D_COMPACT_F, ierr)
+  if (check(ierr, self%filename)) error stop "h5fortran:hdf_create:h5pset_layout: " // dname
+endif
+endif
+
 !> create dataset dataspace
-call h5screate_simple_f(rank=size(dset_dims), dims=dset_dims, space_id=filespace, hdferr=ierr)
-if (ierr/=0) error stop "h5screate_simple:filespace " // dname // " " // self%filename
+if(size(dset_dims) == 0) then
+  call h5screate_f(H5S_SCALAR_F, filespace, ierr)
+else
+  call h5screate_simple_f(size(dset_dims), dset_dims, filespace, ierr)
+endif
+if (ierr/=0) error stop "h5fortran:hdf_create:h5screate:filespace " // dname // " " // self%filename
 
 !> create dataset
 call h5dcreate_f(self%file_id, dname, dtype, space_id=filespace, dset_id=dset_id, hdferr=ierr, dcpl_id=plist_id)
-if (ierr/=0) error stop "h5fortran:h5dcreate: " // dname // " " // self%filename
+if (ierr/=0) error stop "h5fortran:hdf_create:h5dcreate: " // dname // " " // self%filename
 
 call h5pclose_f(plist_id, ierr)
 if (ierr/=0) error stop "h5pclose: " // dname // ' in ' // self%filename

@@ -5,7 +5,7 @@ max_gcd(${MPI_MAX} ${MPIEXEC_MAX_NUMPROCS} Nmpi)
 
 message(STATUS "Unit tests using ${Nmpi} processes")
 
-set(test_names deflate_write deflate_props deflate_read scalar shape)
+set(test_names deflate_write deflate_props deflate_read layout shape)
 
 foreach(t IN LISTS test_names)
 
@@ -18,9 +18,26 @@ foreach(t IN LISTS test_names)
 
 endforeach()
 
+# --- write test data
+add_executable(test_write test_write.f90)
+target_link_libraries(test_write PRIVATE h5mpi HDF5::HDF5 MPI::MPI_Fortran)
+
+add_test(NAME write COMMAND test_write)
+set_tests_properties(write PROPERTIES
+FIXTURES_SETUP test_files
+TIMEOUT 10
+)
+
+# --- test dependencies
+
 set_tests_properties(${test_names} PROPERTIES
 TIMEOUT 10
 PROCESSORS ${Nmpi}
+)
+
+set_tests_properties(layout shape PROPERTIES
+FIXTURES_REQUIRED test_files
+REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/test_write.h5
 )
 
 set_tests_properties(deflate_write PROPERTIES
