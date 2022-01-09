@@ -5,7 +5,7 @@ max_gcd(${MPI_MAX} ${MPIEXEC_MAX_NUMPROCS} Nmpi)
 
 message(STATUS "Unit tests using ${Nmpi} processes")
 
-set(test_names deflate_write deflate_props deflate_read scalar)
+set(test_names deflate_write deflate_props deflate_read scalar shape)
 
 foreach(t IN LISTS test_names)
 

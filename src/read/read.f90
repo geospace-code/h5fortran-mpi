@@ -93,67 +93,6 @@ call h5dclose_f(dset_id, ierr)
 end procedure get_deflate
 
 
-module procedure hdf_get_chunk
-
-integer :: ierr, drank
-integer(HID_T) :: pid, dset_id
-
-if(.not.self%is_open) error stop 'h5fortran:read: file handle is not open'
-
-chunk_size = -1
-if (.not.self%exist(dname)) then
-  write(stderr, *) 'ERROR:get_chunk: ' // dname // ' does not exist in ' // self%filename
-  ierr = -1
-  return
-endif
-
-if(.not.self%is_chunked(dname)) return
-
-call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ierr)
-if (check(ierr, 'ERROR:get_chunk: get rank ' // dname // ' ' // self%filename)) return
-call h5dopen_f(self%file_id, dname, dset_id, ierr)
-if (check(ierr, 'ERROR:get_chunk: open dataset ' // dname // ' ' // self%filename)) return
-call h5dget_create_plist_f(dset_id, pid, ierr)
-if (check(ierr, 'ERROR:get_chunk: get property list ID ' // dname // ' ' // self%filename)) return
-
-call h5pget_chunk_f(pid, drank, chunk_size, ierr)
-if (ierr /= drank) then
-  write(stderr,*) 'ERROR:get_chunk read ' // dname // ' ' // self%filename
-  return
-endif
-
-call h5dclose_f(dset_id, ierr)
-if (check(ierr, 'ERROR:get_chunk: close dataset: ' // dname // ' ' // self%filename)) return
-
-end procedure hdf_get_chunk
-
-
-module procedure hdf_get_layout
-
-integer(HID_T) :: pid, dset_id
-integer :: ierr
-
-if(.not.self%is_open) error stop 'h5fortran:read: file handle is not open'
-
-layout = -1
-
-if (.not.self%exist(dname)) then
-  write(stderr, *) 'ERROR:get_layout: ' // dname // ' does not exist in ' // self%filename
-  return
-endif
-
-call h5dopen_f(self%file_id, dname, dset_id, ierr)
-if (check(ierr, 'ERROR:get_layout: open dataset ' // dname // ' ' // self%filename)) return
-call h5dget_create_plist_f(dset_id, pid, ierr)
-if (check(ierr, 'ERROR:get_layout: get property list ID ' // dname // ' ' // self%filename)) return
-call h5pget_layout_f(pid, layout, ierr)
-if (check(ierr, 'ERROR:get_layout read ' // dname //' ' // self%filename)) return
-call h5dclose_f(dset_id, ierr)
-if (check(ierr, 'ERROR:get_layout: close dataset: ' // dname //' ' // self%filename)) return
-
-end procedure hdf_get_layout
-
-
 subroutine get_dset_class(self, dname, class, ds_id, size_bytes)
 !! get the dataset class (integer, float, string, ...)
 !! {H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F}
@@ -244,5 +183,102 @@ else
 endif
 
 end procedure get_native_dtype
+
+
+module procedure hdf_get_ndim
+!! get rank or "ndims"
+integer :: ier
+
+if(.not.self%is_open) error stop 'h5fortran:read: file handle is not open'
+
+drank = -1
+
+if (self%exist(dname)) then
+  call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ier)
+else
+  write(stderr, '(a)') 'ERROR:get_ndim: ' // dname // ' does not exist in ' // self%filename
+endif
+
+end procedure hdf_get_ndim
+
+
+module procedure hdf_get_shape
+
+!! must get rank before info, as "dims" must be allocated first.
+integer(SIZE_T) :: type_size
+integer :: type_class, drank, ier
+
+if(.not. self%exist(dname)) error stop 'h5fortran:get_shape: ' // dname // ' does not exist in ' // self%filename
+
+call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ier)
+if (ier /= 0) error stop "h5fortran:get_shape: could not get rank of " // dname // " in " // self%filename
+
+allocate(dims(drank))
+call h5ltget_dataset_info_f(self%file_id, dname, dims=dims, &
+  type_class=type_class, type_size=type_size, errcode=ier)
+if (ier /= 0) error stop "h5fortran:get_shape: could not get shape of " // dname // " in " // self%filename
+
+end procedure hdf_get_shape
+
+
+module procedure hdf_get_chunk
+
+integer :: ierr, drank
+integer(HID_T) :: pid, dset_id
+
+if(.not.self%is_open) error stop 'h5fortran:read: file handle is not open'
+
+chunk_size = -1
+if (.not.self%exist(dname)) then
+  write(stderr, *) 'ERROR:get_chunk: ' // dname // ' does not exist in ' // self%filename
+  ierr = -1
+  return
+endif
+
+if(.not.self%is_chunked(dname)) return
+
+call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ierr)
+if (check(ierr, 'ERROR:get_chunk: get rank ' // dname // ' ' // self%filename)) return
+call h5dopen_f(self%file_id, dname, dset_id, ierr)
+if (check(ierr, 'ERROR:get_chunk: open dataset ' // dname // ' ' // self%filename)) return
+call h5dget_create_plist_f(dset_id, pid, ierr)
+if (check(ierr, 'ERROR:get_chunk: get property list ID ' // dname // ' ' // self%filename)) return
+
+call h5pget_chunk_f(pid, drank, chunk_size, ierr)
+if (ierr /= drank) then
+  write(stderr,*) 'ERROR:get_chunk read ' // dname // ' ' // self%filename
+  return
+endif
+
+call h5dclose_f(dset_id, ierr)
+if (check(ierr, 'ERROR:get_chunk: close dataset: ' // dname // ' ' // self%filename)) return
+
+end procedure hdf_get_chunk
+
+
+module procedure hdf_get_layout
+
+integer(HID_T) :: pid, dset_id
+integer :: ierr
+
+if(.not.self%is_open) error stop 'h5fortran:read: file handle is not open'
+
+layout = -1
+
+if (.not.self%exist(dname)) then
+  write(stderr, *) 'ERROR:get_layout: ' // dname // ' does not exist in ' // self%filename
+  return
+endif
+
+call h5dopen_f(self%file_id, dname, dset_id, ierr)
+if (check(ierr, 'ERROR:get_layout: open dataset ' // dname // ' ' // self%filename)) return
+call h5dget_create_plist_f(dset_id, pid, ierr)
+if (check(ierr, 'ERROR:get_layout: get property list ID ' // dname // ' ' // self%filename)) return
+call h5pget_layout_f(pid, layout, ierr)
+if (check(ierr, 'ERROR:get_layout read ' // dname //' ' // self%filename)) return
+call h5dclose_f(dset_id, ierr)
+if (check(ierr, 'ERROR:get_layout: close dataset: ' // dname //' ' // self%filename)) return
+
+end procedure hdf_get_layout
 
 end submodule hdf5_read

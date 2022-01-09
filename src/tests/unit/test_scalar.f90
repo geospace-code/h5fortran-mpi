@@ -43,8 +43,6 @@ print '(a,i0,a,i0)', "MPI worker: ", mpi_id, "read value: ", i
 
 call h5%close()
 
-
-
 end subroutine test_scalar_collective
 
 

@@ -14,7 +14,7 @@ H5P_DEFAULT_F, H5P_FILE_ACCESS_F, H5P_DATASET_CREATE_F, H5P_DATASET_XFER_F, &
 H5S_ALL_F, H5S_SELECT_SET_F, &
 H5D_CHUNKED_F, H5D_CONTIGUOUS_F, H5D_COMPACT_F, &
 h5dcreate_f, h5dopen_f, h5dclose_f, h5dget_space_f, h5dget_create_plist_f, &
-h5fopen_f, h5fclose_f, h5fcreate_f, h5fget_filesize_f, h5fflush_f, &
+h5fopen_f, h5fclose_f, h5fcreate_f, h5fget_filesize_f, h5fflush_f, h5fis_hdf5_f, &
 h5pcreate_f, h5pclose_f, h5pset_chunk_f, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, h5pall_filters_avail_f, &
 h5sselect_hyperslab_f, h5screate_simple_f, h5sclose_f, &
 h5get_libversion_f, &
@@ -44,7 +44,7 @@ integer :: comp_lvl = 0
 contains
 
 procedure, public :: open => ph5open, close => ph5close, &
-flush => hdf_flush, shape => h5get_shape, exist => hdf_exist, &
+flush => hdf_flush, ndim => hdf_get_ndim, shape => hdf_get_shape, exist => hdf_exist, &
 create => hdf_create, filesize => hdf_filesize, &
 class => get_class, dtype => get_native_dtype, &
 deflate => get_deflate, &
@@ -72,7 +72,7 @@ integer :: a2=102, a3=103
 end type mpi_tags
 
 private
-public :: mpi_h5comm, hdf5_file, mpi_tags, has_parallel_compression, &
+public :: mpi_h5comm, hdf5_file, mpi_tags, has_parallel_compression, is_hdf5, &
 check, hdf_wrapup, hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hyperslab, &
 hdf5version, HSIZE_T
 
@@ -171,6 +171,28 @@ end interface
 
 interface !< read.f90
 
+module integer function get_class(self, dname)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+end function get_class
+
+module integer(hid_t) function get_native_dtype(self, dname, ds_id)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+integer(hid_t), intent(in), optional :: ds_id
+end function get_native_dtype
+
+module integer function hdf_get_ndim(self, dname) result (drank)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+end function hdf_get_ndim
+
+module subroutine hdf_get_shape(self, dname, dims)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+integer(HSIZE_T), intent(out), allocatable :: dims(:)
+end subroutine hdf_get_shape
+
 module subroutine h5open_read(self, dname, dims, dset_dims, filespace, memspace, dset_id)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
@@ -196,16 +218,6 @@ character(*), intent(in) :: dname
 integer(hsize_t), intent(out) :: chunk_size(:)
 end subroutine hdf_get_chunk
 
-module integer function get_class(self, dname)
-class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: dname
-end function get_class
-
-module integer(hid_t) function get_native_dtype(self, dname, ds_id)
-class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: dname
-integer(hid_t), intent(in), optional :: ds_id
-end function get_native_dtype
 end interface
 
 
@@ -446,6 +458,23 @@ hdf_is_chunked = self%layout(dname) == H5D_CHUNKED_F
 end function hdf_is_chunked
 
 
+logical function is_hdf5(filename)
+!! is this file HDF5?
+
+character(*), intent(in) :: filename
+integer :: ierr
+
+inquire(file=filename, exist=is_hdf5)
+!! avoid warning/error messages
+if (.not. is_hdf5) return
+
+call h5fis_hdf5_f(filename, is_hdf5, ierr)
+
+if (ierr/=0) is_hdf5 = .false.
+!! sometimes h5fis_hdf5_f is .true. for missing file
+
+end function is_hdf5
+
 
 subroutine mpi_hyperslab(mem_dims, dset_dims, dset_id, filespace, memspace, dname, istart, iend)
 !! Each process defines dataset in memory and writes it to the hyperslab in the file.
@@ -591,28 +620,6 @@ if (present(dname)) dn = dname
 write(stderr,*) 'ERROR: ' // fn // ':' // dn // ' error code ', ierr
 
 end function check
-
-
-subroutine h5get_shape(self, dname, dims)
-class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: dname
-integer(HSIZE_T), intent(inout), allocatable :: dims(:)
-
-!! must get rank before info, as "dims" must be allocated first.
-integer(SIZE_T) :: type_size
-integer :: type_class, drank, ier
-
-if(.not. self%exist(dname)) error stop 'h5fortran:get_shape: ' // dname // ' does not exist in ' // self%filename
-
-call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ier)
-if (ier /= 0) error stop "h5fortran:get_shape: could not get rank of " // dname // " in " // self%filename
-
-allocate(dims(drank))
-call h5ltget_dataset_info_f(self%file_id, dname, dims=dims, &
-  type_class=type_class, type_size=type_size, errcode=ier)
-if (ier /= 0) error stop "h5fortran:get_shape: could not get shape of " // dname // " in " // self%filename
-
-end subroutine h5get_shape
 
 
 logical function hdf_exist(self, dname) result(exists)

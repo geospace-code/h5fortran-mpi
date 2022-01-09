@@ -26,7 +26,6 @@ if(ierr/=0) error stop "mpi_comm_rank"
 call test_read_deflate(fn1, N, mpi_id, Nmpi)
 if(mpi_id==0) print *,'OK: HDF5 read deflate'
 
-
 call mpi_finalize(ierr)
 if (ierr /= 0) error stop "mpi_finalize"
 
