@@ -210,7 +210,9 @@ end interface
 
 
 interface !< reader.f90
-
+!! the read "value" are intent(inout) because:
+!! * arrays: to work correctly when actual argument is allocatable
+!! * scalar: to work correctly with character type
 module subroutine h5read_scalar(self, dname, value)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname

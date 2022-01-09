@@ -5,7 +5,7 @@ max_gcd(${MPI_MAX} ${MPIEXEC_MAX_NUMPROCS} Nmpi)
 
 message(STATUS "Unit tests using ${Nmpi} processes")
 
-set(test_names deflate deflate_props deflate_read)
+set(test_names deflate_write deflate_props deflate_read scalar)
 
 foreach(t IN LISTS test_names)
 
@@ -23,7 +23,7 @@ TIMEOUT 10
 PROCESSORS ${Nmpi}
 )
 
-set_tests_properties(deflate PROPERTIES
+set_tests_properties(deflate_write PROPERTIES
 FIXTURES_SETUP deflate_files
 )
 
