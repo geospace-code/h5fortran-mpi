@@ -40,6 +40,16 @@ elseif(dclass == H5T_INTEGER_F) then
 else
   error stop 'h5fortran:reader: non-handled datatype--please reach out to developers.'
 end if
-if(ier/=0) error stop 'h5fortran:reader: h5dread_f ' // dname // ' from ' // self%filename
+if(ier /= 0) error stop 'h5fortran:reader:h5dread: ' // dname // ' from ' // self%filename
 
-call hdf_wrapup(file_space_id, mem_space_id, dset_id, xfer_id)
+call h5dclose_f(dset_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:reader: closing dataset: " // dname // " in " // self%filename
+
+if(mem_space_id /= H5S_ALL_F) call h5sclose_f(mem_space_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:reader closing memory dataspace: " // dname // " in " // self%filename
+
+if(file_space_id /= H5S_ALL_F) call h5sclose_f(file_space_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:reader closing file dataspace: " // dname // " in " // self%filename
+
+call h5pclose_f(xfer_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:reader closing property: " // dname // " in " // self%filename

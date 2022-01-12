@@ -15,7 +15,7 @@ integer(HID_T) :: file_space_id, mem_space_id, dset_id, xfer_id, dtype
 
 xfer_id = H5P_DEFAULT_F
 
-if(.not.self%is_open) error stop 'h5fortran:write: file handle is not open'
+if(.not. self%is_open()) error stop 'ERROR:h5fortran:write: file handle is not open'
 
 select type (value)
 type is (real(real32))
@@ -27,7 +27,7 @@ type is (integer(int32))
 type is (integer(int64))
   dtype = H5T_STD_I64LE
 class default
-  error stop "unknown variable type for " // dname
+  error stop "ERROR:h5fortran:write: unknown variable type for " // dname
 end select
 
 mem_dims = shape(value, HSIZE_T)
@@ -52,9 +52,12 @@ type is (integer(int64))
 type is (character(*))
   call h5ltmake_dataset_string_f(self%file_id, dname, value, ier)
 class default
-  error stop "h5fortran:write: unsupported type for " // dname
+  error stop "ERROR:h5fortran:write: unsupported type for " // dname
 end select
-if (ier/=0) error stop 'h5fortran:write: could not write ' // dname // ' to ' // self%filename
+if (ier/=0) error stop 'ERROR:h5fortran:write: could not write ' // dname // ' to ' // self%filename
+
+call h5dclose_f(dset_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:writer: closing dataset: " // dname // " in " // self%filename
 
 end procedure h5write_scalar
 

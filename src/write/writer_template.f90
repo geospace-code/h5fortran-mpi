@@ -57,6 +57,16 @@ type is (integer(int64))
 class default
   error stop "unknown variable type for " // dname
 end select
-if (ier/=0) error stop 'ERROR:h5fortran:h5dwrite: could not write ' // dname // ' to ' // self%filename
+if (ier /= 0) error stop 'ERROR:h5fortran:h5dwrite: could not write ' // dname // ' to ' // self%filename
 
-call hdf_wrapup(file_space_id, mem_space_id, dset_id, xfer_id)
+call h5dclose_f(dset_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:writer: closing dataset: " // dname // " in " // self%filename
+
+if(mem_space_id /= H5S_ALL_F) call h5sclose_f(mem_space_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:writer closing memory dataspace: " // dname // " in " // self%filename
+
+if(file_space_id /= H5S_ALL_F) call h5sclose_f(file_space_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:writer closing file dataspace: " // dname // " in " // self%filename
+
+call h5pclose_f(xfer_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:writer closing property: " // dname // " in " // self%filename

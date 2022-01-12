@@ -12,25 +12,27 @@ contains
 
 module procedure hdf_create
 
-logical :: exists
+logical :: exists, is_scalar
 integer :: ierr
-integer(HID_T) :: dcpl, ds_id
+integer(HID_T) :: dcpl
 
 dcpl = H5P_DEFAULT_F
 memspace = H5S_ALL_F
 
-if(.not.self%is_open) error stop 'h5fortran:write: file handle is not open: ' // self%filename
+is_scalar = size(mem_dims) == 0
 
+!> sanity check: file is open
+if(.not. self%is_open()) error stop 'ERROR:h5fortran:write: file handle is not open: ' // self%filename
+
+!> sanity check: dataset path is valid
 call h5ltpath_valid_f(self%file_id, dname, .true., exists, ierr)
+if (ierr /= 0) error stop 'ERROR:h5fortran:create: variable path invalid: ' // dname // ' in ' // self%filename
 !! h5lexists_f can false error with groups--just use h5ltpath_valid
 !! stricter than self%exists() since we're creating and/or writing variable
-if (ierr /= 0) error stop 'ERROR:h5fortran:create: variable path invalid: ' // dname // ' in ' // self%filename
-
-if(self%debug) print *,'h5fortran:TRACE:create:exists: ' // dname, exists
 
 if(exists) then
   if (.not.present(istart)) then
-    if (size(mem_dims) == 0) then
+    if (is_scalar) then
       !! scalar
       call hdf_rank_check(self, dname, size(mem_dims))
     else
@@ -40,14 +42,17 @@ if(exists) then
   !! FIXME: read and write slice shape not checked; but should check in future versions
 
   !> open dataset
-  call h5dopen_f(self%file_id, dname, ds_id, ierr)
+  call h5dopen_f(self%file_id, dname, dset_id, ierr)
   if (ierr /= 0) error stop 'ERROR:h5fortran:create: could not open ' // dname // ' in ' // self%filename
 
-  if(present(dset_id)) dset_id = ds_id
-  if(present(filespace)) then
-    call h5dget_space_f(ds_id, filespace, ierr)
-    if(ierr /= 0) error stop 'h5fortran:create could not get dataset ' // dname // ' in ' // self%filename
-  end if
+  !> get dataset filespace
+  call h5dget_space_f(dset_id, filespace, ierr)
+  if(ierr /= 0) error stop 'ERROR:h5fortran:create could not get dataset ' // dname // ' in ' // self%filename
+
+  if(self%use_mpi .and. is_scalar .and. self%mpi_id > 0) call h5sselect_none_f(filespace, ierr)
+  !! for MPI collective scalar writes, only root worker can write.
+  !! otherwise race condition would result
+
   return
 endif
 
@@ -64,10 +69,10 @@ if(present(compact)) then
 if(compact .and. dcpl == H5P_DEFAULT_F .and. product(dset_dims) * 8 < 60000)  then
 !! 64000 byte limit, here we assumed 8 bytes / element
   call h5pcreate_f(H5P_DATASET_CREATE_F, dcpl, ierr)
-  if (check(ierr, self%filename)) error stop "h5fortran:hdf_create:h5pcreate: " // dname
+  if (check(ierr, self%filename)) error stop "ERROR:h5fortran:hdf_create:h5pcreate: " // dname
 
   call h5pset_layout_f(dcpl, H5D_COMPACT_F, ierr)
-  if (check(ierr, self%filename)) error stop "h5fortran:hdf_create:h5pset_layout: " // dname
+  if (check(ierr, self%filename)) error stop "ERROR:h5fortran:hdf_create:h5pset_layout: " // dname
 endif
 endif
 
@@ -77,14 +82,18 @@ if(size(dset_dims) == 0) then
 else
   call h5screate_simple_f(size(dset_dims), dset_dims, filespace, ierr)
 endif
-if (ierr/=0) error stop "h5fortran:hdf_create:h5screate:filespace " // dname // " " // self%filename
+if (ierr/=0) error stop "ERROR:h5fortran:hdf_create:h5screate:filespace " // dname // " " // self%filename
+
+if(self%use_mpi .and. is_scalar .and. self%mpi_id > 0) call h5sselect_none_f(filespace, ierr)
+!! for MPI collective scalar writes, only root worker can write.
+!! otherwise race condition would result
 
 !> create dataset
 call h5dcreate_f(self%file_id, dname, dtype, space_id=filespace, dset_id=dset_id, hdferr=ierr, dcpl_id=dcpl)
-if (ierr/=0) error stop "h5fortran:hdf_create:h5dcreate: " // dname // " " // self%filename
+if (ierr/=0) error stop "ERROR:h5fortran:hdf_create:h5dcreate: " // dname // " " // self%filename
 
 call h5pclose_f(dcpl, ierr)
-if (ierr/=0) error stop "h5pclose: " // dname // ' in ' // self%filename
+if (ierr/=0) error stop "ERROR:h5fortran:h5pclose: " // dname // ' in ' // self%filename
 
 end procedure hdf_create
 
@@ -116,26 +125,26 @@ endif
 if(self%debug) print *,'DEBUG:set_deflate: dims: ',dims,'chunk size: ', cs
 
 if(any(cs == 0)) return  !< array too small to chunk
-if(any(cs < 0)) error stop "h5fortran:set_deflate: chunk_size must be strictly positive"
+if(any(cs < 0)) error stop "ERROR:h5fortran:set_deflate: chunk_size must be strictly positive"
 
 call h5pcreate_f(H5P_DATASET_CREATE_F, plist_id, ierr)
-if (ierr/=0) error stop "h5fortran:set_deflate:h5pcreate: " // self%filename
+if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pcreate: " // self%filename
 
 call h5pset_chunk_f(plist_id, size(dims), cs, ierr)
-if (ierr/=0) error stop "h5fortran:set_deflate:h5pset_chunk: " // self%filename
+if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pset_chunk: " // self%filename
 
 if (self%fletcher32) then
   !! fletcher32 filter adds a checksum to the data
   if (self%use_mpi .and. .not. self%parallel_compression) then
-    write(stderr, '(a)') 'h5fortran:set_deflate: fletcher32 parallel filter not supported ' // self%filename
+    write(stderr, '(a)') 'WARNING: h5fortran:set_deflate: fletcher32 parallel filter not supported ' // self%filename
   else
     call h5pset_fletcher32_f(plist_id, ierr)
-    if (ierr/=0) error stop "h5fortran:set_deflate:h5pset_fletcher32: " // self%filename
+    if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pset_fletcher32: " // self%filename
   endif
 endif
 
 if (self%use_mpi .and. .not. self%parallel_compression) then
-  write(stderr, '(a)') 'h5fortran:set_deflate: deflate parallel filter not supported ' // self%filename
+  write(stderr, '(a)') 'WARNING: h5fortran:set_deflate: deflate parallel filter not supported ' // self%filename
   return
 endif
 
@@ -144,15 +153,15 @@ if (self%comp_lvl < 1 .or. self%comp_lvl > 9) return
 if(self%shuffle) then
   !! shuffle filter improves compression
   if (self%use_mpi .and. .not. self%parallel_compression) then
-    write(stderr, '(a)') 'h5fortran:set_deflate: shuffle parallel filter not supported ' // self%filename
+    write(stderr, '(a)') 'WARNING: h5fortran:set_deflate: shuffle parallel filter not supported ' // self%filename
   else
     call h5pset_shuffle_f(plist_id, ierr)
-    if (ierr/=0) error stop "h5fortran:set_deflate:h5pset_shuffle: " // self%filename
+    if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pset_shuffle: " // self%filename
   endif
 endif
 
 call h5pset_deflate_f(plist_id, self%comp_lvl, ierr)
-if (ierr/=0) error stop "h5fortran:set_deflate:h5pset_deflate: " // self%filename
+if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pset_deflate: " // self%filename
 
 if(self%debug) print '(a,i0)','TRACE:set_deflate done, comp_lvl: ', self%comp_lvl
 
@@ -205,7 +214,7 @@ do
   if (product(chunk_size) == 1) exit
   !! Element size larger than CHUNK_MAX
   j = int(modulo(i, ndims), hsize_t) + 1
-  if (j < 1 .or. j > ndims) error stop 'h5fortran: auto index bounds error'
+  if (j < 1 .or. j > ndims) error stop 'ERROR:h5fortran:guess_chunk_size: auto index bounds error'
   chunk_size(j) = ceiling(real(chunk_size(j)) / 2.0)
   i = i+1
 end do

@@ -6,17 +6,21 @@ use, intrinsic :: iso_fortran_env, only : real32, real64, int32, int64, stderr=>
 use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL, mpi_comm_rank
 use hdf5, only : &
 HID_T, HSIZE_T, SIZE_T, &
+H5I_FILE_F, &
 H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F, &
 H5T_NATIVE_CHARACTER, H5T_NATIVE_INTEGER, H5T_NATIVE_REAL, H5T_NATIVE_DOUBLE, H5T_STD_I64LE, &
 H5F_ACC_RDONLY_F, H5F_ACC_TRUNC_F, H5F_ACC_RDWR_F, H5F_SCOPE_GLOBAL_F, &
+H5F_OBJ_FILE_F, H5F_OBJ_GROUP_F, H5F_OBJ_DATASET_F, H5F_OBJ_DATATYPE_F, H5F_OBJ_ALL_F, &
 H5FD_MPIO_COLLECTIVE_F, &
 H5P_DEFAULT_F, H5P_FILE_ACCESS_F, H5P_DATASET_CREATE_F, H5P_DATASET_XFER_F, &
 H5S_ALL_F, H5S_SELECT_SET_F, &
 H5D_CHUNKED_F, H5D_CONTIGUOUS_F, H5D_COMPACT_F, &
 h5dcreate_f, h5dopen_f, h5dclose_f, h5dget_space_f, h5dget_create_plist_f, &
 h5fopen_f, h5fclose_f, h5fcreate_f, h5fget_filesize_f, h5fflush_f, h5fis_hdf5_f, &
+h5fget_obj_count_f, h5fget_obj_ids_f, h5fget_name_f, &
+h5iis_valid_f, h5iget_type_f, h5iget_name_f, &
 h5pcreate_f, h5pclose_f, h5pset_chunk_f, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, h5pall_filters_avail_f, &
-h5sselect_hyperslab_f, h5screate_simple_f, h5sclose_f, &
+h5sselect_hyperslab_f, h5sselect_none_f, h5screate_simple_f, h5sclose_f, &
 h5get_libversion_f, &
 h5open_f, h5close_f
 
@@ -30,8 +34,10 @@ type :: hdf5_file
 
 character(:), allocatable :: filename
 integer(HID_T) :: file_id
-logical :: is_open = .false.
+
 logical :: use_mpi = .false.
+integer :: mpi_id = -1
+
 logical :: debug = .false.
 logical :: parallel_compression = .false.
 logical :: fletcher32 = .false.
@@ -49,7 +55,8 @@ create => hdf_create, filesize => hdf_filesize, &
 class => get_class, dtype => get_native_dtype, &
 deflate => get_deflate, &
 layout => hdf_get_layout, chunks => hdf_get_chunk, &
-is_contig => hdf_is_contig, is_chunked => hdf_is_chunked, is_compact => hdf_is_compact
+is_contig => hdf_is_contig, is_chunked => hdf_is_chunked, is_compact => hdf_is_compact, &
+is_open
 !! procedures without mapping
 
 generic, public :: write => h5write_scalar,ph5write_1d, ph5write_2d, ph5write_3d, ph5write_4d, ph5write_5d, ph5write_6d, ph5write_7d
@@ -62,6 +69,9 @@ procedure,private :: h5write_scalar, ph5write_1d, ph5write_2d, ph5write_3d, ph5w
 procedure, private :: h5read_scalar, ph5read_1d, ph5read_2d, ph5read_3d, ph5read_4d, ph5read_5d, ph5read_6d, ph5read_7d
 !! mapped procedures must be declared again like this
 
+!> flush file to disk and close file if user forgets to do so.
+final :: destructor
+
 end type hdf5_file
 
 
@@ -73,7 +83,7 @@ end type mpi_tags
 
 private
 public :: mpi_h5comm, hdf5_file, mpi_tags, has_parallel_compression, is_hdf5, &
-check, hdf_wrapup, hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hyperslab, &
+check, hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hyperslab, &
 hdf5version, HSIZE_T
 
 interface !< write.f90
@@ -84,7 +94,7 @@ class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: dname
 integer(HID_T), intent(in) :: dtype
 integer(HSIZE_T), dimension(:), intent(in) :: mem_dims, dset_dims
-integer(HID_T), intent(out), optional :: filespace, memspace, dset_id
+integer(HID_T), intent(out) :: filespace, memspace, dset_id
 integer(HSIZE_T), dimension(:), intent(in), optional :: istart, iend
 integer, dimension(:), intent(in), optional :: chunk_size
 logical, intent(in), optional :: compact
@@ -324,6 +334,11 @@ if (present(action)) laction = action
 
 if (present(mpi)) self%use_mpi = mpi
 
+if(self%use_mpi) then
+  call mpi_comm_rank(MPI_COMM_WORLD, self%mpi_id, ierr)
+  if(ierr /= 0) error stop "ERROR:h5fortran:open: could not get MPI ID"
+endif
+
 if(present(debug)) self%debug = debug
 
 call get_hdf5_config(self%parallel_compression)
@@ -394,7 +409,6 @@ if(fapl /= H5P_DEFAULT_F) then
 endif
 
 self%filename = filename
-self%is_open = .true.
 
 end subroutine ph5open
 
@@ -411,39 +425,104 @@ subroutine ph5close(self, close_hdf5_interface)
 
 class(hdf5_file), intent(inout) :: self
 logical, intent(in), optional :: close_hdf5_interface
-integer :: ier, ierr, mpi_id
 
-if (.not. self%is_open) then
+integer :: ierr, i
+integer(SIZE_T) :: Ngroup, Ndset, Ndtype, Nfile, Lf_name, Lds_name
+integer(HID_T), allocatable :: obj_ids(:)
+integer(SIZE_T), parameter :: L = 2048 !< arbitrary length
+character(L) :: file_name, dset_name
+
+if (.not. self%is_open()) then
   write(stderr,*) 'WARNING:h5fortran:file_close: file handle is already closed: '// self%filename
   return
 endif
 
+!> ref count for better error messages, as this is more of a problem with HDF5-MPI programs
+call h5fget_obj_count_f(self%file_id, H5F_OBJ_GROUP_F, Ngroup, ierr)
+if(ierr /= 0) error stop "ERROR:h5fortran:close:h5fget_obj_count: could not count open groups: " // self%filename
+if(Ngroup > 0) write(stderr,'(a,i0,a)') "ERROR:h5fortran:close: there are ", Ngroup, " groups open: " // self%filename
+
+
+call h5fget_obj_count_f(self%file_id, H5F_OBJ_DATASET_F, Ndset, ierr)
+if(ierr /= 0) error stop "ERROR:h5fortran:close:h5fget_obj_count: could not count open datasets: " // self%filename
+if(Ndset > 0) then
+  write(stderr,'(a,i0,a)') "ERROR:h5fortran:close: there are ", Ndset, " datasets open: " // self%filename
+
+  allocate(obj_ids(Ndset))
+  call h5fget_obj_ids_f(self%file_id, H5F_OBJ_DATASET_F, Ndset, obj_ids, ierr)
+  if(ierr /= 0) error stop "ERROR:h5fortran:close:h5fget_obj_ids: could not get open dataset ids: " // self%filename
+
+  do i = 1, int(Ndset)
+    call h5fget_name_f(obj_ids(i), file_name, Lf_name, ierr)
+    if(ierr /= 0) error stop "ERROR:h5fortran:close:h5fget_name: could not get filename of open dataset: " // self%filename
+
+    call h5iget_name_f(obj_ids(i), dset_name, L, Lds_name, ierr)
+
+    write(stderr,*) "h5fortran:close: open dataset: " // dset_name(:Lds_name) // " in file: " // file_name(:Lf_name)
+  end do
+endif
+
+call h5fget_obj_count_f(self%file_id, H5F_OBJ_DATATYPE_F, Ndtype, ierr)
+if(ierr /= 0) error stop "ERROR:h5fortran:close:h5fget_obj_count: could not count open datatypes: " // self%filename
+if(Ndtype > 0) write(stderr,'(a,i0,a)') "ERROR:h5fortran:close: there are ", Ndtype, " datatypes open: " // self%filename
+
+call h5fget_obj_count_f(self%file_id, H5F_OBJ_FILE_F, Nfile, ierr)
+if(ierr /= 0) error stop "ERROR:h5fortran:close:h5fget_obj_count: could not count open files: " // self%filename
+if(Nfile < 1) write(stderr,'(a,i0,a)') "ERROR:h5fortran:close: there are ", Nfile, " files open: " // self%filename
+
+if(Ngroup > 0 .or. Ndset > 0 .or. Ndtype > 0) error stop "ERROR:h5fortran:close: hanging HID handles open: " // self%filename
+
 
 !> close hdf5 file
-call h5fclose_f(self%file_id, ier)
-if (ier/=0) then
-  call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
-  write(stderr,'(a,i0)') 'ERROR:h5fortran:h5fclose: HDF5 file close: ' // self%filename // ' mpi_id: ', mpi_id
+call h5fclose_f(self%file_id, ierr)
+if (ierr /= 0) then
+  write(stderr,'(a,i0)') 'ERROR:h5fortran:h5fclose: HDF5 file close: ' // self%filename // ' mpi_id: ', self%mpi_id
   error stop
 endif
 
 if (present(close_hdf5_interface)) then
   if (close_hdf5_interface) then
-    call h5close_f(ier)
-    if (ier/=0) error stop 'ERROR: HDF5 library close'
+    call h5close_f(ierr)
+    if (ierr /= 0) error stop 'ERROR:h5fortran:h5close: HDF5 library close'
   endif
 endif
 
-!> sentinel file_id
-self%file_id = 0
-
-self%is_open = .false.
-
 end subroutine ph5close
+
+
+logical function is_open(self)
+!! check if file handle is open
+
+class(hdf5_file), intent(in) :: self
+
+! integer :: hid_type
+integer :: ierr
+
+call h5iis_valid_f(self%file_id, is_open, ierr)
+if(ierr /= 0) error stop "h5fortran:is_open:h5iis_valid: " // self%filename
+
+! call h5iget_type_f(self%file_id, hid_type, ierr)
+! if(ierr /= 0 .or. hid_type /= H5I_FILE_F) is_open = .false.
+
+end function is_open
+
 
 logical function has_parallel_compression()
 call get_hdf5_config(has_parallel_compression)
 end function has_parallel_compression
+
+
+subroutine destructor(self)
+!! Close file and handle if user forgets to do so
+
+type(hdf5_file), intent(inout) :: self
+
+if (.not. self%is_open()) return
+
+print '(a)', "auto-closing " // self%filename
+call self%close()
+
+end subroutine destructor
 
 
 logical function hdf_is_contig(self, dname)
@@ -638,36 +717,13 @@ character(*), intent(in) :: dname
 
 integer :: ierr
 
-if(.not.self%is_open) error stop 'h5fortran:exist: file handle is not open'
+if(.not. self%is_open()) error stop 'h5fortran:exist: file handle is not open: ' // self%filename
 
 call h5ltpath_valid_f(self%file_id, dname, .true., exists, ierr)
 !! h5lexists_f can false error with groups--just use h5ltpath_valid
-
 if (ierr/=0) error stop 'h5fortran:check_exist: could not determine status of ' // dname // ' in ' // self%filename
 
-
 end function hdf_exist
-
-
-subroutine hdf_wrapup(filespace, memspace, dset_id, plist_id)
-
-integer(HID_T), intent(in) :: filespace, memspace, dset_id, plist_id
-
-integer :: ierr
-
-call h5dclose_f(dset_id, ierr)
-if(ierr/=0) error stop "ERROR: closing dataset"
-
-if(memspace /= H5S_ALL_F) call h5sclose_f(memspace, ierr)
-if(ierr/=0) error stop "ERROR: closing memory dataspace"
-
-if(filespace /= H5S_ALL_F) call h5sclose_f(filespace, ierr)
-if(ierr/=0) error stop "ERROR: closing file dataspace"
-
-call h5pclose_f(plist_id, ierr)
-if(ierr/=0) error stop "ERROR: closing property"
-
-end subroutine hdf_wrapup
 
 
 subroutine hdf_rank_check(self, dname, mrank, vector_scalar)
@@ -683,9 +739,9 @@ integer :: ierr, drank, type_class
 
 if(present(vector_scalar)) vector_scalar = .false.
 
-if(.not.self%is_open) error stop 'h5fortran:rank_check: file handle is not open'
+if(.not.self%is_open()) error stop 'ERROR:h5fortran:rank_check: file handle is not open: ' // self%filename
 
-if (.not.self%exist(dname)) error stop 'ERROR: ' // dname // ' does not exist in ' // self%filename
+if (.not.self%exist(dname)) error stop 'ERROR::h5fortran:rank_check: ' // dname // ' does not exist in ' // self%filename
 
 !> check for matching rank, else bad reads can occur--doesn't always crash without this check
 call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ierr)
@@ -726,14 +782,14 @@ call hdf_rank_check(self, dname, size(dims))
 
 call h5ltget_dataset_info_f(self%file_id, dname, dims=dsdims, &
     type_class=type_class, type_size=type_size, errcode=ierr)
-if (ierr/=0) error stop 'h5fortran:shape_check: get_dataset_info ' // dname // ' read ' // self%filename
+if (ierr/=0) error stop 'ERROR:h5fortran:shape_check: get_dataset_info ' // dname // ' read ' // self%filename
 
 if(present(dset_dims)) dset_dims = dsdims
 
 if(self%use_mpi) return
 
 if(any(int(dims, int64) /= dsdims)) then
-  write(stderr,*) 'h5fortran:shape_check: shape mismatch ' // dname // ' = ', dsdims, '  variable shape =', dims
+  write(stderr,*) 'ERROR:h5fortran:shape_check: shape mismatch ' // dname // ' = ', dsdims, '  variable shape =', dims
   error stop
 endif
 
@@ -748,14 +804,12 @@ integer :: ierr
 
 logical :: close_self
 
-close_self = .false.
+close_self = .not. self%is_open()
 
-if (.not. self%is_open) then
-  close_self = .true.
-  call self%open(self%filename, action="r", mpi=.false.)
-endif
+if (close_self) call self%open(self%filename, action="r", mpi=.false.)
+
 call h5fget_filesize_f(self%file_id, hdf_filesize, ierr)
-if(ierr/=0) error stop "could not get file size " // self%filename
+if(ierr/=0) error stop "ERROR:h5fortran: could not get file size " // self%filename
 
 if(close_self) call self%close()
 
