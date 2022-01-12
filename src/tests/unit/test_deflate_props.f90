@@ -27,11 +27,8 @@ if(ierr/=0) error stop "mpi_comm_rank"
 call test_read_deflate_props(fn1, N, mpi_id)
 if(mpi_id==0) print *,'OK: HDF5 read deflate properties'
 
-if(mpi_id==0) then
-  call test_get_deflate(fn1)
-  !! only works with mpi=.false. else get h5fclose error
-  print *, 'OK: HDF5 get deflate'
-endif
+call test_get_deflate(fn1)
+if (ierr /= 0) print *, 'OK: HDF5 get deflate'
 
 call mpi_finalize(ierr)
 if (ierr /= 0) error stop "mpi_finalize"
@@ -88,7 +85,7 @@ character(*), intent(in) :: fn
 
 type(hdf5_file) :: h5f
 
-call h5f%open(fn, action='r', mpi=.false.)
+call h5f%open(fn, action='r', mpi=.true.)
 
 if (h5f%parallel_compression) then
   if (.not. h5f%deflate("/A")) error stop "test_get_deflate: expected deflate MPI"

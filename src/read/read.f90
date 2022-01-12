@@ -55,8 +55,6 @@ logical :: debug = .false.
 
 get_deflate = .false.
 
-if(self%use_mpi) error stop "ERROR:h5fortran:get_deflate: must not have mpi=.true. => %open(mpi=.false.) to use %deflate()"
-
 Naux = size(Aux, kind=SIZE_T)
 
 call h5dopen_f(self%file_id, dname, dset_id, ierr)
@@ -87,10 +85,9 @@ filters: do i = 1, Nf
     if(j>0) print *, "TRACE:get_filter: filter name: ", filter_name(:j-1)
   endif
 
-  if (filter_id == H5Z_FILTER_DEFLATE_F) then
-    get_deflate = .true.
-    exit filters
-  end if
+  get_deflate = filter_id == H5Z_FILTER_DEFLATE_F
+  if(get_deflate) exit filters
+
 end do filters
 
 call h5pclose_f(dcpl, ierr)
