@@ -566,46 +566,65 @@ if (ierr/=0) is_hdf5 = .false.
 end function is_hdf5
 
 
-subroutine mpi_hyperslab(mem_dims, dset_dims, dset_id, filespace, memspace, dname, istart, iend)
+function id2name(id)
+!! get name of object with given id
+
+integer(HID_T) :: id
+character(:), allocatable :: id2name
+
+integer(SIZE_T) :: L
+integer :: ierr
+
+character(2048) :: name
+
+call h5iget_name_f(id, name, len(name, SIZE_T), L, ierr)
+if(ierr /= 0) error stop "h5fortran:id2name:h5iget_name"
+
+id2name = name(:L)
+
+end function id2name
+
+
+subroutine mpi_hyperslab(mem_dims, dset_dims, dset_id, filespace, memspace, istart, iend)
 !! Each process defines dataset in memory and writes it to the hyperslab in the file.
 
 integer(HSIZE_T), dimension(:), intent(in) :: mem_dims, dset_dims
 integer(HID_T), intent(in) :: dset_id
 integer(HID_T), intent(inout) :: filespace, memspace
-character(*), intent(in) :: dname !< for error messages
 integer(HSIZE_T), dimension(:), intent(in) :: istart
 integer(HSIZE_T), dimension(size(istart)), intent(in) :: iend
 
 integer(HSIZE_T), dimension(size(mem_dims)) :: c_mem_dims, i0
 integer(HID_T) :: dcpl
 integer :: ierr
-
 logical :: filters_OK
+character(:), allocatable :: dset_name
+
+dset_name = id2name(dset_id)
 
 !> check that all necessary filters to access dataset are available on the system.
 call h5dget_create_plist_f(dset_id, dcpl, ierr)
-if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5dget_create_plist: " // dname
+if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5dget_create_plist: " // dset_name
 
 call h5pall_filters_avail_f(dcpl, filters_OK, ierr)
-if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5pall_filters_avail: " // dname
+if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5pall_filters_avail: " // dset_name
 if (.not. filters_OK) then
-  error stop "h5fortran: filter(s) missing necessary for dataset " // dname // " in parallel with MPI. This is " // &
+  error stop "h5fortran: filter(s) missing necessary for dataset " // dset_name // " in parallel with MPI. This is " // &
     "typically caused by missing DEFLATE compression with HDF5-MPI."
 endif
 
 call h5pclose_f(dcpl, ierr)
-if(ierr/=0) error stop "h5fortran:mpi_hyperslab:h5pclose: " // dname
+if(ierr/=0) error stop "h5fortran:mpi_hyperslab:h5pclose: " // dset_name
 
 if(filespace == H5S_ALL_F) then
   !> create dataspace
   call h5screate_simple_f(rank=size(dset_dims), dims=dset_dims, space_id=filespace, hdferr=ierr)
-  if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5screate_simple:filespace " // dname
+  if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5screate_simple:filespace " // dset_name
 endif
 
 !> Select hyperslab in the file.
 call h5dget_space_f(dset_id, filespace, ierr)
-if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5dget_space: " // dname
-
+if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5dget_space: " // dset_name
 
 
 ! blk(1) = 1
@@ -621,9 +640,9 @@ if(any(c_mem_dims /= mem_dims)) then
   error stop "ERROR:h5fortran:mpi_hyperslab"
 endif
 
-! print *, 'TRACE:mpi_hyperslab: ' // dname //': istart', i0, 'C mem_dims: ', c_mem_dims, 'mem_dims', mem_dims
+! print *, 'TRACE:mpi_hyperslab: ' // dset_name //': istart', i0, 'C mem_dims: ', c_mem_dims, 'mem_dims', mem_dims
 
-if(any(c_mem_dims < 1)) error stop "h5mpi:hyperslab:non-positive hyperslab: " // dname
+if(any(c_mem_dims < 1)) error stop "h5mpi:hyperslab:non-positive hyperslab: " // dset_name
 
 call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
 start=i0, &
@@ -632,11 +651,11 @@ hdferr=ierr)
 ! stride=1, &  !< for now we don't stride data
 ! block=blk  !< would this help performance?
 
-if (ierr/=0) error stop "g5fortran:mpi_hyperslab:h5sselect_hyperslab: " // dname
+if (ierr/=0) error stop "g5fortran:mpi_hyperslab:h5sselect_hyperslab: " // dset_name
 
 !> create memory dataspace
 call h5screate_simple_f(rank=size(c_mem_dims), dims=c_mem_dims, space_id=memspace, hdferr=ierr)
-if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5screate_simple:memspace " // dname
+if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5screate_simple:memspace " // dset_name
 
 end subroutine mpi_hyperslab
 

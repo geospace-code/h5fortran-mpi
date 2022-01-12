@@ -41,7 +41,7 @@ istart=istart, iend=iend, chunk_size=chunk_size, &
 compact=compact)
 
 if(self%use_mpi) then
-  call mpi_hyperslab(mem_dims, dims_dset, dset_id, file_space_id, mem_space_id, dname, istart=istart, iend=iend)
+  call mpi_hyperslab(mem_dims, dims_dset, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend)
   xfer_id = mpi_collective(dname)
 endif
 

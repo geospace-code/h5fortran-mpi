@@ -10,7 +10,7 @@ call h5open_read(self, dname, dims, dset_dims, file_space_id, mem_space_id, dset
 
 if(self%use_mpi) then
   if(present(istart) .and. present(iend)) then
-    call mpi_hyperslab(dims, dset_dims, dset_id, file_space_id, mem_space_id, dname, istart=istart, iend=iend)
+    call mpi_hyperslab(dims, dset_dims, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend)
   endif
   xfer_id = mpi_collective(dname)
 endif
