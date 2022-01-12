@@ -90,7 +90,7 @@ interface !< write.f90
 module subroutine hdf_create(self, dname, dtype, mem_dims, dset_dims, filespace, memspace, dset_id, &
   istart, iend, chunk_size, compact)
 
-class(hdf5_file), intent(inout) :: self
+class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 integer(HID_T), intent(in) :: dtype
 integer(HSIZE_T), dimension(:), intent(in) :: mem_dims, dset_dims
@@ -111,14 +111,14 @@ end interface
 interface !< writer.f90
 
 module subroutine h5write_scalar(self, dname, value, compact)
-class(hdf5_file), intent(inout) :: self
+class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value
 logical, intent(in), optional :: compact
 end subroutine h5write_scalar
 
 module subroutine ph5write_1d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
-class(hdf5_file), intent(inout) :: self
+class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:)
 class(*), intent(in), dimension(1), optional :: dset_dims  !< integer or integer(HSIZE_T) full disk shape (not just per worker)
@@ -128,7 +128,7 @@ logical, intent(in), optional :: compact
 end subroutine ph5write_1d
 
 module subroutine ph5write_2d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
-class(hdf5_file), intent(inout) :: self
+class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:)
 class(*), intent(in), dimension(2), optional :: dset_dims
@@ -138,7 +138,7 @@ logical, intent(in), optional :: compact
 end subroutine ph5write_2d
 
 module subroutine ph5write_3d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
-class(hdf5_file), intent(inout) :: self
+class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:)
 class(*), intent(in), dimension(3), optional :: dset_dims
@@ -148,7 +148,7 @@ logical, intent(in), optional :: compact
 end subroutine ph5write_3d
 
 module subroutine ph5write_4d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
-class(hdf5_file), intent(inout) :: self
+class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:)
 class(*), intent(in), dimension(4), optional :: dset_dims
@@ -158,7 +158,7 @@ logical, intent(in), optional :: compact
 end subroutine ph5write_4d
 
 module subroutine ph5write_5d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
-class(hdf5_file), intent(inout) :: self
+class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:)
 class(*), intent(in), dimension(5), optional :: dset_dims
@@ -168,7 +168,7 @@ logical, intent(in), optional :: compact
 end subroutine ph5write_5d
 
 module subroutine ph5write_6d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
-class(hdf5_file), intent(inout) :: self
+class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:,:)
 class(*), intent(in), dimension(6), optional :: dset_dims
@@ -178,7 +178,7 @@ logical, intent(in), optional :: compact
 end subroutine ph5write_6d
 
 module subroutine ph5write_7d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
-class(hdf5_file), intent(inout) :: self
+class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(:,:,:,:,:,:,:)
 class(*), intent(in), dimension(7), optional :: dset_dims
@@ -423,7 +423,7 @@ subroutine ph5close(self, close_hdf5_interface)
 !! close_hdf5_interface is when you know you have exactly one HDF5 file in your
 !! application, if true it closes ALL files, even those invoked directly from HDF5.
 
-class(hdf5_file), intent(inout) :: self
+class(hdf5_file), intent(in) :: self
 logical, intent(in), optional :: close_hdf5_interface
 
 integer :: ierr, i
@@ -515,7 +515,7 @@ end function has_parallel_compression
 subroutine destructor(self)
 !! Close file and handle if user forgets to do so
 
-type(hdf5_file), intent(inout) :: self
+type(hdf5_file), intent(in) :: self
 
 if (.not. self%is_open()) return
 
@@ -798,20 +798,14 @@ end subroutine hdf_shape_check
 
 integer(HSIZE_T) function hdf_filesize(self)
 !! returns the size of the HDF5 file in bytes
-class(hdf5_file), intent(inout) :: self
+class(hdf5_file), intent(in) :: self
 
 integer :: ierr
 
-logical :: close_self
-
-close_self = .not. self%is_open()
-
-if (close_self) call self%open(self%filename, action="r", mpi=.false.)
+if(.not. self%is_open()) error stop 'h5fortran:filesize: file handle is not open: ' // self%filename
 
 call h5fget_filesize_f(self%file_id, hdf_filesize, ierr)
 if(ierr/=0) error stop "ERROR:h5fortran: could not get file size " // self%filename
-
-if(close_self) call self%close()
 
 end function hdf_filesize
 

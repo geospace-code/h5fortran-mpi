@@ -99,7 +99,7 @@ end procedure hdf_create
 
 
 subroutine set_deflate(self, dims, dcpl, chunk_size)
-class(hdf5_file), intent(inout) :: self
+class(hdf5_file), intent(in) :: self
 integer(HSIZE_T), intent(in) :: dims(:)
 integer(HID_T), intent(out) :: dcpl
 integer, intent(in), optional :: chunk_size(:)
