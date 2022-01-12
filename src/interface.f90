@@ -84,7 +84,10 @@ end type mpi_tags
 private
 public :: mpi_h5comm, hdf5_file, mpi_tags, has_parallel_compression, is_hdf5, &
 check, hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hyperslab, &
-hdf5version, HSIZE_T
+hdf5version, &
+HSIZE_T, &
+H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F, &
+H5T_NATIVE_REAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_NATIVE_CHARACTER, H5T_STD_I64LE
 
 interface !< write.f90
 module subroutine hdf_create(self, dname, dtype, mem_dims, dset_dims, filespace, memspace, dset_id, &
