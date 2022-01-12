@@ -18,6 +18,10 @@ xfer_id = H5P_DEFAULT_F
 if(.not. self%is_open()) error stop 'ERROR:h5fortran:write: file handle is not open'
 
 select type (value)
+type is (character(*))
+  call h5ltmake_dataset_string_f(self%file_id, dname, value, ier)
+  if (ier /= 0) error stop 'h5fortran:write: could not write CHARACTER ' // dname // ' to ' // self%filename
+  return
 type is (real(real32))
   dtype = H5T_NATIVE_REAL
 type is (real(real64))
@@ -49,8 +53,6 @@ type is (integer(int32))
   call h5dwrite_f(dset_id, dtype, value, dset_dims, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
 type is (integer(int64))
   call h5dwrite_f(dset_id, dtype, value, dset_dims, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
-type is (character(*))
-  call h5ltmake_dataset_string_f(self%file_id, dname, value, ier)
 class default
   error stop "ERROR:h5fortran:write: unsupported type for " // dname
 end select
