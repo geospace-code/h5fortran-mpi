@@ -98,17 +98,17 @@ if (ierr/=0) error stop "ERROR:h5fortran:h5pclose: " // dname // ' in ' // self%
 end procedure hdf_create
 
 
-subroutine set_deflate(self, dims, plist_id, chunk_size)
+subroutine set_deflate(self, dims, dcpl, chunk_size)
 class(hdf5_file), intent(inout) :: self
 integer(HSIZE_T), intent(in) :: dims(:)
-integer(HID_T), intent(out) :: plist_id
+integer(HID_T), intent(out) :: dcpl
 integer, intent(in), optional :: chunk_size(:)
 
 integer(HSIZE_T) :: cs(size(dims))
 integer :: ierr
 
 
-plist_id = H5P_DEFAULT_F
+dcpl = H5P_DEFAULT_F
 
 if (present(chunk_size)) then
   cs = chunk_size
@@ -127,10 +127,10 @@ if(self%debug) print *,'DEBUG:set_deflate: dims: ',dims,'chunk size: ', cs
 if(any(cs == 0)) return  !< array too small to chunk
 if(any(cs < 0)) error stop "ERROR:h5fortran:set_deflate: chunk_size must be strictly positive"
 
-call h5pcreate_f(H5P_DATASET_CREATE_F, plist_id, ierr)
+call h5pcreate_f(H5P_DATASET_CREATE_F, dcpl, ierr)
 if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pcreate: " // self%filename
 
-call h5pset_chunk_f(plist_id, size(dims), cs, ierr)
+call h5pset_chunk_f(dcpl, size(dims), cs, ierr)
 if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pset_chunk: " // self%filename
 
 if (self%fletcher32) then
@@ -138,7 +138,7 @@ if (self%fletcher32) then
   if (self%use_mpi .and. .not. self%parallel_compression) then
     write(stderr, '(a)') 'WARNING: h5fortran:set_deflate: fletcher32 parallel filter not supported ' // self%filename
   else
-    call h5pset_fletcher32_f(plist_id, ierr)
+    call h5pset_fletcher32_f(dcpl, ierr)
     if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pset_fletcher32: " // self%filename
   endif
 endif
@@ -155,12 +155,12 @@ if(self%shuffle) then
   if (self%use_mpi .and. .not. self%parallel_compression) then
     write(stderr, '(a)') 'WARNING: h5fortran:set_deflate: shuffle parallel filter not supported ' // self%filename
   else
-    call h5pset_shuffle_f(plist_id, ierr)
+    call h5pset_shuffle_f(dcpl, ierr)
     if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pset_shuffle: " // self%filename
   endif
 endif
 
-call h5pset_deflate_f(plist_id, self%comp_lvl, ierr)
+call h5pset_deflate_f(dcpl, self%comp_lvl, ierr)
 if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pset_deflate: " // self%filename
 
 if(self%debug) print '(a,i0)','TRACE:set_deflate done, comp_lvl: ', self%comp_lvl

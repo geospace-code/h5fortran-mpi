@@ -59,6 +59,15 @@ if (ier/=0) error stop 'ERROR:h5fortran:write: could not write ' // dname // ' t
 call h5dclose_f(dset_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:writer: closing dataset: " // dname // " in " // self%filename
 
+if(mem_space_id /= H5S_ALL_F) call h5sclose_f(mem_space_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:writer closing memory dataspace: " // dname // " in " // self%filename
+
+if(file_space_id /= H5S_ALL_F) call h5sclose_f(file_space_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:writer closing file dataspace: " // dname // " in " // self%filename
+
+if(self%use_mpi) call h5pclose_f(xfer_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:writer closing property: " // dname // " in " // self%filename
+
 end procedure h5write_scalar
 
 module procedure ph5write_1d

@@ -92,6 +92,9 @@ if(ier/=0) error stop 'h5fortran:reader: reading ' // dname // ' from ' // self%
 call h5dclose_f(dset_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:reader: closing dataset: " // dname // " in " // self%filename
 
+if(self%use_mpi) call h5pclose_f(xfer_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:writer closing property: " // dname // " in " // self%filename
+
 end procedure h5read_scalar
 
 

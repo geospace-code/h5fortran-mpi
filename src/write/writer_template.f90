@@ -68,5 +68,5 @@ if(ier /= 0) error stop "ERROR:h5fortran:writer closing memory dataspace: " // d
 if(file_space_id /= H5S_ALL_F) call h5sclose_f(file_space_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:writer closing file dataspace: " // dname // " in " // self%filename
 
-call h5pclose_f(xfer_id, ier)
+if(self%use_mpi) call h5pclose_f(xfer_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:writer closing property: " // dname // " in " // self%filename
