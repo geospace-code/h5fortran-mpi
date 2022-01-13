@@ -16,7 +16,7 @@ project(h5mpi
 LANGUAGES C Fortran
 VERSION ${PROJECT_VERSION}
 DESCRIPTION "Lightweight object-oriented HDF5 MPI parallel Fortran interface"
-HOMEPAGE_URL https://github.com/scivision/h5fortran-mpi
+HOMEPAGE_URL https://github.com/geospace-code/h5fortran-mpi
 )
 
 include(CTest)

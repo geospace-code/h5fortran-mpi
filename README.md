@@ -1,8 +1,8 @@
 # hdf5-benchmark
 
-[![ci](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci.yml)
-[![ci_macos](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci_macos.yml/badge.svg)](https://github.com/scivision/hdf5-benchmark/actions/workflows/ci_macos.yml)
-[![intel-oneapi](https://github.com/scivision/hdf5-benchmark/actions/workflows/intel-oneapi.yml/badge.svg)](https://github.com/scivision/hdf5-benchmark/actions/workflows/intel-oneapi.yml)
+[![ci](https://github.com/geospace-code/hdf5-benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/geospace-code/hdf5-benchmark/actions/workflows/ci.yml)
+[![ci_macos](https://github.com/geospace-code/hdf5-benchmark/actions/workflows/ci_macos.yml/badge.svg)](https://github.com/geospace-code/hdf5-benchmark/actions/workflows/ci_macos.yml)
+[![intel-oneapi](https://github.com/geospace-code/hdf5-benchmark/actions/workflows/intel-oneapi.yml/badge.svg)](https://github.com/geospace-code/hdf5-benchmark/actions/workflows/intel-oneapi.yml)
 
 Easy to use object-oriented Fortran HDF5 interface.
 This interface requires MPI, although it is capable of non-MPI file I/O.
