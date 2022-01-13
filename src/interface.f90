@@ -65,7 +65,15 @@ generic, public :: write => h5write_scalar,ph5write_1d, ph5write_2d, ph5write_3d
 generic, public :: read => h5read_scalar, ph5read_1d, ph5read_2d, ph5read_3d, ph5read_4d, ph5read_5d, ph5read_6d, ph5read_7d
 !! mapped procedures
 
-procedure,private :: h5write_scalar, ph5write_1d, ph5write_2d, ph5write_3d, ph5write_4d, ph5write_5d, ph5write_6d, ph5write_7d
+!> write attributes
+generic, public :: writeattr => writeattr_char, writeattr_num
+
+!> read attributes
+generic, public :: readattr => readattr_char, readattr_num
+
+procedure, private :: writeattr_char, writeattr_num, readattr_char, readattr_num
+
+procedure, private :: h5write_scalar, ph5write_1d, ph5write_2d, ph5write_3d, ph5write_4d, ph5write_5d, ph5write_6d, ph5write_7d
 
 procedure, private :: h5read_scalar, ph5read_1d, ph5read_2d, ph5read_3d, ph5read_4d, ph5read_5d, ph5read_6d, ph5read_7d
 !! mapped procedures must be declared again like this
@@ -84,7 +92,7 @@ end type mpi_tags
 
 private
 public :: mpi_h5comm, hdf5_file, mpi_tags, has_parallel_compression, is_hdf5, &
-check, hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hyperslab, &
+hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hyperslab, &
 hdf5version, h5exist, &
 HSIZE_T, &
 H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F, &
@@ -323,6 +331,37 @@ integer(HSIZE_T), intent(in), dimension(7), optional :: istart, iend
 end subroutine ph5read_7d
 
 end interface
+
+
+interface  !< attributes.f90
+
+module subroutine readattr_char(self, dname, attr, attrval)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname, attr
+character(*), intent(inout) :: attrval
+!! intent(inout) for character
+end subroutine readattr_char
+
+module subroutine readattr_num(self, dname, attr, attrval)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname, attr
+class(*), intent(out) :: attrval(:)
+end subroutine readattr_num
+
+module subroutine writeattr_char(self, dname, attr, attrval)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname, attr
+character(*), intent(in) :: attrval
+end subroutine writeattr_char
+
+module subroutine writeattr_num(self, dname, attr, attrval)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname, attr
+class(*), intent(in) :: attrval(:)
+end subroutine writeattr_num
+
+end interface
+
 
 contains
 
@@ -729,26 +768,6 @@ call h5fflush_f(self%file_id, H5F_SCOPE_GLOBAL_F, ierr)
 if (ierr /= 0) error stop 'ERROR: HDF5 flush ' // self%filename
 
 end subroutine hdf_flush
-
-
-logical function check(ierr, filename, dname)
-integer, intent(in) :: ierr
-character(*), intent(in), optional :: filename, dname
-
-character(:), allocatable :: fn, dn
-
-check = .false.
-if (ierr==0) return
-
-check = .true.
-fn = ""
-dn = ""
-if (present(filename)) fn = filename
-if (present(dname)) dn = dname
-
-write(stderr,*) 'ERROR: ' // fn // ':' // dn // ' error code ', ierr
-
-end function check
 
 
 logical function hdf_exist(self, dname) result(exists)
