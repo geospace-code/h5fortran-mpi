@@ -2,7 +2,8 @@ submodule (h5mpi) write
 
 use hdf5, only : h5pset_deflate_f, h5pset_fletcher32_f, h5pset_shuffle_f, h5pset_layout_f, &
 h5dwrite_f, &
-h5lcreate_soft_f, &
+h5gcreate_f, h5gclose_f, &
+h5lcreate_soft_f, h5lexists_f, &
 h5screate_f, &
 H5S_SCALAR_F
 
@@ -54,6 +55,9 @@ endif
 
 !> Only new datasets go past this point
 
+call self%write_group(dname)
+!! write_group is needed for any dataset in a group e.g. /hi/there/var
+
 !> compression
 if(size(mem_dims) >= 2) then
   call set_deflate(self, mem_dims, dcpl, chunk_size)
@@ -101,6 +105,45 @@ call H5Lcreate_soft_f(tgt, self%file_id, link, ierr)
 if (ierr /= 0) error stop 'ERROR:h5fortran:create_softlink: ' // link // ' in ' // self%filename
 
 end procedure create_softlink
+
+
+module procedure write_group
+
+integer(HID_T)  :: gid
+integer :: ier
+
+integer :: sp, ep, L
+logical :: gexist
+
+if(.not.self%is_open()) error stop 'h5fortran:write_group: file handle is not open'
+
+L = len_trim(group_path)
+if(L < 2) return  !< not a new group
+
+sp = 1
+ep = 0
+
+do
+  ep = index(group_path(sp+1:L), "/")
+
+  ! no subgroup found
+  if (ep == 0) return
+
+  ! check subgroup exists
+  sp = sp + ep
+  call h5lexists_f(self%file_id, group_path(:sp-1), gexist, ier)
+  if (ier /= 0) error stop "ERROR:h5fortran:write_group: check exists group " // group_path // " in " // self%filename
+
+  if(.not.gexist) then
+    call h5gcreate_f(self%file_id, group_path(:sp-1), gid, ier)
+    if (ier /= 0) error stop "ERROR:h5fortran:write_group: create group " // group_path // " in " // self%filename
+
+    call h5gclose_f(gid, ier)
+    if (ier /= 0) error stop "ERROR:h5fortran:write_group: close new group " // group_path // " in " // self%filename
+  endif
+end do
+
+end procedure write_group
 
 
 subroutine set_deflate(self, dims, dcpl, chunk_size)

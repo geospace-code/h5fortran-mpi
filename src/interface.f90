@@ -57,7 +57,7 @@ deflate => get_deflate, &
 softlink => create_softlink, &
 layout => hdf_get_layout, chunks => hdf_get_chunk, &
 is_contig => hdf_is_contig, is_chunked => hdf_is_chunked, is_compact => hdf_is_compact, &
-is_open
+is_open, write_group
 !! procedures without mapping
 
 generic, public :: write => h5write_scalar,ph5write_1d, ph5write_2d, ph5write_3d, ph5write_4d, ph5write_5d, ph5write_6d, ph5write_7d
@@ -104,6 +104,10 @@ integer, dimension(:), intent(in), optional :: chunk_size
 logical, intent(in), optional :: compact
 end subroutine hdf_create
 
+module subroutine write_group(self, group_path)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: group_path   !< full path to group
+end subroutine write_group
 module subroutine create_softlink(self, tgt, link)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: tgt, &  !< target path to link

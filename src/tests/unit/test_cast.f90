@@ -29,6 +29,7 @@ if(mpi_id == 0) print "(A)", "OK: cast write"
 call test_cast_read(fn)
 if(mpi_id == 0) print "(A)", "OK: cast read"
 
+
 call mpi_finalize(ierr)
 if (ierr /= 0) error stop "mpi_finalize"
 

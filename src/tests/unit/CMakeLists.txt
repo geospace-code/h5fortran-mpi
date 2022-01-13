@@ -20,7 +20,7 @@ add_library(test_utils OBJECT utils.f90)
 
 # --- unit tests
 
-set(test_names cast deflate_write deflate_props deflate_read destructor exist layout shape string)
+set(test_names cast deflate_write deflate_props deflate_read destructor exist groups layout shape string)
 
 foreach(t IN LISTS test_names)
 
