@@ -7,7 +7,7 @@
     "downloadUrl": "https://github.com/scivision/h5fortran-mpi/releases",
     "issueTracker": "https://github.com/scivision/h5fortran-mpi/issues",
     "name": "h5fortran-mpi",
-    "version": "0.9.0",
+    "version": "1.0.0",
     "identifier": "",
     "description": "Lightweight object-oriented HDF5-MPI parallel Fortran interface",
     "applicationCategory": "file I/O",
