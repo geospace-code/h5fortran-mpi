@@ -334,7 +334,7 @@ subroutine ph5open(self, filename, action, mpi, comp_lvl, shuffle, fletcher32, d
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: filename
 character(*), intent(in), optional :: action
-logical, intent(in), optional :: mpi
+logical, intent(in) :: mpi
 integer, intent(in), optional :: comp_lvl
 logical, intent(in), optional :: shuffle
 logical, intent(in), optional :: fletcher32
@@ -349,7 +349,7 @@ logical :: exists
 laction = "rw"
 if (present(action)) laction = action
 
-if (present(mpi)) self%use_mpi = mpi
+self%use_mpi = mpi
 
 if(self%use_mpi) then
   call mpi_comm_rank(MPI_COMM_WORLD, self%mpi_id, ierr)
