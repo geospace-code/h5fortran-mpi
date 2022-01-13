@@ -13,7 +13,6 @@ implicit none (type, external)
 external :: mpi_finalize
 
 integer :: ierr, mpi_id
-character(*), parameter :: fn = "test_destruct.h5"
 
 
 call mpi_init(ierr)

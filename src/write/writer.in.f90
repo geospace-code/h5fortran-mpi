@@ -41,6 +41,13 @@ call hdf_create(self, dname, dtype, mem_dims=mem_dims, dset_dims=dset_dims, &
     filespace=file_space_id, memspace=mem_space_id, dset_id=dset_id, compact=compact)
 
 if(self%use_mpi) then
+  if(self%mpi_id > 0) then
+    call h5sselect_none_f(file_space_id, ier)
+    if(ier /= 0) error stop "ERROR:h5fortran:write:h5sselect_none: selecting no write failed for worker. " // dname
+    !! for MPI collective scalar writes, only root worker can write.
+    !! otherwise race condition would result
+  endif
+
   xfer_id = mpi_collective(dname)
 endif
 

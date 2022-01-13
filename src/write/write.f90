@@ -34,7 +34,6 @@ if (ierr /= 0) error stop 'ERROR:h5fortran:create: variable path invalid: ' // d
 if(exists) then
   if (.not.present(istart)) then
     if (is_scalar) then
-      !! scalar
       call hdf_rank_check(self, dname, size(mem_dims))
     else
       call hdf_shape_check(self, dname, mem_dims)
@@ -49,10 +48,6 @@ if(exists) then
   !> get dataset filespace
   call h5dget_space_f(dset_id, filespace, ierr)
   if(ierr /= 0) error stop 'ERROR:h5fortran:create could not get dataset ' // dname // ' in ' // self%filename
-
-  if(self%use_mpi .and. is_scalar .and. self%mpi_id > 0) call h5sselect_none_f(filespace, ierr)
-  !! for MPI collective scalar writes, only root worker can write.
-  !! otherwise race condition would result
 
   return
 endif
@@ -70,10 +65,10 @@ if(present(compact)) then
 if(compact .and. dcpl == H5P_DEFAULT_F .and. product(dset_dims) * 8 < 60000)  then
 !! 64000 byte limit, here we assumed 8 bytes / element
   call h5pcreate_f(H5P_DATASET_CREATE_F, dcpl, ierr)
-  if (check(ierr, self%filename)) error stop "ERROR:h5fortran:hdf_create:h5pcreate: " // dname
+  if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5pcreate: " // dname
 
   call h5pset_layout_f(dcpl, H5D_COMPACT_F, ierr)
-  if (check(ierr, self%filename)) error stop "ERROR:h5fortran:hdf_create:h5pset_layout: " // dname
+  if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5pset_layout: " // dname
 endif
 endif
 
@@ -84,10 +79,6 @@ else
   call h5screate_simple_f(size(dset_dims), dset_dims, filespace, ierr)
 endif
 if (ierr/=0) error stop "ERROR:h5fortran:hdf_create:h5screate:filespace " // dname // " " // self%filename
-
-if(self%use_mpi .and. is_scalar .and. self%mpi_id > 0) call h5sselect_none_f(filespace, ierr)
-!! for MPI collective scalar writes, only root worker can write.
-!! otherwise race condition would result
 
 !> create dataset
 call h5dcreate_f(self%file_id, dname, dtype, space_id=filespace, dset_id=dset_id, hdferr=ierr, dcpl_id=dcpl)

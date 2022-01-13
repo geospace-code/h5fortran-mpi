@@ -5,6 +5,7 @@ integer :: ier
 xfer_id = H5P_DEFAULT_F
 
 mem_dims = shape(value, HSIZE_T)
+
 if(present(dset_dims)) then
   select type (dset_dims)
   type is (integer(HSIZE_T))
@@ -14,9 +15,6 @@ if(present(dset_dims)) then
   class default
     error stop "write: expecting dset_dims to be integer"
   end select
-elseif(self%use_mpi) then
-  error stop "h5mpi:write: must specify dset_dims if using MPI"
-  !! FIXME: there may be a way to do indepedent write rather than simply fail
 else
   dims_dset = mem_dims
 endif
@@ -41,7 +39,15 @@ istart=istart, iend=iend, chunk_size=chunk_size, &
 compact=compact)
 
 if(self%use_mpi) then
-  call mpi_hyperslab(mem_dims, dims_dset, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend)
+  if(present(dset_dims)) then
+    call mpi_hyperslab(mem_dims, dims_dset, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend)
+  elseif(self%mpi_id > 0) then
+    call h5sselect_none_f(file_space_id, ier)
+    if(ier /= 0) error stop "ERROR:h5fortran:writer:h5sselect_none: selecting no write failed for worker. " // dname
+    !! for MPI collective scalar or whole array writes, only root worker can write.
+    !! otherwise race condition would result
+  endif
+
   xfer_id = mpi_collective(dname)
 endif
 

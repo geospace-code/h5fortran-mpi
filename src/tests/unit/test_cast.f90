@@ -22,10 +22,9 @@ if (ierr /= 0) error stop "mpi_init"
 call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
 if (ierr /= 0) error stop "mpi_comm_rank"
 
-if(mpi_id == 0) then
-  call test_cast_write(fn)
-  print "(A)", "OK: cast write"
-endif
+
+call test_cast_write(fn)
+if(mpi_id == 0) print "(A)", "OK: cast write"
 
 call test_cast_read(fn)
 if(mpi_id == 0) print "(A)", "OK: cast read"
@@ -43,7 +42,7 @@ character(*), intent(in) :: fn
 
 type(hdf5_file) :: h
 
-call h%open(fn, action='w', mpi=.false.)
+call h%open(fn, action='w', mpi=.true.)
 
 !> test values
 call h%write('/scalar_int32', 42_int32)
