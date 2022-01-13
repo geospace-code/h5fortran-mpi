@@ -2,6 +2,8 @@ name: ci
 
 env:
   CTEST_PARALLEL_LEVEL: 4
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
+  CMAKE_BUILD_TYPE: Release
 
 on:
   push:
@@ -54,6 +56,40 @@ jobs:
       run: cmake -S Examples -B Examples/build -Dh5mpi_ROOT=${HOME}
     - name: build examples
       run: cmake --build Examples/build
+    - name: Test examples
+      run: ctest --test-dir Examples/build -V
+
+  linux-shared:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: install hdf5
+      run: |
+        sudo apt update -yq
+        sudo apt install -yq --no-install-recommends ninja-build libhdf5-openmpi-dev hdf5-tools libopenmpi-dev openmpi-bin
+
+    - run: cmake --preset multi -DBUILD_SHARED_LIBS:BOOL=true --install-prefix=${HOME}
+    - run: cmake --build --preset debug
+    - run: ctest --preset debug --output-junit test-debug.xml
+
+    - run: cmake --build --preset release
+    - run: ctest --preset release --output-junit test-release.xml
+
+    - name: Publish Unit Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v1
+      if: always()
+      with:
+        files: build/test-*.xml
+
+    - run: cmake --install build
+
+    - name: configure examples
+      run: cmake -S Examples -B Examples/build -Dh5mpi_ROOT=${HOME}
+    - name: build examples
+      run: cmake --build Examples/build --parallel
     - name: Test examples
       run: ctest --test-dir Examples/build -V
 
