@@ -20,10 +20,8 @@ if (ierr /= 0) error stop "mpi_init"
 call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
 if (ierr /= 0) error stop "mpi_comm_rank"
 
-if(mpi_id == 0) then
-  call test_write(fn)
-  print *, "OK: HDF5 string write"
-endif
+call test_write(fn)
+if(mpi_id == 0) print *, "OK: HDF5 string write"
 
 call test_read(fn)
 if(mpi_id == 0) print *,'OK: HDF5 string read'
@@ -40,7 +38,7 @@ character(*), intent(in) :: fn
 
 type(hdf5_file) :: h
 
-call h%open(fn, action='w', mpi=.false.)
+call h%open(fn, action='w', mpi=.true.)
 
 call h%write('/little', '42')
 call h%write('/MySentence', 'this is a little sentence.')
