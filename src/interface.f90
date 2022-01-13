@@ -345,7 +345,7 @@ end subroutine readattr_char
 module subroutine readattr_num(self, dname, attr, attrval)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname, attr
-class(*), intent(out) :: attrval(:)
+class(*), intent(inout) :: attrval(:)
 end subroutine readattr_num
 
 module subroutine writeattr_char(self, dname, attr, attrval)

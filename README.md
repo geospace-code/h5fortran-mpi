@@ -1,13 +1,14 @@
-# hdf5-benchmark
+# h5fortran-mpi
 
-[![ci](https://github.com/geospace-code/hdf5-benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/geospace-code/hdf5-benchmark/actions/workflows/ci.yml)
-[![ci_macos](https://github.com/geospace-code/hdf5-benchmark/actions/workflows/ci_macos.yml/badge.svg)](https://github.com/geospace-code/hdf5-benchmark/actions/workflows/ci_macos.yml)
-[![intel-oneapi](https://github.com/geospace-code/hdf5-benchmark/actions/workflows/intel-oneapi.yml/badge.svg)](https://github.com/geospace-code/hdf5-benchmark/actions/workflows/intel-oneapi.yml)
+[![ci](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/ci.yml/badge.svg)](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/ci.yml)
+[![ci_macos](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/ci_macos.yml/badge.svg)](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/ci_macos.yml)
+[![intel-oneapi](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/intel-oneapi.yml/badge.svg)](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/intel-oneapi.yml)
 
 Easy to use object-oriented Fortran HDF5 interface.
 This interface requires MPI, although it is capable of non-MPI file I/O.
-The original object-oriented Fortran HDF5 interface without MPI is [h5fortran](https://github.com/geospace-code/h5fortran).
-The non-MPI h5fortran and h5fortran-mpi APIs are by design nearly identical.
+The original object-oriented Fortran HDF5 interface **without MPI** is [h5fortran](https://github.com/geospace-code/h5fortran).
+The [h5fortran-mpi API](./API.md)
+is by design nearly identical to the non-MPI serial h5fortran API.
 A very similar NetCDF4 interface is [nc4fortran](https://github.com/geospace-code/nc4fortran).
 
 Many computer systems default to the serial HDF5 API, which lacks the HDF5 parallel MPI layer.
@@ -60,15 +61,12 @@ cmake --build build
 
 ## Notes
 
-To build and install the HDF5 parallel library use the script from our h5fortran repo:
+To build and install the HDF5 parallel library use the script:
 
 ```sh
-git clone https://github.com/geospace-code/h5fortran
-cd h5fortran/scripts
+cmake -B build_hdf5 -S scripts --install-prefix=$HOME/lib_par
 
-cmake -B build --install-prefix=$HOME/lib_par -Dhdf5_parallel=on
-
-cmake --build build
+cmake --build build_hdf5
 ```
 
 that will build and install HDF5 under ~/lib_par (or other directory of your choice).
