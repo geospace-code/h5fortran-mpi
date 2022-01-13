@@ -6,7 +6,7 @@
 [![ci_macos](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/ci_macos.yml/badge.svg)](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/ci_macos.yml)
 [![intel-oneapi](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/intel-oneapi.yml/badge.svg)](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/intel-oneapi.yml)
 
-Easy to use object-oriented Fortran HDF5 interface.
+Easy to use object-oriented Fortran [parallel HDF5-MPI](https://portal.hdfgroup.org/display/HDF5/Parallel+HDF5) interface.
 This interface requires MPI, although it is capable of non-MPI file I/O.
 The original object-oriented Fortran HDF5 interface **without MPI** is [h5fortran](https://github.com/geospace-code/h5fortran).
 The [h5fortran-mpi API](./API.md)
