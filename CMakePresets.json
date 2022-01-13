@@ -9,6 +9,17 @@
   "generator": "Ninja Multi-Config"
 },
 {
+  "name": "coverage",
+  "binaryDir": "${sourceDir}/build-coverage",
+  "displayName": "Code Coverage",
+  "description": "Build with code coverage enabled.",
+  "cacheVariables": {
+    "CMAKE_BUILD_TYPE": "Debug",
+    "ENABLE_COVERAGE": true,
+    "autobuild": false
+  }
+},
+{
   "name": "phony"
 }
 ],
@@ -28,6 +39,15 @@
     "name": "debug",
     "configurePreset": "multi",
     "configuration": "Debug"
+  },
+  {
+    "name": "coverage",
+    "configurePreset": "coverage"
+  },
+  {
+    "name": "run-coverage",
+    "configurePreset": "coverage",
+    "targets": "coverage"
   }
 ],
 "testPresets": [

@@ -94,6 +94,36 @@ jobs:
       run: ctest --test-dir Examples/build -V
 
 
+  linux-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: install hdf5
+      run: |
+        sudo apt update -yq
+        sudo apt install -yq --no-install-recommends libhdf5-openmpi-dev hdf5-tools libopenmpi-dev openmpi-bin
+
+    - name: install Gcovr
+      run: pip install gcovr
+
+    - run: cmake --preset coverage
+    - run: cmake --build --preset coverage
+
+    - name: Code coverage
+      run: cmake --build --preset run-coverage
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: coverage-report-html
+        path: build-coverage/coverage/
+
+
   linux-build-static:
     needs: linux-static
     runs-on: ubuntu-latest

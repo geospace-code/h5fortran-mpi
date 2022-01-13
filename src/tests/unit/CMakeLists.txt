@@ -5,6 +5,13 @@ max_gcd(${MPI_MAX} ${MPIEXEC_MAX_NUMPROCS} Nmpi)
 
 message(STATUS "Unit tests using ${Nmpi} processes")
 
+if(ENABLE_COVERAGE)
+setup_target_for_coverage_gcovr_html(
+NAME coverage
+EXECUTABLE ${CMAKE_CTEST_COMMAND}
+)
+endif()
+
 set(test_names cast deflate_write deflate_props deflate_read destructor exist layout shape string)
 
 foreach(t IN LISTS test_names)
