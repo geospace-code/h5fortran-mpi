@@ -5,6 +5,17 @@ implicit none (type, external)
 contains
 
 
+module procedure h5exist
+
+type(hdf5_file) :: h
+
+call h%open(filename, action='r', mpi=mpi)
+h5exist = h%exist(dname)
+call h%close()
+
+end procedure h5exist
+
+
 module procedure h5read_scalar
 
 integer(HSIZE_T) :: dims(0)

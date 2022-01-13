@@ -2,6 +2,7 @@ submodule (h5mpi) write
 
 use hdf5, only : h5pset_deflate_f, h5pset_fletcher32_f, h5pset_shuffle_f, h5pset_layout_f, &
 h5dwrite_f, &
+h5lcreate_soft_f, &
 h5screate_f, &
 H5S_SCALAR_F
 
@@ -96,6 +97,19 @@ call h5pclose_f(dcpl, ierr)
 if (ierr/=0) error stop "ERROR:h5fortran:h5pclose: " // dname // ' in ' // self%filename
 
 end procedure hdf_create
+
+
+module procedure create_softlink
+!! HDF5 soft link -- to variables in same file
+!! target need not exist (dangling link)
+!! linking to external files requires an external link (different function required)
+
+integer :: ierr
+
+call H5Lcreate_soft_f(tgt, self%file_id, link, ierr)
+if (ierr /= 0) error stop 'ERROR:h5fortran:create_softlink: ' // link // ' in ' // self%filename
+
+end procedure create_softlink
 
 
 subroutine set_deflate(self, dims, dcpl, chunk_size)

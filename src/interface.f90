@@ -54,6 +54,7 @@ flush => hdf_flush, ndim => hdf_get_ndim, shape => hdf_get_shape, exist => hdf_e
 create => hdf_create, filesize => hdf_filesize, &
 class => get_class, dtype => get_native_dtype, &
 deflate => get_deflate, &
+softlink => create_softlink, &
 layout => hdf_get_layout, chunks => hdf_get_chunk, &
 is_contig => hdf_is_contig, is_chunked => hdf_is_chunked, is_compact => hdf_is_compact, &
 is_open
@@ -84,7 +85,7 @@ end type mpi_tags
 private
 public :: mpi_h5comm, hdf5_file, mpi_tags, has_parallel_compression, is_hdf5, &
 check, hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hyperslab, &
-hdf5version, &
+hdf5version, h5exist, &
 HSIZE_T, &
 H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F, &
 H5T_NATIVE_REAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_NATIVE_CHARACTER, H5T_STD_I64LE
@@ -102,6 +103,13 @@ integer(HSIZE_T), dimension(:), intent(in), optional :: istart, iend
 integer, dimension(:), intent(in), optional :: chunk_size
 logical, intent(in), optional :: compact
 end subroutine hdf_create
+
+module subroutine create_softlink(self, tgt, link)
+class(hdf5_file), intent(inout) :: self
+character(*), intent(in) :: tgt, &  !< target path to link
+                            link  !< soft link path to create
+end subroutine create_softlink
+
 end interface
 
 interface !< hdf5_config.f90
@@ -249,6 +257,12 @@ interface !< reader.f90
 !! the read "value" are intent(inout) because:
 !! * arrays: to work correctly when actual argument is allocatable
 !! * scalar: to work correctly with character type
+
+module logical function h5exist(filename, dname, mpi)
+character(*), intent(in) :: filename, dname
+logical, intent(in) :: mpi
+end function h5exist
+
 module subroutine h5read_scalar(self, dname, value)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
