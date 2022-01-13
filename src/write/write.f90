@@ -123,10 +123,8 @@ if(L < 2) return  !< not a new group
 sp = 1
 ep = 0
 
-do
+grps: do
   ep = index(group_path(sp+1:L), "/")
-
-  ! no subgroup found
   if (ep == 0) return
 
   ! check subgroup exists
@@ -134,14 +132,14 @@ do
   call h5lexists_f(self%file_id, group_path(:sp-1), gexist, ier)
   if (ier /= 0) error stop "ERROR:h5fortran:write_group: check exists group " // group_path // " in " // self%filename
 
-  if(.not.gexist) then
-    call h5gcreate_f(self%file_id, group_path(:sp-1), gid, ier)
-    if (ier /= 0) error stop "ERROR:h5fortran:write_group: create group " // group_path // " in " // self%filename
+  if(gexist) cycle grps
 
-    call h5gclose_f(gid, ier)
-    if (ier /= 0) error stop "ERROR:h5fortran:write_group: close new group " // group_path // " in " // self%filename
-  endif
-end do
+  call h5gcreate_f(self%file_id, group_path(:sp-1), gid, ier)
+  if (ier /= 0) error stop "ERROR:h5fortran:write_group: create group " // group_path // " in " // self%filename
+
+  call h5gclose_f(gid, ier)
+  if (ier /= 0) error stop "ERROR:h5fortran:write_group: close new group " // group_path // " in " // self%filename
+end do grps
 
 end procedure write_group
 
