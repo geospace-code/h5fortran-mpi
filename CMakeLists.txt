@@ -24,31 +24,16 @@ if(NOT DEFINED ${PROJECT_NAME}_BUILD_TESTING)
   set(${PROJECT_NAME}_BUILD_TESTING ${BUILD_TESTING})
 endif()
 
-if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
-  set(EXTPROJ_GENERATOR "Ninja")
-else()
-  set(EXTPROJ_GENERATOR ${CMAKE_GENERATOR})
-endif()
+include(cmake/options.cmake)
+include(cmake/compilers.cmake)
 
-if(BUILD_SHARED_LIBS)
-  if(WIN32 AND CMAKE_VERSION VERSION_LESS 3.21 AND BUILD_TESTING)
-    message(STATUS "Windows with shared libs needs CMake >= 3.21 to run tests")
-  endif()
-  if(MSVC)
-    message(WARNING "Intel oneAPI has trouble with shared libs in general on Windows, try
-      cmake -DBUILD_SHARED_LIBS=off")
-  endif()
-endif()
-
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 if(ourFindMPI)
   list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules/MPI)
 endif()
 
 find_package(MPI COMPONENTS C Fortran REQUIRED)
 
-include(cmake/options.cmake)
-include(cmake/compilers.cmake)
+
 include(cmake/libraries.cmake)
 
 include(cmake/gcd.cmake)  # math functions
@@ -60,9 +45,9 @@ check_mpi_version()
 
 if(NOT hdf5_external)
   if(autobuild)
-    find_package(HDF5 1.10.2...2 COMPONENTS Fortran HL parallel)
+    find_package(HDF5 1.10.2 COMPONENTS Fortran HL parallel)
   else()
-    find_package(HDF5 1.10.2...2 COMPONENTS Fortran HL parallel REQUIRED)
+    find_package(HDF5 1.10.2 COMPONENTS Fortran HL parallel REQUIRED)
   endif()
 endif()
 
@@ -85,7 +70,7 @@ endif()
 add_subdirectory(src)
 
 if(${PROJECT_NAME}_BUILD_TESTING)
-  add_subdirectory(src/tests)
+  add_subdirectory(tests)
 endif()
 
 # additional Find*.cmake necessary
