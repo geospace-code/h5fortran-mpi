@@ -14,7 +14,7 @@ is by design nearly identical to the non-MPI serial h5fortran API.
 A very similar NetCDF4 interface is [nc4fortran](https://github.com/geospace-code/nc4fortran).
 
 Many computer systems default to the serial HDF5 API, which lacks the HDF5 parallel MPI layer.
-The CMakeLists.txt in this project detects this and **automatically builds HDF5-MPI if needed**.
+The scripts/CMakeLists.txt can build the HDF5-MPI stack if needed.
 The system must have a working MPI library installed already (e.g. OpenMPI, MPICH, Intel MPI, MS-MPI).
 
 Some OS have an installable parallel HDF5 package:

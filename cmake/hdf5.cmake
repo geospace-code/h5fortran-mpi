@@ -4,7 +4,13 @@
 
 include(ExternalProject)
 
-set(hdf5_external true CACHE BOOL "autobuild HDF5")
+if(NOT HDF5_VERSION)
+  set(HDF5_VERSION 1.12.1 CACHE STRING "HDF5 version built")
+endif()
+
+string(JSON hdf5_url GET ${json} hdf5 ${HDF5_VERSION} url)
+string(JSON hdf5_sha256 GET ${json} hdf5 ${HDF5_VERSION} sha256)
+
 
 if(hdf5_parallel)
   find_package(MPI REQUIRED COMPONENTS C)
@@ -15,44 +21,43 @@ if(NOT MPI_ROOT AND DEFINED ENV{MPI_ROOT})
   set(MPI_ROOT $ENV{MPI_ROOT})
 endif()
 
-# need to be sure _ROOT isn't empty, DEFINED is not enough
-if(NOT HDF5_ROOT)
-  set(HDF5_ROOT ${CMAKE_INSTALL_PREFIX})
-endif()
-
 set(HDF5_LIBRARIES)
-set(HDF5_DLLS)
 foreach(_name hdf5_hl_fortran hdf5_hl_f90cstub hdf5_fortran hdf5_f90cstub hdf5_hl hdf5)
   if(BUILD_SHARED_LIBS)
-    list(APPEND HDF5_LIBRARIES ${HDF5_ROOT}/lib/lib${_name}$<IF:$<BOOL:${MSVC}>,${CMAKE_STATIC_LIBRARY_SUFFIX},${CMAKE_SHARED_LIBRARY_SUFFIX}>$<$<BOOL:${MINGW}>:.a>)
-    list(APPEND HDF5_DLLS $<$<BOOL:${WIN32}>:${HDF5_ROOT}/bin/lib${_name}.dll>)
+    if(WIN32)
+      list(APPEND HDF5_LIBRARIES ${CMAKE_INSTALL_PREFIX}/bin/lib${_name}${CMAKE_SHARED_LIBRARY_SUFFIX})
+    else()
+      list(APPEND HDF5_LIBRARIES ${CMAKE_INSTALL_PREFIX}/lib/lib${_name}${CMAKE_SHARED_LIBRARY_SUFFIX})
+    endif()
   else()
-    list(APPEND HDF5_LIBRARIES ${HDF5_ROOT}/lib/lib${_name}${CMAKE_STATIC_LIBRARY_SUFFIX})
+    list(APPEND HDF5_LIBRARIES ${CMAKE_INSTALL_PREFIX}/lib/lib${_name}${CMAKE_STATIC_LIBRARY_SUFFIX})
   endif()
 endforeach()
 
-set(HDF5_INCLUDE_DIRS ${HDF5_ROOT}/include)
+set(HDF5_INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/include)
 
 # --- Zlib
-set(zlib_root
--DHDF5_ENABLE_Z_LIB_SUPPORT:BOOL=ON
--DZLIB_USE_EXTERNAL:BOOL=OFF)
-
 if(NOT TARGET ZLIB::ZLIB)
   include(${CMAKE_CURRENT_LIST_DIR}/zlib.cmake)
 endif()
+
 # --- HDF5
 # https://forum.hdfgroup.org/t/issues-when-using-hdf5-as-a-git-submodule-and-using-cmake-with-add-subdirectory/7189/2
 
 set(hdf5_cmake_args
-${zlib_root}
---install-prefix=${HDF5_ROOT}
+-DHDF5_ENABLE_Z_LIB_SUPPORT:BOOL=ON
+-DZLIB_USE_EXTERNAL:BOOL=OFF
+-DZLIB_LIBRARY:FILEPATH=${ZLIB_LIBRARIES}
+-DZLIB_INCLUDE_DIR:PATH=${ZLIB_INCLUDE_DIRS}
+-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
 -DCMAKE_MODULE_PATH:PATH=${CMAKE_MODULE_PATH}
 -DHDF5_GENERATE_HEADERS:BOOL=false
 -DHDF5_DISABLE_COMPILER_WARNINGS:BOOL=true
 -DBUILD_STATIC_LIBS:BOOL=$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>
 -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
 -DCMAKE_BUILD_TYPE=Release
+-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+-DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
 -DHDF5_BUILD_FORTRAN:BOOL=true
 -DHDF5_BUILD_CPP_LIB:BOOL=false
 -DBUILD_TESTING:BOOL=false
@@ -70,7 +75,6 @@ ExternalProject_Add(HDF5
 URL ${hdf5_url}
 URL_HASH SHA256=${hdf5_sha256}
 CMAKE_ARGS ${hdf5_cmake_args}
-CMAKE_GENERATOR ${EXTPROJ_GENERATOR}
 BUILD_BYPRODUCTS ${HDF5_LIBRARIES}
 DEPENDS ZLIB::ZLIB
 CONFIGURE_HANDLED_BY_BUILD ON
@@ -111,8 +115,3 @@ ${CMAKE_DL_LIBS}
 $<$<BOOL:${UNIX}>:m>
 )
 # libdl and libm are needed on some systems
-
-# --- dynamic shared HDF5
-
-set(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/lib)
-set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)

@@ -1,6 +1,3 @@
-option(autobuild "autobuild libraries if not available" true)
-option(hdf5_parallel "enable parallel HDF5" true)
-
 option(ENABLE_BENCHMARKS "write / read benchmarks")
 
 option(ENABLE_COVERAGE "Code coverage tests")
@@ -9,7 +6,6 @@ option(ourFindMPI "Use our FindMPI")
 
 set(CMAKE_TLS_VERIFY true)
 
-set_directory_properties(PROPERTIES EP_UPDATE_DISCONNECTED true)
 
 if(BUILD_SHARED_LIBS)
   if(WIN32 AND CMAKE_VERSION VERSION_LESS 3.21 AND BUILD_TESTING)

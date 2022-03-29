@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20...3.22)
+cmake_minimum_required(VERSION 3.20...3.23)
 project(HDF5_build
 LANGUAGES C Fortran
 )
@@ -57,7 +57,7 @@ if(_hdf5_libprior OR _hdf5_incprior OR _hdf5_binprior)
 endif()
 
 # --- commence HDF5 build/install
-include(${PROJECT_SOURCE_DIR}/../cmake/libraries.cmake)
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/libraries.json json)
 
 set_directory_properties(PROPERTIES EP_UPDATE_DISCONNECTED true)
 
