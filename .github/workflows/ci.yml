@@ -121,7 +121,8 @@ jobs:
       run: cmake -S scripts -B scripts/build -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
 
     - name: Build/install HDF5
-      run: cmake --build scripts/build --parallel
+      run: cmake --build scripts/build || cmake --build scripts/build
+# double build to workaround HDF5 build bug--can't find MPI_C first time.
 
     - name: configure h5fortran
       run: cmake -B build -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }} -DCMAKE_PREFIX_PATH=${{ runner.temp }}
@@ -136,7 +137,7 @@ jobs:
       run: cmake --install build
 
     - name: configure examples
-      run: -DCMAKE_PREFIX_PATH:PATH=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
+      run: cmake -S Examples -B Examples/build -DCMAKE_PREFIX_PATH:PATH=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
     - name: build Examples
       run: cmake --build Examples/build --parallel
     - name: Test Examples
