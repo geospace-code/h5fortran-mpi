@@ -1,0 +1,36 @@
+name: ci_fpm
+
+on:
+  push:
+    paths:
+      - "fpm.toml"
+      - ".github/workflows/ci_fpm.yml"
+  release:
+    types: [published]
+
+
+jobs:
+
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      FPM_FFLAGS: "-I/usr/include/hdf5/openmpi -I/usr/include/x86_64-linux-gnu/openmpi -I/usr/lib/x86_64-linux-gnu/fortran/gfortran-mod-15/openmpi/"
+      FPM_LDFLAGS: -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi
+
+    steps:
+
+    - uses: fortran-lang/setup-fpm@v4
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: install hdf5
+      run: |
+        sudo apt update
+        sudo apt install --no-install-recommends libhdf5-openmpi-dev libopenmpi-dev openmpi-bin
+
+    - uses: actions/checkout@v2
+
+    - run: fpm build
+    - run: fpm test

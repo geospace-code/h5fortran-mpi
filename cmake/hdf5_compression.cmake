@@ -52,7 +52,7 @@ if(${CMAKE_MATCH_1})
 
   if(hdf5_parallel_compression_run)
     message(CHECK_PASS "${CMAKE_MATCH_1}")
-    set(hdf5_parallel_compression .true. CACHE STRING "HDF5 configured for parallel compression")
+    set(hdf5_parallel_compression .true. CACHE STRING "HDF5-MPI configured for parallel compression")
   else()
     message(CHECK_FAIL "HDF5-MPI run check failed")
     set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression")

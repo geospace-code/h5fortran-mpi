@@ -1,7 +1,7 @@
 include(${PROJECT_SOURCE_DIR}/cmake/hdf5_compression.cmake)
 hdf5_compression_flag()
 
-configure_file(hdf5_config.in.f90 hdf5_config.f90 @ONLY)
+configure_file(hdf5_config.f90.in hdf5_config.f90 @ONLY)
 
 # main library
 add_library(h5mpi interface.f90
