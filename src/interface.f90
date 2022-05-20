@@ -387,7 +387,6 @@ logical, intent(in), optional :: debug
 character(len=2) :: laction
 integer :: ierr
 integer(HID_T) :: fapl !< file access property list
-logical :: exists
 
 laction = "rw"
 if (present(action)) laction = action
@@ -431,9 +430,6 @@ if(ierr/=0) error stop "h5open: could not open HDF5 library"
 !! OK to call repeatedly
 !! https://support.hdfgroup.org/HDF5/doc/RM/RM_H5.html#Library-Open
 
-inquire(file=filename, exist=exists)
-if (laction(1:1) == "r".and..not.exists) error stop "h5open: file does not exist: " // filename
-
 if(self%use_mpi) then
   !! collective: setup for MPI access
   call h5pcreate_f(H5P_FILE_ACCESS_F, fapl, ierr)
@@ -446,11 +442,13 @@ endif
 
 select case(laction)
 case('r')
+  if(.not. is_hdf5(filename)) error stop "h5fortran:open: file does not exist: "//filename
   call h5fopen_f(filename, H5F_ACC_RDONLY_F, self%file_id, ierr, access_prp=fapl)
 case('r+')
+  if(.not. is_hdf5(filename)) error stop "h5fortran:open: file does not exist: "//filename
   call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ierr, access_prp=fapl)
 case('rw', 'a')
-  if(exists) then
+  if(is_hdf5(filename)) then
     call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ierr, access_prp=fapl)
   else
     call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ierr, access_prp=fapl)
