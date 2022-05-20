@@ -76,8 +76,8 @@ jobs:
       run: cmake --install build
 
     - name: configure examples
-      run: cmake -S Examples -B Examples/build -DCMAKE_PREFIX_PATH:PATH=${{ runner.temp }}
+      run: cmake -S example -B example/build -DCMAKE_PREFIX_PATH:PATH=${{ runner.temp }}
     - name: build examples
-      run: cmake --build Examples/build
+      run: cmake --build example/build
     - name: Test examples
-      run: ctest --test-dir Examples/build -V
+      run: ctest --test-dir example/build -V

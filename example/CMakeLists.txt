@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20...3.22)
+cmake_minimum_required(VERSION 3.20)
 
 project(h5mpiExample
 LANGUAGES C Fortran
@@ -13,9 +13,7 @@ find_package(h5mpi CONFIG REQUIRED)
 add_executable(example1 example1.f90)
 target_link_libraries(example1 h5mpi::h5mpi MPI::MPI_Fortran MPI::MPI_C)
 
-add_test(NAME Example1
-COMMAND $<TARGET_FILE:example1>
-)
+add_test(NAME Example1 COMMAND example1)
 set_tests_properties(Example1 PROPERTIES
 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 TIMEOUT 10

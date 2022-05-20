@@ -48,7 +48,7 @@ if(ENABLE_BENCHMARKS)
   find_package(HWLOCfortran CONFIG REQUIRED)
 
   add_subdirectory(src/utils)
-  add_subdirectory(tests/benchmarks)
+  add_subdirectory(test/benchmarks)
 endif()
 
 # --- HDF5-MPI object oriented API
@@ -56,7 +56,7 @@ endif()
 add_subdirectory(src)
 
 if(${PROJECT_NAME}_BUILD_TESTING)
-  add_subdirectory(tests)
+  add_subdirectory(test)
 endif()
 
 # additional Find*.cmake necessary
