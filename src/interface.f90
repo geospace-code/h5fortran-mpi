@@ -99,17 +99,20 @@ H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F, &
 H5T_NATIVE_REAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_NATIVE_CHARACTER, H5T_STD_I64LE
 
 interface !< write.f90
-module subroutine hdf_create(self, dname, dtype, mem_dims, dset_dims, filespace, memspace, dset_id, &
-  istart, iend, chunk_size, compact)
+module subroutine hdf_create(self, dname, dtype, mem_dims, dset_dims, &
+  filespace, memspace, dset_id, dtype_id, &
+  istart, iend, chunk_size, compact, charlen)
 
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 integer(HID_T), intent(in) :: dtype
 integer(HSIZE_T), dimension(:), intent(in) :: mem_dims, dset_dims
 integer(HID_T), intent(out) :: filespace, memspace, dset_id
+integer(HID_T), intent(out), optional :: dtype_id
 integer(HSIZE_T), dimension(:), intent(in), optional :: istart, iend
 integer, dimension(:), intent(in), optional :: chunk_size
 logical, intent(in), optional :: compact
+integer, intent(in), optional :: charlen !< length of character scalar
 end subroutine hdf_create
 
 module subroutine write_group(self, group_path)
