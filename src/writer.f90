@@ -80,31 +80,31 @@ if(ier /= 0) error stop "ERROR:h5fortran:writer closing property: " // dname // 
 end procedure h5write_scalar
 
 module procedure ph5write_1d
-@writer_template@
+include "writer_template.inc"
 end procedure ph5write_1d
 
 module procedure ph5write_2d
-@writer_template@
+include "writer_template.inc"
 end procedure ph5write_2d
 
 module procedure ph5write_3d
-@writer_template@
+include "writer_template.inc"
 end procedure ph5write_3d
 
 module procedure ph5write_4d
-@writer_template@
+include "writer_template.inc"
 end procedure ph5write_4d
 
 module procedure ph5write_5d
-@writer_template@
+include "writer_template.inc"
 end procedure ph5write_5d
 
 module procedure ph5write_6d
-@writer_template@
+include "writer_template.inc"
 end procedure ph5write_6d
 
 module procedure ph5write_7d
-@writer_template@
+include "writer_template.inc"
 end procedure ph5write_7d
 
 

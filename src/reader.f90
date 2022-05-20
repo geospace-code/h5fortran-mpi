@@ -111,31 +111,31 @@ end procedure h5read_scalar
 
 
 module procedure ph5read_1d
-@reader_template@
+include "reader_template.inc"
 end procedure ph5read_1d
 
 module procedure ph5read_2d
-@reader_template@
+include "reader_template.inc"
 end procedure ph5read_2d
 
 module procedure ph5read_3d
-@reader_template@
+include "reader_template.inc"
 end procedure ph5read_3d
 
 module procedure ph5read_4d
-@reader_template@
+include "reader_template.inc"
 end procedure ph5read_4d
 
 module procedure ph5read_5d
-@reader_template@
+include "reader_template.inc"
 end procedure ph5read_5d
 
 module procedure ph5read_6d
-@reader_template@
+include "reader_template.inc"
 end procedure ph5read_6d
 
 module procedure ph5read_7d
-@reader_template@
+include "reader_template.inc"
 end procedure ph5read_7d
 
 end submodule hdf5_reader
