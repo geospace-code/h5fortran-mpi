@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20...3.22)
+cmake_minimum_required(VERSION 3.20)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
   message(FATAL_ERROR "cmake -B <build> to specify build directory")
@@ -47,8 +47,8 @@ if(ENABLE_BENCHMARKS)
   find_package(HWLOC 2.4 REQUIRED)
   find_package(HWLOCfortran CONFIG REQUIRED)
 
-  add_subdirectory(src/utils)
-  add_subdirectory(test/benchmarks)
+  add_subdirectory(benchmark)
+  add_subdirectory(benchmark/test)
 endif()
 
 # --- HDF5-MPI object oriented API

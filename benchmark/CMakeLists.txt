@@ -1,3 +1,16 @@
+cmake_minimum_required(VERSION 3.20)
+
+project(h5mpi-benchmark
+LANGUAGES C Fortran
+)
+
+cmake_path(SET CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/Modules)
+
+# --- auto-ignore build directory
+if(NOT EXISTS ${PROJECT_BINARY_DIR}/.gitignore)
+  file(WRITE ${PROJECT_BINARY_DIR}/.gitignore "*")
+endif()
+
 set(runner_os \"${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}\")
 configure_file(perf.in.f90 perf.f90 @ONLY)
 add_library(perf OBJECT
