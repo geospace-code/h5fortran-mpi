@@ -224,36 +224,42 @@ module procedure hdf_get_chunk
 
 integer :: ierr, drank
 integer(HID_T) :: dapl, dset_id
+integer(HSIZE_T) :: cs(size(chunk_size))
 
-if(.not. self%is_open()) error stop 'ERROR:h5fortran:read: file handle is not open'
+cs = -1
 
-chunk_size = -1
-if (.not.self%exist(dname)) then
-  write(stderr, *) 'ERROR:h5fortran:get_chunk: ' // dname // ' does not exist in ' // self%filename
-  ierr = -1
-  return
+if (.not.self%is_open()) error stop 'ERROR:h5fortran:read: file handle is not open'
+if (.not.self%exist(dname)) error stop 'ERROR:h5fortran:get_chunk: ' // dname // ' does not exist in ' // self%filename
+
+if(self%is_chunked(dname)) then
+  call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ierr)
+  if (ierr /= 0) error stop 'ERROR:h5fortran:get_chunk: get rank ' // dname // ' ' // self%filename
+
+  call h5dopen_f(self%file_id, dname, dset_id, ierr)
+  if (ierr /= 0) error stop 'ERROR:h5fortran:get_chunk: open dataset ' // dname // ' ' // self%filename
+
+  call h5dget_create_plist_f(dset_id, dapl, ierr)
+  if (ierr /= 0) error stop 'ERROR:h5fortran:get_chunk: get property list ID ' // dname // ' ' // self%filename
+
+  call h5dclose_f(dset_id, ierr)
+  if (ierr /= 0) error stop 'ERROR:h5fortran:get_chunk: close dataset: ' // dname // ' ' // self%filename
+
+  call h5pget_chunk_f(dapl, drank, cs, ierr)
+  if (ierr /= drank) error stop 'ERROR:h5fortran:get_chunk:h5pget_chunk ' // dname // ' ' // self%filename
+  !! yes ierr == drank is success for this call
+
+  call h5pclose_f(dapl, ierr)
+  if (ierr /= 0) error stop 'ERROR:h5fortran:get_chunk: close property list ' // dname // ' ' // self%filename
 endif
 
-if(.not. self%is_chunked(dname)) return
-
-call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ierr)
-if (ierr /= 0) error stop 'ERROR:h5fortran:get_chunk: get rank ' // dname // ' ' // self%filename
-
-call h5dopen_f(self%file_id, dname, dset_id, ierr)
-if (ierr /= 0) error stop 'ERROR:h5fortran:get_chunk: open dataset ' // dname // ' ' // self%filename
-
-call h5dget_create_plist_f(dset_id, dapl, ierr)
-if (ierr /= 0) error stop 'ERROR:h5fortran:get_chunk: get property list ID ' // dname // ' ' // self%filename
-
-call h5dclose_f(dset_id, ierr)
-if (ierr /= 0) error stop 'ERROR:h5fortran:get_chunk: close dataset: ' // dname // ' ' // self%filename
-
-call h5pget_chunk_f(dapl, drank, chunk_size, ierr)
-if (ierr /= drank) error stop 'ERROR:h5fortran:get_chunk:h5pget_chunk ' // dname // ' ' // self%filename
-!! yes ierr == drank is success for this call
-
-call h5pclose_f(dapl, ierr)
-if (ierr /= 0) error stop 'ERROR:h5fortran:get_chunk: close property list ' // dname // ' ' // self%filename
+select type (chunk_size)
+type is (integer(HSIZE_T))
+  chunk_size = cs
+type is (integer(int32))
+  chunk_size = int(cs)
+class default
+  error stop 'ERROR:h5fortran:get_chunk: unknown type for chunk_size'
+end select
 
 end procedure hdf_get_chunk
 
@@ -285,5 +291,19 @@ call h5pclose_f(dapl, ierr)
 if (ierr /= 0) error stop 'ERROR:h5fortran:get_chunk: close property list ' // dname // ' ' // self%filename
 
 end procedure hdf_get_layout
+
+
+module procedure hdf_check_exist
+
+integer :: ierr
+
+if(.not. self%is_open()) error stop 'ERROR:h5fortran:exist: file handle is not open: ' // self%filename
+
+call h5ltpath_valid_f(self%file_id, dname, .true., hdf_check_exist, ierr)
+!! h5lexists_f can false error with groups--just use h5ltpath_valid
+
+if (ierr/=0) error stop 'ERROR:h5fortran:check_exist: could not determine status of ' // dname // ' in ' // self%filename
+
+end procedure hdf_check_exist
 
 end submodule hdf5_read

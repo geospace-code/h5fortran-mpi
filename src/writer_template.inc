@@ -61,7 +61,7 @@ type is (integer(int32))
 type is (integer(int64))
   call h5dwrite_f(dset_id, dtype, value, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
 class default
-  error stop "unknown variable type for " // dname
+  error stop "ERROR:h5fortran:writer: unknown variable type for " // dname
 end select
 if (ier /= 0) error stop 'ERROR:h5fortran:h5dwrite: could not write ' // dname // ' to ' // self%filename
 

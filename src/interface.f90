@@ -49,15 +49,25 @@ integer :: comp_lvl = 0
 
 contains
 
-procedure, public :: open => ph5open, close => ph5close, &
-flush => hdf_flush, ndim => hdf_get_ndim, shape => hdf_get_shape, exist => hdf_exist, &
-create => hdf_create, filesize => hdf_filesize, &
-class => get_class, dtype => get_native_dtype, &
-deflate => get_deflate, &
-softlink => create_softlink, &
-layout => hdf_get_layout, chunks => hdf_get_chunk, &
-is_contig => hdf_is_contig, is_chunked => hdf_is_chunked, is_compact => hdf_is_compact, &
-is_open, write_group
+procedure, public :: open => ph5open
+procedure, public :: close => ph5close
+procedure, public :: write_group
+procedure, public :: create => hdf_create
+procedure, public :: flush => hdf_flush
+procedure, public :: filesize => hdf_filesize
+procedure, public :: ndim => hdf_get_ndim
+procedure, public :: shape => hdf_get_shape
+procedure, public :: layout => hdf_get_layout
+procedure, public :: chunks => hdf_get_chunk
+procedure, public :: exist => hdf_check_exist
+procedure, public :: class => get_class
+procedure, public :: dtype => get_native_dtype
+procedure, public :: deflate => get_deflate
+procedure, public :: is_contig => hdf_is_contig
+procedure, public :: is_chunked => hdf_is_chunked
+procedure, public :: is_compact => hdf_is_compact
+procedure, public :: softlink => create_softlink
+procedure, public :: is_open
 !! procedures without mapping
 
 generic, public :: write => h5write_scalar,ph5write_1d, ph5write_2d, ph5write_3d, ph5write_4d, ph5write_5d, ph5write_6d, ph5write_7d
@@ -269,8 +279,13 @@ end function hdf_get_layout
 module subroutine hdf_get_chunk(self, dname, chunk_size)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
-integer(hsize_t), intent(out) :: chunk_size(:)
+class(*), intent(out) :: chunk_size(:)
 end subroutine hdf_get_chunk
+
+module logical function hdf_check_exist(self, dname)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+end function hdf_check_exist
 
 end interface
 
@@ -608,21 +623,6 @@ if ((v(2) == 10 .and. v(3) < 2) .or. v(2) < 10) then
 end if
 
 end function hdf5version
-
-
-logical function hdf_exist(self, dname) result(exists)
-class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: dname
-
-integer :: ierr
-
-if(.not. self%is_open()) error stop 'h5fortran:exist: file handle is not open: ' // self%filename
-
-call h5ltpath_valid_f(self%file_id, dname, .true., exists, ierr)
-!! h5lexists_f can false error with groups--just use h5ltpath_valid
-if (ierr/=0) error stop 'h5fortran:check_exist: could not determine status of ' // dname // ' in ' // self%filename
-
-end function hdf_exist
 
 
 subroutine hdf5_close()

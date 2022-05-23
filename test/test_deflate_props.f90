@@ -25,10 +25,10 @@ call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
 if(ierr/=0) error stop "mpi_comm_rank"
 
 call test_read_deflate_props(fn1, N, mpi_id)
-if(mpi_id==0) print *,'OK: HDF5 read deflate properties'
+if(mpi_id == 0) print *,'OK: HDF5 read deflate properties'
 
 call test_get_deflate(fn1)
-if (ierr /= 0) print *, 'OK: HDF5 get deflate'
+if(mpi_id == 0) print *, 'OK: HDF5 get deflate'
 
 call mpi_finalize(ierr)
 if (ierr /= 0) error stop "mpi_finalize"

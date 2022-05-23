@@ -20,6 +20,9 @@ MIN_COMP = 2  !< lots of CPUs, smaller arrays => poorer compression
 integer :: ierr, mpi_id, Nmpi
 
 
+logical :: debug = .false.
+
+
 call mpi_init(ierr)
 if (ierr /= 0) error stop "mpi_init"
 
@@ -50,7 +53,6 @@ integer, intent(in) :: N(2), mpi_id, Nmpi
 type(hdf5_file) :: h5f
 integer(HSIZE_T) :: i0(2), i1(2), dx2
 real(real32), allocatable :: A(:,:)
-logical :: debug = .false.
 
 !> MPI partition
 if(mpi_id == 0) then
@@ -72,7 +74,7 @@ i1(1) = size(A, 1)
 i1(2) = i0(2) + dx2 - 1
 
 !> write with MPI, compressing if available
-if(debug) print '(a,i0,1x,2i5,2x,2i5)', "#1 partition: mpi_id, i0, i1 ", mpi_id, i0, i1
+if(debug) print '(a,i0,1x,2i5,2x,2i5)', "write_deflate partition: mpi_id, i0, i1 ", mpi_id, i0, i1
 
 call h5f%open(fn, action='w', comp_lvl=1, mpi=.true.)
 call h5f%write('/A', A, N, istart=i0, iend=i1, chunk_size=[5, 50])
@@ -140,14 +142,12 @@ call h5f%write('/A_autochunk', A, [N(1), N(2), 4], istart=i0, iend=i1)
 call h5f%chunks('/A_autochunk', chunks)
 if(any(chunks < 1)) error stop '#2 auto chunk unexpected chunk size'
 
-call h5f%close()
-
 if(mpi_id == 0) then
   fsize = real(h5f%filesize())
   crat = (2 * N(1) * N(2) * 4 * storage_size(A) / 8) / fsize
   !! 2* since two datasets same size
 
-  print '(A,F6.2,A,I6)','#2 filesize (Mbytes): ', fsize / 1e6, '   compression ratio:', crat
+  print '(A,F6.2,A,f7.1)','#2 filesize (Mbytes): ', fsize / 1e6, '   compression ratio:', crat
 
   if (h5f%parallel_compression) then
     if(crat < MIN_COMP) error stop fn // ' low compression'
@@ -155,6 +155,8 @@ if(mpi_id == 0) then
     print *, "test_deflate_whole: MPI commpression was disabled, so " // fn // " was not compressed."
   endif
 endif
+
+call h5f%close()
 
 end subroutine test_deflate_whole
 
@@ -166,8 +168,9 @@ integer, intent(in) :: N(2)
 
 type(hdf5_file) :: h5f
 integer, allocatable :: A(:,:,:)
-integer(hsize_t) :: crat, chunks(3), dx2, i0(3), i1(3)
-integer :: fsize, mpi_id, Nmpi, M(3)
+integer(hsize_t) :: chunks(3), dx2, i0(3), i1(3)
+integer :: mpi_id, Nmpi, M(3)
+real :: fsize, crat
 
 !> MPI partition
 call mpi_comm_size(MPI_COMM_WORLD, Nmpi, ierr)
@@ -196,13 +199,11 @@ call h5f%write('/A', A(:M(1), :, :), dset_dims=M, istart=i0, iend=i1)
 call h5f%chunks('/A', chunks)
 if(any(chunks < 1)) error stop '#3 auto chunk unexpected chunk size'
 
-call h5f%close()
-
 if(mpi_id == 0) then
-  inquire(file=fn, size=fsize)
+  fsize = real(h5f%filesize())
   crat = (N(1) * N(2) * storage_size(A) / 8) / fsize
 
-  print '(A,F6.2,A,I6)','#3 filesize (Mbytes): ',fsize / 1e6, '  compression ratio:', crat
+  print '(A,F6.2,A,f7.1)','#3 filesize (Mbytes): ',fsize / 1e6, '  compression ratio:', crat
 
   if (h5f%parallel_compression) then
     if(crat < MIN_COMP) error stop fn // ' low compression'
@@ -210,6 +211,8 @@ if(mpi_id == 0) then
     print *, "test_deflate_slice: MPI commpression was disabled, so " // fn // " was not compressed."
   endif
 endif
+
+call h5f%close()
 
 end subroutine test_deflate_slice
 
