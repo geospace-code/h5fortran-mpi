@@ -1,5 +1,7 @@
 submodule (h5mpi) hdf5_read
 
+use, intrinsic:: iso_c_binding, only : c_null_char
+
 use hdf5, only : h5dget_create_plist_f, &
   h5pget_layout_f, h5pget_chunk_f, h5pclose_f, h5pget_nfilters_f, h5pget_filter_f, &
   h5dget_type_f, h5dopen_f, h5dclose_f, &

@@ -1,6 +1,5 @@
 module h5mpi
 
-use, intrinsic :: iso_c_binding, only : C_NULL_CHAR
 use, intrinsic :: iso_fortran_env, only : real32, real64, int32, int64, stderr=>error_unit
 
 use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL, mpi_comm_rank
@@ -12,8 +11,11 @@ H5P_DEFAULT_F
 
 implicit none (type, external)
 
+private
+
 integer, parameter :: mpi_h5comm = MPI_COMM_WORLD, mpi_h5info = MPI_INFO_NULL
 
+!> main type
 type :: hdf5_file
 
 character(:), allocatable :: filename
@@ -84,13 +86,15 @@ integer :: a2=102, a3=103
 
 end type mpi_tags
 
-private
-public :: mpi_h5comm, hdf5_file, mpi_tags, has_parallel_compression, is_hdf5, &
-hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hyperslab, &
-hdf5version, h5exist, hdf5_close, &
-HSIZE_T, &
-H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F, &
-H5T_NATIVE_REAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_NATIVE_CHARACTER, H5T_STD_I64LE
+
+public :: mpi_h5comm,  mpi_tags, has_parallel_compression
+public :: hdf5_file, is_hdf5
+public :: hdf_rank_check, hdf_shape_check, hdf5version, h5exist, hdf5_close
+public :: mpi_collective, mpi_hyperslab
+
+!! for submodules only
+public :: HSIZE_T, H5T_NATIVE_REAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_NATIVE_CHARACTER, H5T_STD_I64LE
+public :: H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F
 
 interface !< write.f90
 module subroutine hdf_create(self, dname, dtype, mem_dims, dset_dims, &
@@ -115,7 +119,7 @@ character(*), intent(in) :: group_path   !< full path to group
 end subroutine write_group
 
 module subroutine create_softlink(self, tgt, link)
-class(hdf5_file), intent(inout) :: self
+class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: tgt, &  !< target path to link
                             link  !< soft link path to create
 end subroutine create_softlink
