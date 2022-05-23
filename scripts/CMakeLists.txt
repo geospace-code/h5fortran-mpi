@@ -1,13 +1,10 @@
-cmake_minimum_required(VERSION 3.20...3.23)
+cmake_minimum_required(VERSION 3.20)
 project(HDF5_build
 LANGUAGES C Fortran
 )
 
 option(hdf5_parallel "build HDF5 parallel MPI" on)
-
-if(NOT HDF5_VERSION)
-  set(HDF5_VERSION 1.12.1)  # default version to build
-endif()
+option(zlib_legacy "use legacy zlib 1.x")
 
 # --- system checks
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -61,8 +58,6 @@ file(READ ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/libraries.json json)
 
 set_directory_properties(PROPERTIES EP_UPDATE_DISCONNECTED true)
 
-message(STATUS "Build / install HDF5 ${HDF5_VERSION} to ${CMAKE_INSTALL_PREFIX}")
-
 if(hdf5_parallel)
   find_package(MPI COMPONENTS C REQUIRED)
   include(${PROJECT_SOURCE_DIR}/../cmake/check_mpi.cmake)
@@ -70,6 +65,8 @@ if(hdf5_parallel)
 endif()
 
 include(${PROJECT_SOURCE_DIR}/../cmake/hdf5.cmake)
+
+message(STATUS "Build / install HDF5 ${hdf5_tag} to ${CMAKE_INSTALL_PREFIX}")
 
 # --- features
 include(FeatureSummary)

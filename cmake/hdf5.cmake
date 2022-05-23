@@ -4,14 +4,6 @@
 
 include(ExternalProject)
 
-if(NOT HDF5_VERSION)
-  set(HDF5_VERSION 1.12.1 CACHE STRING "HDF5 version built")
-endif()
-
-string(JSON hdf5_url GET ${json} hdf5 ${HDF5_VERSION} url)
-string(JSON hdf5_sha256 GET ${json} hdf5 ${HDF5_VERSION} sha256)
-
-
 if(hdf5_parallel)
   find_package(MPI REQUIRED COMPONENTS C)
 endif()
@@ -71,14 +63,20 @@ if(MPI_ROOT)
   list(APPEND hdf5_cmake_args -DMPI_ROOT:PATH=${MPI_ROOT})
 endif()
 
+string(JSON hdf5_url GET ${json} hdf5 url)
+if(NOT hdf5_tag)
+  string(JSON hdf5_tag GET ${json} hdf5 tag)
+endif()
+
 ExternalProject_Add(HDF5
-URL ${hdf5_url}
-URL_HASH SHA256=${hdf5_sha256}
+GIT_REPOSITORY ${hdf5_url}
+GIT_TAG ${hdf5_tag}
+GIT_SHALLOW true
 CMAKE_ARGS ${hdf5_cmake_args}
 BUILD_BYPRODUCTS ${HDF5_LIBRARIES}
 DEPENDS ZLIB::ZLIB
 CONFIGURE_HANDLED_BY_BUILD ON
-INACTIVITY_TIMEOUT 15
+INACTIVITY_TIMEOUT 60
 )
 
 # --- imported target
