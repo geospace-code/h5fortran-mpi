@@ -142,6 +142,9 @@ call h5f%write('/A_autochunk', A, [N(1), N(2), 4], istart=i0, iend=i1)
 call h5f%chunks('/A_autochunk', chunks)
 if(any(chunks < 1)) error stop '#2 auto chunk unexpected chunk size'
 
+call h5f%close()
+
+call h5f%open(fn, action='r', mpi=.false.)
 if(mpi_id == 0) then
   fsize = real(h5f%filesize())
   crat = (2 * N(1) * N(2) * 4 * storage_size(A) / 8) / fsize
@@ -198,7 +201,9 @@ call h5f%open(fn, action='w', comp_lvl=1, mpi=.true.)
 call h5f%write('/A', A(:M(1), :, :), dset_dims=M, istart=i0, iend=i1)
 call h5f%chunks('/A', chunks)
 if(any(chunks < 1)) error stop '#3 auto chunk unexpected chunk size'
+call h5f%close()
 
+call h5f%open(fn, action='r', mpi=.false.)
 if(mpi_id == 0) then
   fsize = real(h5f%filesize())
   crat = (N(1) * N(2) * storage_size(A) / 8) / fsize
