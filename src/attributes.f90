@@ -6,7 +6,6 @@ h5ltget_attribute_ndims_f, h5ltget_attribute_info_f
 
 implicit none (type, external)
 
-
 contains
 
 
@@ -31,9 +30,7 @@ integer :: ier
 
 if(.not.self%is_open()) error stop 'h5fortran:readattr: file handle is not open'
 
-call attr_shape_check(self, dname, attr, size(attrval), ier)
-if (ier /= 0) error stop "ERROR:h5fortran:readattr_num: shape check attr of " // dname // " in " // self%filename
-
+call attr_shape_check(self, dname, attr, size(attrval))
 select type(attrval)
 type is (real(real32))
   call h5ltget_attribute_float_f(self%file_id, dname, attr, attrval, ier)
@@ -89,13 +86,12 @@ if (ier /= 0) error stop "ERROR:h5fortran:writeattr_num: " // dname // " in " //
 end procedure writeattr_num
 
 
-subroutine attr_shape_check(self, dname, attr, asize, ierr)
+subroutine attr_shape_check(self, dname, attr, asize)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname, attr
 integer, intent(in) :: asize
-integer, intent(out) :: ierr
 
-integer :: arank, atype
+integer :: arank, atype, ierr
 integer(size_t) :: attr_bytes
 integer(hsize_t) :: adims(1)
 
