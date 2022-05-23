@@ -5,7 +5,7 @@ use, intrinsic :: iso_fortran_env, only : stderr=>error_unit
 
 use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank
 
-use h5mpi, only: hdf5_file, h5exist, is_hdf5
+use h5mpi, only: hdf5_file, h5exist, is_hdf5, hdf5_close
 
 
 implicit none (type, external)
@@ -127,6 +127,8 @@ call f%close()
 if (.not.g%is_open() .or. .not. h%is_open()) error stop 'is_open not isolated at destructor'
 call g%close()
 call h%close()
+
+call hdf5_close()
 
 end subroutine test_multifiles
 

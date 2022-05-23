@@ -93,7 +93,7 @@ end type mpi_tags
 private
 public :: mpi_h5comm, hdf5_file, mpi_tags, has_parallel_compression, is_hdf5, &
 hdf_rank_check, hdf_shape_check, mpi_collective, mpi_hyperslab, &
-hdf5version, h5exist, &
+hdf5version, h5exist, hdf5_close, &
 HSIZE_T, &
 H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F, &
 H5T_NATIVE_REAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_NATIVE_CHARACTER, H5T_STD_I64LE
@@ -119,11 +119,18 @@ module subroutine write_group(self, group_path)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: group_path   !< full path to group
 end subroutine write_group
+
 module subroutine create_softlink(self, tgt, link)
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: tgt, &  !< target path to link
                             link  !< soft link path to create
 end subroutine create_softlink
+
+module subroutine hdf_flush(self)
+!! request operating system flush data to disk.
+!! The operating system can do this when it desires, which might be a while.
+class(hdf5_file), intent(in) :: self
+end subroutine hdf_flush
 
 end interface
 
@@ -586,6 +593,52 @@ call self%close()
 end subroutine destructor
 
 
+function hdf5version() result(v)
+!! tell HDF5 library version (major, minor, release)
+integer :: v(3), ierr
+
+!> get library version
+call h5get_libversion_f(v(1), v(2), v(3), ierr)
+if (ierr/=0) error stop 'ERROR:h5fortran: HDF5 library get version'
+
+if ((v(2) == 10 .and. v(3) < 2) .or. v(2) < 10) then
+  write(stderr,'(a,I0,a1,I0,a1,I0,/,a)') "WARNING: HDF5 >= 1.10.2 required for MPI-HDF5. Your HDF5 version: ", &
+  v(1), ".", v(2), ".", v(3), &
+  "https://www.hdfgroup.org/2018/03/release-of-hdf5-1-10-2-newsletter-160/"
+end if
+
+end function hdf5version
+
+
+logical function hdf_exist(self, dname) result(exists)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+
+integer :: ierr
+
+if(.not. self%is_open()) error stop 'h5fortran:exist: file handle is not open: ' // self%filename
+
+call h5ltpath_valid_f(self%file_id, dname, .true., exists, ierr)
+!! h5lexists_f can false error with groups--just use h5ltpath_valid
+if (ierr/=0) error stop 'h5fortran:check_exist: could not determine status of ' // dname // ' in ' // self%filename
+
+end function hdf_exist
+
+
+subroutine hdf5_close()
+!! this subroutine will close ALL existing file handles
+!! only call it at end of your program
+!! "Flushes all data to disk, closes all open identifiers, and cleans up memory."
+!! "Should be called by all HDF5 Fortran programs"
+
+integer :: ier
+
+call h5close_f(ier)
+if (ier /= 0) error stop 'ERROR: h5fortran:h5close: HDF5 library close'
+
+end subroutine hdf5_close
+
+
 logical function hdf_is_contig(self, dname)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
@@ -737,53 +790,6 @@ if (ierr/=0) error stop "h5pset_dxpl_mpio collective: " // dname
 ! call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_INDEPENDENT_F, ierr)
 
 end function mpi_collective
-
-
-function hdf5version() result(v)
-!! tell HDF5 library version (major, minor, release)
-integer :: v(3), ierr
-
-!> get library version
-call h5get_libversion_f(v(1), v(2), v(3), ierr)
-
-if (ierr/=0) error stop 'ERROR:h5fortran: HDF5 library get version'
-
-if ((v(2) == 10 .and. v(3) < 2) .or. v(2) < 10) then
-  write(stderr,'(a,I0,a1,I0,a1,I0,/,a)') "WARNING: HDF5 >= 1.10.2 required for MPI-HDF5. Your HDF5 version: ", &
-  v(1), ".", v(2), ".", v(3), &
-  "https://www.hdfgroup.org/2018/03/release-of-hdf5-1-10-2-newsletter-160/"
-end if
-
-end function hdf5version
-
-
-subroutine hdf_flush(self)
-!! request operating system flush data to disk.
-!! The operating system can do this when it desires, which might be a while.
-class(hdf5_file), intent(in) :: self
-
-integer :: ierr
-
-call h5fflush_f(self%file_id, H5F_SCOPE_GLOBAL_F, ierr)
-
-if (ierr /= 0) error stop 'ERROR: HDF5 flush ' // self%filename
-
-end subroutine hdf_flush
-
-
-logical function hdf_exist(self, dname) result(exists)
-class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: dname
-
-integer :: ierr
-
-if(.not. self%is_open()) error stop 'h5fortran:exist: file handle is not open: ' // self%filename
-
-call h5ltpath_valid_f(self%file_id, dname, .true., exists, ierr)
-!! h5lexists_f can false error with groups--just use h5ltpath_valid
-if (ierr/=0) error stop 'h5fortran:check_exist: could not determine status of ' // dname // ' in ' // self%filename
-
-end function hdf_exist
 
 
 subroutine hdf_rank_check(self, dname, mrank, vector_scalar)

@@ -105,9 +105,10 @@ integer, intent(in) :: N(2)
 
 type(hdf5_file) :: h5f
 real, allocatable :: A(:,:,:)
-integer(hsize_t) :: crat, chunks(3)
-integer :: fsize, ierr, mpi_id, Nmpi
+integer(hsize_t) :: chunks(3)
+integer :: ierr, mpi_id, Nmpi
 integer(HSIZE_T) :: dx2, i0(3), i1(3)
+real :: fsize, crat
 
 !> MPI partition
 call mpi_comm_size(MPI_COMM_WORLD, Nmpi, ierr)
@@ -142,7 +143,7 @@ if(any(chunks < 1)) error stop '#2 auto chunk unexpected chunk size'
 call h5f%close()
 
 if(mpi_id == 0) then
-  inquire(file=fn, size=fsize)
+  fsize = real(h5f%filesize())
   crat = (2 * N(1) * N(2) * 4 * storage_size(A) / 8) / fsize
   !! 2* since two datasets same size
 

@@ -145,7 +145,7 @@ integer :: ier
 integer :: sp, ep, L
 logical :: gexist
 
-if(.not.self%is_open()) error stop 'h5fortran:write_group: file handle is not open'
+if(.not.self%is_open()) error stop 'ERROR:h5fortran:write_group: file handle is not open'
 
 L = len_trim(group_path)
 if(L < 2) return  !< not a new group
@@ -296,5 +296,16 @@ do
 end do
 
 end subroutine guess_chunk_size
+
+
+module procedure hdf_flush
+
+integer :: ierr
+
+call h5fflush_f(self%file_id, H5F_SCOPE_GLOBAL_F, ierr)
+if (ierr /= 0) error stop 'ERROR:h5fortran:flush ' // self%filename
+
+end procedure hdf_flush
+
 
 end submodule write
