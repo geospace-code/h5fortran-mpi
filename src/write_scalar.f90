@@ -1,7 +1,6 @@
 submodule (h5mpi:write) write_scalar
 
-use hdf5, only : h5dwrite_f, h5tclose_f
-use h5lt, only : h5ltmake_dataset_string_f
+use hdf5, only: h5dwrite_f, h5tclose_f, h5sselect_none_f
 
 implicit none (type, external)
 

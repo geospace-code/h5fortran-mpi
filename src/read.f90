@@ -1,9 +1,14 @@
 submodule (h5mpi) hdf5_read
 
-use hdf5, only : h5tget_native_type_f, h5tget_class_f, h5dget_type_f, h5tget_size_f, h5tclose_f, h5topen_f, &
-h5pget_nfilters_f, h5pget_filter_f, h5pget_layout_f, h5pget_chunk_f, &
-H5T_DIR_ASCEND_F, &
-H5Z_FILTER_DEFLATE_F
+use hdf5, only : h5dget_create_plist_f, &
+  h5pget_layout_f, h5pget_chunk_f, h5pclose_f, h5pget_nfilters_f, h5pget_filter_f, &
+  h5dget_type_f, h5dopen_f, h5dclose_f, &
+  h5lexists_f, &
+  h5tclose_f, h5tget_native_type_f, h5tget_class_f, H5Tget_order_f, h5tget_size_f, &
+  h5z_filter_deflate_f, &
+  H5T_DIR_ASCEND_F
+
+use H5LT, only : h5ltpath_valid_f, h5ltget_dataset_ndims_f, h5ltget_dataset_info_f
 
 implicit none (type, external)
 
@@ -305,5 +310,6 @@ call h5ltpath_valid_f(self%file_id, dname, .true., hdf_check_exist, ierr)
 if (ierr/=0) error stop 'ERROR:h5fortran:check_exist: could not determine status of ' // dname // ' in ' // self%filename
 
 end procedure hdf_check_exist
+
 
 end submodule hdf5_read

@@ -1,6 +1,6 @@
 submodule (h5mpi:hdf5_read) hdf5_reader
 
-use hdf5, only: h5dread_f
+use hdf5, only: h5dread_f, h5sclose_f
 
 implicit none (type, external)
 

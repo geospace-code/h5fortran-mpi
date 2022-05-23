@@ -1,7 +1,6 @@
 submodule (h5mpi:write) writer
 
-use h5lt, only : h5ltmake_dataset_double_f, h5ltmake_dataset_float_f, h5ltmake_dataset_int_f, h5ltmake_dataset_string_f
-use hdf5, only : h5dwrite_f
+use hdf5, only: h5dwrite_f, h5sselect_none_f
 
 implicit none (type, external)
 
