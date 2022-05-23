@@ -20,15 +20,14 @@ if (ierr /= 0) error stop "mpi_init"
 call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
 if (ierr /= 0) error stop "mpi_comm_rank"
 
-if(mpi_id == 0)call test_write(fn)
+call test_write(fn)
 if(mpi_id == 0) print *, "OK: HDF5 string write"
 
 call test_read(fn)
 if(mpi_id == 0) print *,'OK: HDF5 string read'
 
-! call test_overwrite(fn)
-! if(mpi_id == 0) print *, "OK: string overwrite"
-!! TODO: overwrite needs to not write_scalar with h5lt
+call test_overwrite(fn)
+if(mpi_id == 0) print *, "OK: string overwrite"
 
 call mpi_finalize(ierr)
 if (ierr /= 0) error stop "mpi_finalize"
@@ -44,7 +43,7 @@ character(*), intent(in) :: fn
 
 type(hdf5_file) :: h
 
-call h%open(fn, action='w', mpi=.false.)
+call h%open(fn, action='w', mpi=.true.)
 
 call h%write('/little', '42')
 call h%write('/MySentence', 'this is a little sentence.')

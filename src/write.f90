@@ -106,7 +106,7 @@ if(dtype == H5T_NATIVE_CHARACTER) then
 
   call h5tset_size_f(type_id, int(charlen, SIZE_T), ierr)
   if(ierr /= 0) error stop "h5fortran:h5tset_size:character: " // dname // " in " // self%filename
-  print *, "TRACE: Write char: length:", int(charlen, SIZE_T)
+
   dtype_id = type_id
 else
   type_id = dtype

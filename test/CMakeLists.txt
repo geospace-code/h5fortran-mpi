@@ -14,10 +14,6 @@ EXECUTABLE ${CMAKE_CTEST_COMMAND}
 )
 endif()
 
-# --- test utils
-
-add_library(test_utils OBJECT utils.f90)
-
 # --- unit tests
 
 set(test_names attributes cast deflate_write deflate_props deflate_read destructor exist groups layout shape string)
@@ -25,7 +21,7 @@ set(test_names attributes cast deflate_write deflate_props deflate_read destruct
 foreach(t IN LISTS test_names)
 
   add_executable(test_${t} test_${t}.f90)
-  target_link_libraries(test_${t} PRIVATE h5mpi test_utils HDF5::HDF5 MPI::MPI_Fortran)
+  target_link_libraries(test_${t} PRIVATE h5mpi HDF5::HDF5 MPI::MPI_Fortran)
 
   add_test(NAME ${t}
   COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${Nmpi} $<TARGET_FILE:test_${t}>
