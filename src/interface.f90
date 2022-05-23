@@ -45,21 +45,23 @@ procedure, public :: ndim => hdf_get_ndim
 procedure, public :: shape => hdf_get_shape
 procedure, public :: layout => hdf_get_layout
 procedure, public :: chunks => hdf_get_chunk
-procedure, public :: exist => hdf_check_exist
 procedure, public :: class => get_class
 procedure, public :: dtype => get_native_dtype
 procedure, public :: deflate => get_deflate
+procedure, public :: exist => hdf_check_exist
 procedure, public :: is_contig => hdf_is_contig
 procedure, public :: is_chunked => hdf_is_chunked
 procedure, public :: is_compact => hdf_is_compact
+procedure, public :: get_strpad
 procedure, public :: softlink => create_softlink
 procedure, public :: is_open
 !! procedures without mapping
 
+!> below are procedure that need generic mapping (type or rank agnostic)
+
 generic, public :: write => h5write_scalar, h5write_1d, h5write_2d, h5write_3d, h5write_4d, h5write_5d, h5write_6d, h5write_7d
 
 generic, public :: read => h5read_scalar, h5read_1d, h5read_2d, h5read_3d, h5read_4d, h5read_5d, h5read_6d, h5read_7d
-!! mapped procedures
 
 !> write attributes
 generic, public :: writeattr => writeattr_char, writeattr_num
@@ -252,6 +254,11 @@ integer(HSIZE_T), intent(in) :: dims(:)
 integer(HSIZE_T), intent(out) :: dset_dims(:)
 integer(HID_T), intent(out) :: filespace, memspace, dset_id
 end subroutine h5open_read
+
+module integer function get_strpad(self, dset_name)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dset_name
+end function get_strpad
 
 module logical function get_deflate(self, dname)
 class(hdf5_file), intent(in) :: self

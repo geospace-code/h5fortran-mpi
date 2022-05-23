@@ -4,7 +4,8 @@ use, intrinsic:: iso_fortran_env, only:  stderr=>error_unit
 
 use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank
 
-use h5mpi, only : hdf5_file
+use hdf5, only: H5T_STR_SPACEPAD_F
+use h5mpi, only: hdf5_file
 
 implicit none (type, external)
 
@@ -69,6 +70,9 @@ if(len_trim(value) /= 2) then
   error stop
 endif
 if (value /= '42') error stop 'test_string:  read/write verification failure. Value: '// value
+
+!> check padding
+if (h%get_strpad("/little") /= H5T_STR_SPACEPAD_F) error stop "SPACEPAD expected for /little"
 
 !> longer character than data
 call h%read('/little', val1k)

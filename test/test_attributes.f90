@@ -33,7 +33,6 @@ if (ierr /= 0) error stop "mpi_finalize"
 
 contains
 
-
 subroutine test_write_attributes(path)
 
 type(hdf5_file) :: h

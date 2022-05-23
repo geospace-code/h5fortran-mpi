@@ -6,7 +6,7 @@ use hdf5, only : h5dget_create_plist_f, &
   h5pget_layout_f, h5pget_chunk_f, h5pclose_f, h5pget_nfilters_f, h5pget_filter_f, &
   h5dget_type_f, h5dopen_f, h5dclose_f, &
   h5lexists_f, &
-  h5tclose_f, h5tget_native_type_f, h5tget_class_f, H5Tget_order_f, h5tget_size_f, &
+  h5tclose_f, h5tget_native_type_f, h5tget_class_f, H5Tget_order_f, h5tget_size_f, h5tget_strpad_f, &
   h5z_filter_deflate_f, &
   H5T_DIR_ASCEND_F
 
@@ -35,10 +35,20 @@ end procedure h5open_read
 
 
 module procedure get_class
-
 call get_dset_class(self, dname, get_class)
-
 end procedure get_class
+
+
+module procedure get_strpad
+!! H5T_STR_NULLTERM  Null terminate (as C does).
+!! H5T_STR_NULLPAD   Pad with zeros.
+!! H5T_STR_SPACEPAD  Pad with spaces (as FORTRAN does).
+
+integer :: class
+
+call get_dset_class(self, dset_name, class, pad_type=get_strpad)
+
+end procedure get_strpad
 
 
 module procedure get_deflate
@@ -61,6 +71,7 @@ get_deflate = .false.
 
 Naux = size(Aux, kind=SIZE_T)
 
+if(.not.self%exist(dname)) error stop "ERROR:h5fortran:get_deflate: " // dname // " does not exist: " // self%filename
 call h5dopen_f(self%file_id, dname, dset_id, ierr)
 if (ierr/=0) error stop "ERROR:h5fortran:get_deflate:h5dopen: " // dname // " in " // self%filename
 
@@ -99,21 +110,24 @@ call h5pclose_f(dcpl, ierr)
 end procedure get_deflate
 
 
-subroutine get_dset_class(self, dname, class, ds_id, size_bytes)
+subroutine get_dset_class(self, dname, class, ds_id, size_bytes, pad_type)
 !! get the dataset class (integer, float, string, ...)
 !! {H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F}
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 integer, intent(out) :: class
-integer(hid_t), intent(in), optional :: ds_id
-integer(size_t), intent(out), optional :: size_bytes
+integer(HID_T), intent(in), optional :: ds_id
+integer(SIZE_T), intent(out), optional :: size_bytes
+integer, intent(out), optional :: pad_type
 
 integer :: ierr
-integer(hid_t) :: dtype_id, native_dtype_id, dset_id
+integer(HID_T) :: dtype_id, native_dtype_id, dset_id
 
 if(present(ds_id)) then
   dset_id = ds_id
 else
+  if(.not.self%exist(dname)) error stop "ERROR:h5fortran:get_dset_class: " // dname // " does not exist: " // self%filename
+
   call h5dopen_f(self%file_id, dname, dset_id, ierr)
   if(ierr/=0) error stop 'ERROR:h5fortran:get_class: ' // dname // ' from ' // self%filename
 endif
@@ -121,17 +135,8 @@ endif
 call h5dget_type_f(dset_id, dtype_id, ierr)
 if(ierr/=0) error stop 'ERROR:h5fortran:get_class: dtype_id ' // dname // ' from ' // self%filename
 
-if(.not.present(ds_id)) then
-  call h5dclose_f(dset_id, ierr)
-  if(ierr/=0) error stop 'ERROR:h5fortran:get_class: close dataset ' // dname // ' from ' // self%filename
-endif
-
 call h5tget_native_type_f(dtype_id, H5T_DIR_ASCEND_F, native_dtype_id, ierr)
 if(ierr/=0) error stop 'ERROR:h5fortran:get_class: native_dtype_id ' // dname // ' from ' // self%filename
-
-call h5tclose_f(dtype_id, ierr)
-if(ierr/=0) error stop 'ERROR:h5fortran:get_class: closing dtype ' // dname // ' from ' // self%filename
-
 
 !> compose datatype inferred
 call h5tget_class_f(native_dtype_id, class, ierr)
@@ -142,8 +147,24 @@ if(present(size_bytes)) then
   if(ierr/=0) error stop 'ERROR:h5fortran:get_class: byte size ' // dname // ' from ' // self%filename
 endif
 
+if(present(pad_type)) then
+  if(class /= H5T_STRING_F) error stop "ERROR:h5fortran:get_class: pad_type only for string"
+
+  call H5Tget_strpad_f(dtype_id, pad_type, ierr)
+  if(ierr /= 0) error stop "h5fortran:read:h5tget_strpad " // dname // " in " // self%filename
+endif
+
+!> close to avoid memory leaks
 call h5tclose_f(native_dtype_id, ierr)
 if(ierr/=0) error stop 'ERROR:h5fortran:get_class: closing native dtype ' // dname // ' from ' // self%filename
+
+call h5tclose_f(dtype_id, ierr)
+if(ierr/=0) error stop 'ERROR:h5fortran:get_class: closing dtype ' // dname // ' from ' // self%filename
+
+if(.not.present(ds_id)) then
+  call h5dclose_f(dset_id, ierr)
+  if(ierr/=0) error stop 'ERROR:h5fortran:get_class: close dataset ' // dname // ' from ' // self%filename
+endif
 
 end subroutine get_dset_class
 
@@ -209,7 +230,6 @@ end procedure hdf_get_ndim
 
 
 module procedure hdf_get_shape
-
 !! must get rank before info, as "dims" must be allocated first.
 integer(SIZE_T) :: type_size
 integer :: type_class, drank, ier
