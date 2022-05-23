@@ -18,32 +18,32 @@ call h%close()
 end procedure h5exist
 
 
-module procedure ph5read_1d
+module procedure h5read_1d
 include "reader_template.inc"
-end procedure ph5read_1d
+end procedure h5read_1d
 
-module procedure ph5read_2d
+module procedure h5read_2d
 include "reader_template.inc"
-end procedure ph5read_2d
+end procedure h5read_2d
 
-module procedure ph5read_3d
+module procedure h5read_3d
 include "reader_template.inc"
-end procedure ph5read_3d
+end procedure h5read_3d
 
-module procedure ph5read_4d
+module procedure h5read_4d
 include "reader_template.inc"
-end procedure ph5read_4d
+end procedure h5read_4d
 
-module procedure ph5read_5d
+module procedure h5read_5d
 include "reader_template.inc"
-end procedure ph5read_5d
+end procedure h5read_5d
 
-module procedure ph5read_6d
+module procedure h5read_6d
 include "reader_template.inc"
-end procedure ph5read_6d
+end procedure h5read_6d
 
-module procedure ph5read_7d
+module procedure h5read_7d
 include "reader_template.inc"
-end procedure ph5read_7d
+end procedure h5read_7d
 
 end submodule hdf5_reader

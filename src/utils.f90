@@ -25,7 +25,7 @@ contains
 module procedure h5open
 
 character(len=2) :: laction
-integer :: ierr
+integer :: ier
 integer(HID_T) :: fapl !< file access property list
 
 if(self%is_open()) then
@@ -39,8 +39,8 @@ if (present(action)) laction = action
 self%use_mpi = mpi
 
 if(self%use_mpi) then
-  call mpi_comm_rank(mpi_h5comm, self%mpi_id, ierr)
-  if(ierr /= 0) error stop "ERROR:h5fortran:open: could not get MPI ID"
+  call mpi_comm_rank(mpi_h5comm, self%mpi_id, ier)
+  if(ier /= 0) error stop "ERROR:h5fortran:open: could not get MPI ID"
 endif
 
 if(present(debug)) self%debug = debug
@@ -63,24 +63,25 @@ if(present(shuffle)) self%shuffle = shuffle
 if(present(fletcher32)) self%fletcher32 = fletcher32
 
 if(self%comp_lvl < 0) then
-  write(stderr, '(a)') "ERROR:h5fortran:open: compression level must be >= 0, setting comp_lvl = 0"
+  write(stderr, '(a)') "NOTICE:h5fortran:open: compression level must be >= 0, setting comp_lvl = 0"
   self%comp_lvl = 0
 elseif(self%comp_lvl > 9) then
-  write(stderr, '(a)') "ERROR:h5fortran:open: compression level must be <= 9, setting comp_lvl = 9"
+  write(stderr, '(a)') "NOTICE:h5fortran:open: compression level must be <= 9, setting comp_lvl = 9"
   self%comp_lvl = 9
 endif
 
-call h5open_f(ierr)
-if(ierr/=0) error stop "ERROR:h5fortran:h5open: could not open HDF5 library"
+call h5open_f(ier)
+if (ier /= 0) error stop 'ERROR:h5fortran:open: HDF5 library initialize'
+
 !! OK to call repeatedly
 !! https://support.hdfgroup.org/HDF5/doc/RM/RM_H5.html#Library-Open
 
 if(self%use_mpi) then
   !! collective: setup for MPI access
-  call h5pcreate_f(H5P_FILE_ACCESS_F, fapl, ierr)
-  if(ierr/=0) error stop "ERROR:h5fortran:open:h5pcreate could not collective open property for " // filename
-  call h5pset_fapl_mpio_f(fapl, mpi_h5comm, mpi_h5info, ierr)
-  if(ierr/=0) error stop "ERROR:h5fortran:open:h5pset_fapl_mpio could not collective open file for " // filename
+  call h5pcreate_f(H5P_FILE_ACCESS_F, fapl, ier)
+  if(ier /= 0) error stop "ERROR:h5fortran:open:h5pcreate could not collective open property for " // filename
+  call h5pset_fapl_mpio_f(fapl, mpi_h5comm, mpi_h5info, ier)
+  if(ier /= 0) error stop "ERROR:h5fortran:open:h5pset_fapl_mpio could not collective open file for " // filename
 else
   fapl = H5P_DEFAULT_F
 endif
@@ -88,27 +89,27 @@ endif
 select case(laction)
 case('r')
   if(.not. is_hdf5(filename)) error stop "ERROR:h5fortran:open: file does not exist: "//filename
-  call h5fopen_f(filename, H5F_ACC_RDONLY_F, self%file_id, ierr, access_prp=fapl)
+  call h5fopen_f(filename, H5F_ACC_RDONLY_F, self%file_id, ier, access_prp=fapl)
 case('r+')
   if(.not. is_hdf5(filename)) error stop "ERROR:h5fortran:open: file does not exist: "//filename
-  call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ierr, access_prp=fapl)
+  call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ier, access_prp=fapl)
 case('rw', 'a')
   if(is_hdf5(filename)) then
-    call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ierr, access_prp=fapl)
+    call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ier, access_prp=fapl)
   else
-    call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ierr, access_prp=fapl)
+    call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ier, access_prp=fapl)
   endif
 case ('w')
-  call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ierr, access_prp=fapl)
+  call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ier, access_prp=fapl)
 case default
   error stop 'ERROR:h5fortran:open Unsupported action ' // laction // ' for ' // filename
 end select
 
-if(ierr/=0) error stop "ERROR:h5open/create: could not initialize HDF5 file: " // filename // " action: " // laction
+if (ier /= 0) error stop "ERROR:h5fortran:open: HDF5 file open failed: "//filename
 
 if(fapl /= H5P_DEFAULT_F) then
-  call h5pclose_f(fapl, ierr)
-  if(ierr/=0) error stop "ERROR:h5fortran:open:h5pclose: " // filename
+  call h5pclose_f(fapl, ier)
+  if(ier /= 0) error stop "ERROR:h5fortran:open:h5pclose: " // filename
 endif
 
 self%filename = filename
@@ -125,11 +126,11 @@ integer(SIZE_T), parameter :: L = 2048 !< arbitrary length
 character(L) :: file_name, dset_name
 
 if (.not. self%is_open()) then
-  write(stderr,*) 'WARNING:h5fortran:file_close: file handle is already closed: '// self%filename
+  write(stderr,*) 'WARNING:h5fortran:close: file handle is already closed: '// self%filename
   return
 endif
 
-!> ref count for better error messages, as this is more of a problem with HDF5-MPI programs
+!> ref count for better error messages; this is more of a problem with HDF5-MPI programs
 call h5fget_obj_count_f(self%file_id, H5F_OBJ_GROUP_F, Ngroup, ierr)
 if(ierr /= 0) error stop "ERROR:h5fortran:close:h5fget_obj_count: could not count open groups: " // self%filename
 if(Ngroup > 0) write(stderr,'(a,i0,a)') "ERROR:h5fortran:close: there are ", Ngroup, " groups open: " // self%filename
@@ -379,7 +380,6 @@ integer :: ierr, drank, type_class
 if(present(vector_scalar)) vector_scalar = .false.
 
 if(.not.self%is_open()) error stop 'ERROR:h5fortran:rank_check: file handle is not open: ' // self%filename
-
 if (.not.self%exist(dname)) error stop 'ERROR::h5fortran:rank_check: ' // dname // ' does not exist in ' // self%filename
 
 !> check for matching rank, else bad reads can occur--doesn't always crash without this check
@@ -435,7 +435,7 @@ module procedure hdf_filesize
 
 integer :: ierr
 
-if(.not. self%is_open()) error stop 'h5fortran:filesize: file handle is not open: ' // self%filename
+if(.not. self%is_open()) error stop 'ERROR:h5fortran:filesize: file handle is not open: ' // self%filename
 
 call h5fget_filesize_f(self%file_id, hdf_filesize, ierr)
 if(ierr/=0) error stop "ERROR:h5fortran: could not get file size " // self%filename

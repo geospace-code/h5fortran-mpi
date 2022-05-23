@@ -29,16 +29,16 @@ call hdf_rank_check(self, dname, rank(value), vector_scalar)
 if(vector_scalar) then
   select type(value)
   type is (real(real32))
-    call ph5read_1d(self, dname, buf_r32)
+    call h5read_1d(self, dname, buf_r32)
     value = buf_r32(1)
   type is (real(real64))
-    call ph5read_1d(self, dname, buf_r64)
+    call h5read_1d(self, dname, buf_r64)
     value = buf_r64(1)
   type is (integer(int32))
-    call ph5read_1d(self, dname, buf_i32)
+    call h5read_1d(self, dname, buf_i32)
     value = buf_i32(1)
   type is (integer(int64))
-    call ph5read_1d(self, dname, buf_i64)
+    call h5read_1d(self, dname, buf_i64)
     value = buf_i64(1)
   class default
     error stop "h5fortran:read:vector_scalar: unknown memory variable type" // dname
@@ -113,16 +113,11 @@ elseif(dclass == H5T_STRING_F) then
       call h5sclose_f(space_id, ier)
       if(ier/=0) error stop "h5fortran:read:h5sclose " // dname // " in " // self%filename
     else
-      !! H5T_STR_NULLTERM  Null terminate (as C does).
-      !! H5T_STR_NULLPAD   Pad with zeros.
-      !! H5T_STR_SPACEPAD  Pad with spaces (as FORTRAN does).
       call H5Tget_strpad_f(type_id, pad_type, ier)
       if(ier/=0) error stop "h5fortran:read:h5tget_strpad " // dname // " in " // self%filename
 
       call H5Tget_size_f(type_id, dsize, ier) !< only for non-variable
       if(ier/=0) error stop "h5fortran:read:h5tget_size " // dname // " in " // self%filename
-
-      if(pad_type == H5T_STR_NULLTERM_F) dsize = dsize - 1  !< for the trailing C_NULL_CHAR
 
       if(dsize > len(value)) then
         write(stderr,'(a,i0,a3,i0,1x,a)') "h5fortran:read:string: buffer too small: ", dsize, " > ", len(value), &
