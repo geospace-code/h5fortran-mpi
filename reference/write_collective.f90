@@ -80,5 +80,8 @@ call h5fclose_f(file_id, ierr)
 call h5close_f(ierr)
 
 call mpi_finalize(ierr)
+if (ierr/=0) error stop "mpi_finalize"
+
+print *,"OK: write collective"
 
 end program

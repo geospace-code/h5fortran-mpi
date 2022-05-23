@@ -1,5 +1,6 @@
 submodule (h5mpi:write) write_scalar
 
+use hdf5, only : h5dwrite_f, h5tclose_f
 use h5lt, only : h5ltmake_dataset_string_f
 
 implicit none (type, external)
@@ -9,19 +10,20 @@ contains
 
 module procedure h5write_scalar
 
-integer :: ier
+integer :: ier, charlen
 integer(HSIZE_T) :: dset_dims(0), mem_dims(0)
-integer(HID_T) :: file_space_id, mem_space_id, dset_id, xfer_id, dtype
+integer(HID_T) :: file_space_id, mem_space_id, dset_id, dtype_id, xfer_id, dtype
 
 xfer_id = H5P_DEFAULT_F
 
 if(.not. self%is_open()) error stop 'ERROR:h5fortran:write: file handle is not open'
 
+charlen = 0
+
 select type (value)
 type is (character(*))
-  call h5ltmake_dataset_string_f(self%file_id, dname, value, ier)
-  if (ier /= 0) error stop 'h5fortran:write:h5ltmake_dataset_string: could not write CHARACTER ' // dname // ' to ' // self%filename
-  return
+  dtype = H5T_NATIVE_CHARACTER
+  charlen = len(value)
 type is (real(real32))
   dtype = H5T_NATIVE_REAL
 type is (real(real64))
@@ -34,11 +36,9 @@ class default
   error stop "ERROR:h5fortran:write: unknown variable type for " // dname
 end select
 
-mem_dims = shape(value, HSIZE_T)
-dset_dims = mem_dims
-
 call hdf_create(self, dname, dtype, mem_dims=mem_dims, dset_dims=dset_dims, &
-    filespace=file_space_id, memspace=mem_space_id, dset_id=dset_id, compact=compact)
+    filespace=file_space_id, memspace=mem_space_id, dset_id=dset_id, dtype_id=dtype_id, compact=compact, &
+    charlen=charlen)
 
 if(self%use_mpi) then
   if(self%mpi_id > 0) then
@@ -60,10 +60,15 @@ type is (integer(int32))
   call h5dwrite_f(dset_id, dtype, value, dset_dims, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
 type is (integer(int64))
   call h5dwrite_f(dset_id, dtype, value, dset_dims, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+type is (character(*))
+  call h5dwrite_f(dset_id, dtype_id, value, dset_dims, ier, &
+  file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+  if (ier /= 0) error stop 'h5fortran:write:string: could not write ' // dname // ' to ' // self%filename
+  call h5tclose_f(dtype_id, ier)
 class default
   error stop "ERROR:h5fortran:write: unsupported type for " // dname
 end select
-if (ier/=0) error stop 'ERROR:h5fortran:write: could not write ' // dname // ' to ' // self%filename
+if (ier /= 0) error stop 'ERROR:h5fortran:write: could not write ' // dname // ' to ' // self%filename
 
 call h5dclose_f(dset_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:writer: closing dataset: " // dname // " in " // self%filename

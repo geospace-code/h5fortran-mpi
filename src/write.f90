@@ -1,7 +1,6 @@
 submodule (h5mpi) write
 
 use hdf5, only : h5pset_deflate_f, h5pset_fletcher32_f, h5pset_shuffle_f, h5pset_layout_f, &
-h5dwrite_f, &
 h5gcreate_f, h5gclose_f, &
 h5lcreate_soft_f, h5lexists_f, &
 h5screate_f, &
@@ -15,14 +14,12 @@ contains
 
 module procedure hdf_create
 
-logical :: exists, is_scalar
+logical :: exists
 integer :: ierr
 integer(HID_T) :: dcpl, type_id
 
 dcpl = H5P_DEFAULT_F
 memspace = H5S_ALL_F
-
-is_scalar = size(mem_dims) == 0
 
 if(dtype == H5T_NATIVE_CHARACTER) then
   if(.not. present(charlen)) error stop "h5fortran:hdf_create: character type must specify charlen"
@@ -40,7 +37,8 @@ if (ierr /= 0) error stop 'ERROR:h5fortran:create: variable path invalid: ' // d
 
 if(exists) then
   if (.not.present(istart)) then
-    if (is_scalar) then
+    if (size(mem_dims) == 0) then
+      !! scalar
       call hdf_rank_check(self, dname, size(mem_dims))
     else
       call hdf_shape_check(self, dname, mem_dims)
@@ -86,10 +84,10 @@ if(present(compact)) then
 if(compact .and. dcpl == H5P_DEFAULT_F .and. product(dset_dims) * 8 < 60000)  then
 !! 64000 byte limit, here we assumed 8 bytes / element
   call h5pcreate_f(H5P_DATASET_CREATE_F, dcpl, ierr)
-  if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5pcreate: " // dname
+  if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5pcreate: " // dname // " in " // self%filename
 
   call h5pset_layout_f(dcpl, H5D_COMPACT_F, ierr)
-  if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5pset_layout: " // dname
+  if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5pset_layout: " // dname // " in " // self%filename
 endif
 endif
 
@@ -99,25 +97,26 @@ if(size(dset_dims) == 0) then
 else
   call h5screate_simple_f(size(dset_dims), dset_dims, filespace, ierr)
 endif
-if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5screate:filespace " // dname // " " // self%filename
+if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5screate:filespace " // dname // " in " // self%filename
 
 !> datatype id and size
 if(dtype == H5T_NATIVE_CHARACTER) then
   call h5tcopy_f(dtype, type_id, ierr)
-  if(ierr /= 0 ) error stop "h5fortran:h5tcopy:character: " // dname // " in " // self%filename
+  if(ierr /= 0) error stop "h5fortran:h5tcopy:character: " // dname // " in " // self%filename
 
   call h5tset_size_f(type_id, int(charlen, SIZE_T), ierr)
   if(ierr /= 0) error stop "h5fortran:h5tset_size:character: " // dname // " in " // self%filename
-
+  print *, "TRACE: Write char: length:", int(charlen, SIZE_T)
   dtype_id = type_id
 else
   type_id = dtype
 endif
 
 !> create dataset
-call h5dcreate_f(self%file_id, dname, dtype, space_id=filespace, dset_id=dset_id, hdferr=ierr, dcpl_id=dcpl)
-if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5dcreate: " // dname // " " // self%filename
+call h5dcreate_f(self%file_id, dname, type_id=type_id, space_id=filespace, dset_id=dset_id, hdferr=ierr, dcpl_id=dcpl)
+if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5dcreate: " // dname // " in " // self%filename
 
+!> free resources
 call h5pclose_f(dcpl, ierr)
 if (ierr /= 0) error stop "ERROR:h5fortran:h5pclose: " // dname // ' in ' // self%filename
 
@@ -204,10 +203,10 @@ if(any(cs == 0)) return  !< array too small to chunk
 if(any(cs < 0)) error stop "ERROR:h5fortran:set_deflate: chunk_size must be strictly positive"
 
 call h5pcreate_f(H5P_DATASET_CREATE_F, dcpl, ierr)
-if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pcreate: " // self%filename
+if (ierr /= 0) error stop "ERROR:h5fortran:set_deflate:h5pcreate: " // self%filename
 
 call h5pset_chunk_f(dcpl, size(dims), cs, ierr)
-if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pset_chunk: " // self%filename
+if (ierr /= 0) error stop "ERROR:h5fortran:set_deflate:h5pset_chunk: " // self%filename
 
 if (self%fletcher32) then
   !! fletcher32 filter adds a checksum to the data
@@ -215,7 +214,7 @@ if (self%fletcher32) then
     write(stderr, '(a)') 'WARNING: h5fortran:set_deflate: fletcher32 parallel filter not supported ' // self%filename
   else
     call h5pset_fletcher32_f(dcpl, ierr)
-    if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pset_fletcher32: " // self%filename
+    if (ierr /= 0) error stop "ERROR:h5fortran:set_deflate:h5pset_fletcher32: " // self%filename
   endif
 endif
 
@@ -232,7 +231,7 @@ if(self%shuffle) then
     write(stderr, '(a)') 'WARNING: h5fortran:set_deflate: shuffle parallel filter not supported ' // self%filename
   else
     call h5pset_shuffle_f(dcpl, ierr)
-    if (ierr/=0) error stop "ERROR:h5fortran:set_deflate:h5pset_shuffle: " // self%filename
+    if (ierr /= 0) error stop "ERROR:h5fortran:set_deflate:h5pset_shuffle: " // self%filename
   endif
 endif
 

@@ -20,7 +20,7 @@ if (ierr /= 0) error stop "mpi_init"
 call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
 if (ierr /= 0) error stop "mpi_comm_rank"
 
-call test_write(fn)
+if(mpi_id == 0)call test_write(fn)
 if(mpi_id == 0) print *, "OK: HDF5 string write"
 
 call test_read(fn)
@@ -44,7 +44,7 @@ character(*), intent(in) :: fn
 
 type(hdf5_file) :: h
 
-call h%open(fn, action='w', mpi=.true.)
+call h%open(fn, action='w', mpi=.false.)
 
 call h%write('/little', '42')
 call h%write('/MySentence', 'this is a little sentence.')
@@ -65,7 +65,10 @@ character(1024) :: val1k
 call h%open(fn, action='r', mpi=.true.)
 call h%read('/little', value)
 
-if(len_trim(value) /= 2) error stop "test_string: read length /= 2"
+if(len_trim(value) /= 2) then
+  write(stderr,*) "test_string: read length ", len_trim(value), " /= 2"
+  error stop
+endif
 if (value /= '42') error stop 'test_string:  read/write verification failure. Value: '// value
 
 !> longer character than data

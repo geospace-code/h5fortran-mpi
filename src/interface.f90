@@ -413,13 +413,18 @@ character(len=2) :: laction
 integer :: ierr
 integer(HID_T) :: fapl !< file access property list
 
+if(self%is_open()) then
+  write(stderr,*) 'h5fortran:open: file handle already open: '//self%filename
+  return
+endif
+
 laction = "rw"
 if (present(action)) laction = action
 
 self%use_mpi = mpi
 
 if(self%use_mpi) then
-  call mpi_comm_rank(MPI_COMM_WORLD, self%mpi_id, ierr)
+  call mpi_comm_rank(mpi_h5comm, self%mpi_id, ierr)
   if(ierr /= 0) error stop "ERROR:h5fortran:open: could not get MPI ID"
 endif
 
@@ -427,7 +432,7 @@ if(present(debug)) self%debug = debug
 
 call get_hdf5_config(self%parallel_compression)
 if(self%use_mpi .and. .not. self%parallel_compression .and. self%comp_lvl > 0) then
-  write(stderr, '(a)') "h5fortran:open: parallel compression is NOT available"
+  write(stderr, '(a)') "WARNING:h5fortran:open: parallel compression is NOT available"
   !! don't set to 0 because non-MPI writes can compress.
   !! We warn again and disable compression for each attempted MPI compress write.
 endif
@@ -443,34 +448,34 @@ if(present(shuffle)) self%shuffle = shuffle
 if(present(fletcher32)) self%fletcher32 = fletcher32
 
 if(self%comp_lvl < 0) then
-  write(stderr, '(a)') "h5fortran:open: compression level must be >= 0, setting comp_lvl = 0"
+  write(stderr, '(a)') "ERROR:h5fortran:open: compression level must be >= 0, setting comp_lvl = 0"
   self%comp_lvl = 0
 elseif(self%comp_lvl > 9) then
-  write(stderr, '(a)') "h5fortran:open: compression level must be <= 9, setting comp_lvl = 9"
+  write(stderr, '(a)') "ERROR:h5fortran:open: compression level must be <= 9, setting comp_lvl = 9"
   self%comp_lvl = 9
 endif
 
 call h5open_f(ierr)
-if(ierr/=0) error stop "h5open: could not open HDF5 library"
+if(ierr/=0) error stop "ERROR:h5fortran:h5open: could not open HDF5 library"
 !! OK to call repeatedly
 !! https://support.hdfgroup.org/HDF5/doc/RM/RM_H5.html#Library-Open
 
 if(self%use_mpi) then
   !! collective: setup for MPI access
   call h5pcreate_f(H5P_FILE_ACCESS_F, fapl, ierr)
-  if(ierr/=0) error stop "h5open:h5pcreate could not collective open property"
+  if(ierr/=0) error stop "ERROR:h5fortran:open:h5pcreate could not collective open property for " // filename
   call h5pset_fapl_mpio_f(fapl, mpi_h5comm, mpi_h5info, ierr)
-  if(ierr/=0) error stop "h5open:h5pset_fapl_mpio could not collective open file"
+  if(ierr/=0) error stop "ERROR:h5fortran:open:h5pset_fapl_mpio could not collective open file for " // filename
 else
   fapl = H5P_DEFAULT_F
 endif
 
 select case(laction)
 case('r')
-  if(.not. is_hdf5(filename)) error stop "h5fortran:open: file does not exist: "//filename
+  if(.not. is_hdf5(filename)) error stop "ERROR:h5fortran:open: file does not exist: "//filename
   call h5fopen_f(filename, H5F_ACC_RDONLY_F, self%file_id, ierr, access_prp=fapl)
 case('r+')
-  if(.not. is_hdf5(filename)) error stop "h5fortran:open: file does not exist: "//filename
+  if(.not. is_hdf5(filename)) error stop "ERROR:h5fortran:open: file does not exist: "//filename
   call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ierr, access_prp=fapl)
 case('rw', 'a')
   if(is_hdf5(filename)) then
@@ -481,14 +486,14 @@ case('rw', 'a')
 case ('w')
   call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ierr, access_prp=fapl)
 case default
-  error stop 'h5fortran:open Unsupported action= ' // laction
+  error stop 'ERROR:h5fortran:open Unsupported action ' // laction // ' for ' // filename
 end select
 
-if(ierr/=0) error stop "h5open/create: could not initialize HDF5 file: " // filename // " action: " // laction
+if(ierr/=0) error stop "ERROR:h5open/create: could not initialize HDF5 file: " // filename // " action: " // laction
 
 if(fapl /= H5P_DEFAULT_F) then
   call h5pclose_f(fapl, ierr)
-  if(ierr/=0) error stop "h5mpi:open:h5pclose: " // filename
+  if(ierr/=0) error stop "ERROR:h5fortran:open:h5pclose: " // filename
 endif
 
 self%filename = filename
@@ -582,7 +587,7 @@ class(hdf5_file), intent(in) :: self
 integer :: ierr
 
 call h5iis_valid_f(self%file_id, is_open, ierr)
-if(ierr /= 0) error stop "h5fortran:is_open:h5iis_valid: " // self%filename
+if(ierr /= 0) error stop "ERROR:h5fortran:is_open:h5iis_valid: " // self%filename
 
 ! call h5iget_type_f(self%file_id, hid_type, ierr)
 ! if(ierr /= 0 .or. hid_type /= H5I_FILE_F) is_open = .false.

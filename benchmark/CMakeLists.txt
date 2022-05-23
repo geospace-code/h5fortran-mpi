@@ -4,12 +4,17 @@ project(h5mpi-benchmark
 LANGUAGES C Fortran
 )
 
-cmake_path(SET CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/Modules)
+cmake_path(SET CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../cmake/Modules)
+
+find_package(MPI COMPONENTS Fortran REQUIRED)
+find_package(HDF5 COMPONENTS parallel Fortran REQUIRED)
 
 # --- auto-ignore build directory
 if(NOT EXISTS ${PROJECT_BINARY_DIR}/.gitignore)
   file(WRITE ${PROJECT_BINARY_DIR}/.gitignore "*")
 endif()
+
+add_subdirectory(test)
 
 set(runner_os \"${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}\")
 configure_file(perf.in.f90 perf.f90 @ONLY)
