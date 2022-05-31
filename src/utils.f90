@@ -270,7 +270,7 @@ end procedure is_hdf5
 function id2name(id)
 !! get name of object with given id
 
-integer(HID_T) :: id
+integer(HID_T), intent(in) :: id
 character(:), allocatable :: id2name
 
 integer(SIZE_T) :: L
