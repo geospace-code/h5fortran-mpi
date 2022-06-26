@@ -162,16 +162,14 @@ if(NOT ZLIB_ROOT)
 endif()
 
 
-set(hdf5_prereqs true PARENT_SCOPE)
-
 if(hdf5_have_zlib)
+
   if(HDF5_FIND_REQUIRED)
     find_package(ZLIB REQUIRED)
   else()
     find_package(ZLIB)
   endif()
   if(NOT ZLIB_FOUND)
-    set(hdf5_prereqs false PARENT_SCOPE)
     return()
   endif()
 
@@ -194,7 +192,6 @@ if(hdf5_have_zlib)
     )
 
     if(NOT SZIP_LIBRARY AND SZIP_INCLUDE_DIR)
-      set(hdf5_prereqs false PARENT_SCOPE)
       return()
     endif()
 
@@ -511,7 +508,6 @@ else()
   find_program(HDF5_Fortran_COMPILER_EXECUTABLE
   NAMES ${wrapper_names}
   NAMES_PER_DIR
-  HINTS ${HOMEBREW_PREFIX} ENV HOMEBREW_PREFIX ${MACPORTS_PREFIX} ENV MACPORTS_PREFIX
   PATHS ${hdf5_binpref}
   PATH_SUFFIXES ${hdf5_binsuf}
   )
@@ -567,7 +563,6 @@ else()
   find_program(HDF5_CXX_COMPILER_EXECUTABLE
   NAMES ${wrapper_names}
   NAMES_PER_DIR
-  HINTS ${HOMEBREW_PREFIX} ENV HOMEBREW_PREFIX ${MACPORTS_PREFIX} ENV MACPORTS_PREFIX
   PATHS ${hdf5_binpref}
   PATH_SUFFIXES ${hdf5_binsuf}
   )
@@ -617,7 +612,6 @@ else()
   find_program(HDF5_C_COMPILER_EXECUTABLE
   NAMES ${wrapper_names}
   NAMES_PER_DIR
-  HINTS ${HOMEBREW_PREFIX} ENV HOMEBREW_PREFIX ${MACPORTS_PREFIX} ENV MACPORTS_PREFIX
   PATHS ${hdf5_binpref}
   PATH_SUFFIXES ${hdf5_binsuf}
   )
@@ -745,7 +739,7 @@ endfunction(check_fortran_links)
 
 function(check_hdf5_link)
 
-if(NOT (hdf5_prereqs AND HDF5_C_FOUND))
+if(NOT HDF5_C_FOUND)
   return()
 endif()
 
@@ -832,7 +826,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(aarch64|arm64)")
   list(APPEND hdf5_isuf openmpi-aarch64 mpich-aarch64)  # CentOS
 endif()
 
-if(NOT HDF5_ROOT AND CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
+if(NOT HDF5_ROOT AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   # CentOS paths
   if(parallel IN_LIST HDF5_FIND_COMPONENTS)
     list(PREPEND hdf5_msuf gfortran/modules/openmpi gfortran/modules/mpich)
@@ -843,7 +837,7 @@ endif()
 
 # --- binary prefix / suffix
 set(hdf5_binpref)
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(hdf5_binpref /usr/lib64)
 endif()
 
@@ -866,11 +860,11 @@ if(HDF5_C_FOUND)
   detect_config()
 endif(HDF5_C_FOUND)
 
-if(hdf5_prereqs AND HDF5_C_FOUND AND CXX IN_LIST HDF5_FIND_COMPONENTS)
+if(HDF5_C_FOUND AND CXX IN_LIST HDF5_FIND_COMPONENTS)
   find_hdf5_cxx()
 endif()
 
-if(hdf5_prereqs AND HDF5_C_FOUND AND Fortran IN_LIST HDF5_FIND_COMPONENTS)
+if(HDF5_C_FOUND AND Fortran IN_LIST HDF5_FIND_COMPONENTS)
   find_hdf5_fortran()
 endif()
 
@@ -887,7 +881,7 @@ list(REMOVE_ITEM CMAKE_IGNORE_PATH ${h5_ignore_path})
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(HDF5
-REQUIRED_VARS HDF5_C_LIBRARIES HDF5_links hdf5_prereqs
+REQUIRED_VARS HDF5_C_LIBRARIES HDF5_links
 VERSION_VAR HDF5_VERSION
 HANDLE_COMPONENTS
 HANDLE_VERSION_RANGE
