@@ -1,11 +1,18 @@
 program frontend
 
 use, intrinsic :: iso_fortran_env, only: compiler_version
-use hwloc_ifc, only : get_cpu_count
+use, intrinsic :: iso_c_binding, only : C_INT
 use partition, only : max_gcd
 use cli, only : get_cli, get_simsize
 
 implicit none (type, external)
+
+interface
+integer(c_int) function cpu_count() bind(c, name="cpu_count")
+import c_int
+end function cpu_count
+end interface
+
 
 integer :: lid, lx1, lx2, lx3, Ncpu, ierr, Nrun, i, comp_lvl
 character(2000) :: buf, exe, mpiexec, outfn, refh5fn
@@ -68,7 +75,7 @@ if(len_trim(exe)==0) error stop "please specify MPI program to run with option: 
 inquire(file=exe, exist=exists)
 if(.not. exists) error stop trim(exe) // " is not a file."
 
-if(Ncpu < 1) Ncpu = get_cpu_count()
+if(Ncpu < 1) Ncpu = cpu_count()
 lid = max_gcd(lx2, Ncpu)
 
 print '(A,I0)', 'MPI images: ', lid

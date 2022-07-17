@@ -36,19 +36,18 @@ find_package(MPI COMPONENTS C Fortran REQUIRED)
 
 include(cmake/gcd.cmake)  # math functions
 
-# --- external libraries:  HDF5, HWLOC
+# --- external libraries:  HDF5
 
 include(cmake/check_mpi.cmake)
 check_mpi_version()
 
-find_package(HDF5 1.10.2 COMPONENTS Fortran HL parallel REQUIRED)
+find_package(HDF5 COMPONENTS Fortran HL parallel REQUIRED)
+if(HDF5_VERSION VERSION_LESS 1.10.2)
+  message(WARNING "HDF5 >= 1.10.2 is needed for HDF5-MPI")
+endif()
 
 if(ENABLE_BENCHMARKS)
-  find_package(HWLOC 2.4 REQUIRED)
-  find_package(HWLOCfortran CONFIG REQUIRED)
-
   add_subdirectory(benchmark)
-  add_subdirectory(benchmark/test)
 endif()
 
 # --- HDF5-MPI object oriented API
@@ -62,7 +61,6 @@ endif()
 # additional Find*.cmake necessary
 install(FILES
 ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/FindHDF5.cmake
-${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/check_hdf5_mpi.f90
 DESTINATION cmake
 )
 

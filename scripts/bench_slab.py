@@ -77,7 +77,7 @@ def mpi_runner(
     debug: bool = False,
 ):
     """
-    Runner frontend uses HWLOC to compute physical core count
+    Runner frontend computes physical core count
     """
 
     runner_exe = shutil.which("runner", path=bin_dir)

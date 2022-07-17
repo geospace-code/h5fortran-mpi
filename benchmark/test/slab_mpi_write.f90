@@ -185,8 +185,10 @@ endif
 !> RESULTS
 
 if(mpi_id == mpi_root_id) then
+  call h5%open(trim(h5fn), action="r", mpi=.false.)
   call print_timing(Nmpi, h5%comp_lvl, storage_size(S3), [lx1, lx2, lx3], t_elapsed, h5%filesize(), debug, &
   trim(h5fn) // ".write_stat.h5")
+  call h5%close()
 endif
 
 if (debug) print '(a,i0)', "mpi finalize: worker: ", mpi_id

@@ -148,8 +148,10 @@ if (any(abs(t3(:, i0:i1, :) - A3) > 0.01)) error stop "3D ref mismatch " // trim
 !> RESULTS
 
 if(mpi_id == mpi_root_id) then
+  call h5%open(trim(refh5fn), action="r", mpi=.false.)
   call print_timing(Nmpi, h5%comp_lvl, storage_size(A3), int(dims_full), t_elapsed, h5%filesize(), debug, &
     trim(h5fn) // ".read_stat.h5")
+  call h5%close()
 endif
 
 if (debug) print '(a,i0)', "mpi finalize: worker: ", mpi_id

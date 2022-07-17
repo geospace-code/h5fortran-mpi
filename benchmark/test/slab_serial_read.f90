@@ -93,7 +93,9 @@ end do main
 
 !> RESULTS
 
+call h5%open(trim(h5fn), action="r", mpi=.false.)
 call print_timing(1, h5%comp_lvl, real_bits, int(dims_full), t_elapsed, h5%filesize(), debug, &
 trim(h5fn) // ".read_stat.h5")
+call h5%close()
 
 end program

@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.20...3.24)
 
 project(h5mpi-benchmark
-LANGUAGES C Fortran
+LANGUAGES C CXX Fortran
 )
+
+set_directory_properties(PROPERTIES LABELS benchmark)
 
 cmake_path(SET CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../cmake/Modules)
 
@@ -13,8 +15,6 @@ find_package(HDF5 COMPONENTS parallel Fortran REQUIRED)
 if(NOT EXISTS ${PROJECT_BINARY_DIR}/.gitignore)
   file(WRITE ${PROJECT_BINARY_DIR}/.gitignore "*")
 endif()
-
-add_subdirectory(test)
 
 set(runner_os \"${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}\")
 configure_file(perf.in.f90 perf.f90 @ONLY)
@@ -29,13 +29,21 @@ add_library(partition OBJECT partition.f90)
 
 add_library(cli OBJECT cli.f90)
 
-add_executable(runner frontend.f90)
-target_link_libraries(runner PRIVATE partition cli HWLOCfortran::hwloc_ifc)
-set_target_properties(runner PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY $<TARGET_FILE_DIR:slab_mpi_write>
-)
+add_executable(runner frontend.f90 cpu.cpp)
+target_link_libraries(runner PRIVATE partition cli)
+# set_target_properties(runner PROPERTIES
+# RUNTIME_OUTPUT_DIRECTORY $<TARGET_FILE_DIR:slab_mpi_write>
+# )
+if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
+  set_target_properties(runner PROPERTIES LINKER_LANGUAGE Fortran)
+else()
+  set_target_properties(runner PROPERTIES LINKER_LANGUAGE CXX)
+endif()
 
 foreach(t cli kernel perf)
   set_target_properties(${t} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
   target_include_directories(${t} INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/include)
 endforeach()
+
+
+add_subdirectory(test)

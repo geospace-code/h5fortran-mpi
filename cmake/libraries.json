@@ -1,18 +1,4 @@
 {
-  "hwloc": {
-    "2.7.0": {
-      "url": "https://download.open-mpi.org/release/hwloc/v2.7/hwloc-2.7.0.tar.bz2",
-      "sha256": "028cee53ebcfe048283a2b3e87f2fa742c83645fc3ae329134bf5bb8b90384e0"
-    },
-    "2.6.0": {
-      "url": "https://download.open-mpi.org/release/hwloc/v2.6/hwloc-2.6.0.tar.bz2",
-      "sha256": "e1f073e44e28c296ff848dead5e9bd6e2426b77f95ead1792358958e859fa83a"
-    }
-  },
-  "HWLOCfortran": {
-    "git": "https://github.com/scivision/hwloc-fortran.git",
-    "tag": "v1.2.3"
-  },
   "zlib1": {
     "url": "http://zlib.net/zlib-1.2.12.tar.xz",
     "sha256": "7db46b8d7726232a621befaab4a1c870f00a90805511c0e0090441dac57def18"

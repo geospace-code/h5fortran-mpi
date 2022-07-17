@@ -177,7 +177,6 @@ if(mpi_id == mpi_root_id) then
 
   call h5%open(trim(h5fn), action="r", mpi=.false.)
   call h5%read("/A3", ts3)
-  call h5%close()
 
   if (any(abs(ts3 - S3) > 0.01)) then
     write(stderr,'(a,i0,1x,i0)') "ERROR: 3D disk vs. memory mismatch."
@@ -185,13 +184,10 @@ if(mpi_id == mpi_root_id) then
     write(stderr,'(a,100f5.1)') "memory: ", S3
     error stop trim(h5fn)
   endif
-endif
 
-!> RESULTS
-
-if(mpi_id == mpi_root_id) then
   call print_timing(Nmpi, h5%comp_lvl, storage_size(S3), int([lx1, lx2, lx3]), t_elapsed, h5%filesize(), debug, &
     trim(h5fn) // ".write_stat.h5")
+  call h5%close()
 endif
 
 if (debug) print '(a,i0)', "mpi finalize: worker: ", mpi_id
