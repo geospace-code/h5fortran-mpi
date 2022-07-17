@@ -127,8 +127,14 @@ unsigned int cpu_count(){
   int N;
   size_t size = sizeof(N);
 
-  if (sysctlbyname("hw.physicalcpu", &N, &size, nullptr, 0) == 0)
+  if (sysctlbyname("hw.perflevel0.physicalcpu", &N, &size, nullptr, 0) == 0) {
+    // Apple Silicon performance core count
     NumberOfPhysicalCPU = N;
+  }
+  else if (sysctlbyname("hw.physicalcpu", &N, &size, nullptr, 0) == 0) {
+    // assumes heterogenous cores e.g. Intel Mac
+    NumberOfPhysicalCPU = N;
+  }
 
 #elif defined(_SC_NPROCESSORS_ONLN)
 
