@@ -73,7 +73,7 @@ call h5open_f(ierr)
 if (ierr/=0) error stop "h5open"
 
 call h5pcreate_f(H5P_FILE_ACCESS_F, fapl, ierr)
-if (ierr/=0) error stop "h5pcreate_f"
+if (ierr/=0) error stop "h5pcreate"
 call h5pset_fapl_mpio_f(fapl, MPI_COMM_WORLD, MPI_INFO_NULL, ierr)
 if (ierr/=0) error stop "h5pset_fapl_mpio"
 

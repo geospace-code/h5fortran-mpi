@@ -24,6 +24,10 @@ if(NOT DEFINED ${PROJECT_NAME}_BUILD_TESTING)
   set(${PROJECT_NAME}_BUILD_TESTING ${BUILD_TESTING})
 endif()
 
+if(${PROJECT_NAME}_BUILD_TESTING)
+  enable_language(CXX)
+endif()
+
 include(cmake/options.cmake)
 include(cmake/compilers.cmake)
 
@@ -46,10 +50,6 @@ if(HDF5_VERSION VERSION_LESS 1.10.2)
   message(WARNING "HDF5 >= 1.10.2 is needed for HDF5-MPI")
 endif()
 
-if(ENABLE_BENCHMARKS)
-  add_subdirectory(benchmark)
-endif()
-
 # --- HDF5-MPI object oriented API
 
 add_subdirectory(src)
@@ -57,6 +57,11 @@ add_subdirectory(src)
 if(${PROJECT_NAME}_BUILD_TESTING)
   add_subdirectory(test)
 endif()
+
+if(ENABLE_BENCHMARKS)
+  add_subdirectory(benchmark)
+endif()
+
 
 # additional Find*.cmake necessary
 install(FILES

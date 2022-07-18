@@ -529,7 +529,7 @@ if(WIN32 AND NOT CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
     PATH_SUFFIXES x64
   )
 
-  if(MPI_Fortran_INCLUDE_EXTRA AND NOT MPI_Fortran_INCLUDE_EXTRA STREQUAL ${MPI_Fortran_INCLUDE_DIR})
+  if(MPI_Fortran_INCLUDE_EXTRA AND NOT MPI_Fortran_INCLUDE_EXTRA STREQUAL "${MPI_Fortran_INCLUDE_DIR}")
     list(APPEND MPI_Fortran_INCLUDE_DIR ${MPI_Fortran_INCLUDE_EXTRA})
   endif()
 endif()
@@ -590,7 +590,7 @@ if(NOT MPI_ROOT AND DEFINED ENV{MPI_ROOT})
 endif()
 
 # Intel MPI, which works with non-Intel compilers on Linux
-if((CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_C_COMPILER_ID MATCHES "^Intel") AND
+if((CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_C_COMPILER_ID MATCHES "^Intel") AND
       DEFINED ENV{I_MPI_ROOT})
   set(_hints $ENV{I_MPI_ROOT})
 endif()

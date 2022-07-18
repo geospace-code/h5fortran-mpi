@@ -31,9 +31,6 @@ add_library(cli OBJECT cli.f90)
 
 add_executable(runner frontend.f90 cpu.cpp)
 target_link_libraries(runner PRIVATE partition cli)
-# set_target_properties(runner PROPERTIES
-# RUNTIME_OUTPUT_DIRECTORY $<TARGET_FILE_DIR:slab_mpi_write>
-# )
 if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
   set_target_properties(runner PROPERTIES LINKER_LANGUAGE Fortran)
 else()

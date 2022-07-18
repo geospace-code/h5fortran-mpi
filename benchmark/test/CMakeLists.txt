@@ -173,14 +173,14 @@ if(NOT DEFINED PySkip)
 endif()
 
 
-set(pyargs ${PROJECT_SOURCE_DIR}/scripts/bench_slab.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -B $<TARGET_FILE_DIR:slab_mpi_write> -Nrun ${Nrun} -lx ${lx3} --debug)
+set(pyargs ${PROJECT_SOURCE_DIR}/bench_slab.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -B ${PROJECT_BINARY_DIR} -Nrun ${Nrun} -lx ${lx3} --debug)
 add_test(NAME PythonRunner COMMAND Python::Interpreter ${pyargs})
 set_tests_properties(PythonRunner PROPERTIES
 FIXTURES_SETUP PyRun_fxt
 RUN_SERIAL true
 )
 
-add_test(NAME Plotter COMMAND Python::Interpreter ${PROJECT_SOURCE_DIR}/scripts/bench_plot.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -lx ${lx3})
+add_test(NAME Plotter COMMAND Python::Interpreter ${PROJECT_SOURCE_DIR}/bench_plot.py --datadir ${CMAKE_CURRENT_BINARY_DIR} -lx ${lx3})
 set_tests_properties(Plotter PROPERTIES
 FIXTURES_REQUIRED PyRun_fxt
 )
