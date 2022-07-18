@@ -5,9 +5,7 @@ implicit none (type, external)
 contains
 
 module procedure get_hdf5_config
-
 parallel_compression = .true.
-
-end procedure get_hdf5_config
+end procedure
 
 end submodule h5conf
