@@ -1,25 +1,18 @@
 integer(HID_T) :: file_space_id, mem_space_id, dset_id, xfer_id, dtype
-integer(HSIZE_T), dimension(rank(value)) :: mem_dims, dims_dset
+integer(HSIZE_T), dimension(rank(A)) :: mem_dims, dims_dset
 integer :: ier
 
 xfer_id = H5P_DEFAULT_F
 
-mem_dims = shape(value, HSIZE_T)
+mem_dims = shape(A, HSIZE_T)
 
 if(present(dset_dims)) then
-  select type (dset_dims)
-  type is (integer(HSIZE_T))
-    dims_dset = dset_dims
-  type is (integer(int32))
-    dims_dset = dset_dims
-  class default
-    error stop "write: expecting dset_dims to be integer"
-  end select
+  dims_dset = dset_dims
 else
   dims_dset = mem_dims
 endif
 
-select type (value)
+select type (A)
 type is (real(real32))
   dtype = H5T_NATIVE_REAL
 type is (real(real64))
@@ -34,7 +27,7 @@ end select
 
 !> create or open dataset
 call hdf_create(self, dname, dtype, mem_dims=mem_dims, dset_dims=dims_dset, &
-filespace=file_space_id, memspace=mem_space_id, dset_id=dset_id, &
+filespace_id=file_space_id, memspace=mem_space_id, dset_id=dset_id, &
 istart=istart, iend=iend, chunk_size=chunk_size, &
 compact=compact)
 
@@ -51,15 +44,15 @@ if(self%use_mpi) then
   xfer_id = mpi_collective(dname)
 endif
 
-select type (value)
+select type (A)
 type is (real(real32))
-  call h5dwrite_f(dset_id, dtype, value, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+  call h5dwrite_f(dset_id, dtype, A, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
 type is (real(real64))
-  call h5dwrite_f(dset_id, dtype, value, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+  call h5dwrite_f(dset_id, dtype, A, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
 type is (integer(int32))
-  call h5dwrite_f(dset_id, dtype, value, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+  call h5dwrite_f(dset_id, dtype, A, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
 type is (integer(int64))
-  call h5dwrite_f(dset_id, dtype, value, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+  call h5dwrite_f(dset_id, dtype, A, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
 class default
   error stop "ERROR:h5fortran:writer: unknown variable type for " // dname
 end select

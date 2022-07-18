@@ -1,5 +1,6 @@
 module h5mpi
 
+use, intrinsic :: iso_c_binding, only : c_ptr, c_loc
 use, intrinsic :: iso_fortran_env, only : real32, real64, int32, int64, stderr=>error_unit
 
 use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL, mpi_comm_rank
@@ -55,26 +56,28 @@ procedure, public :: is_compact => hdf_is_compact
 procedure, public :: get_strpad
 procedure, public :: softlink => create_softlink
 procedure, public :: is_open
+procedure, public :: delete_attr => attr_delete
+procedure, public :: exist_attr => attr_exist
 !! procedures without mapping
 
 !> below are procedure that need generic mapping (type or rank agnostic)
 
 generic, public :: write => h5write_scalar, h5write_1d, h5write_2d, h5write_3d, h5write_4d, h5write_5d, h5write_6d, h5write_7d
-
-generic, public :: read => h5read_scalar, h5read_1d, h5read_2d, h5read_3d, h5read_4d, h5read_5d, h5read_6d, h5read_7d
-
-!> write attributes
-generic, public :: writeattr => writeattr_char, writeattr_num
-
-!> read attributes
-generic, public :: readattr => readattr_char, readattr_num
-
-procedure, private :: writeattr_char, writeattr_num, readattr_char, readattr_num
-
 procedure, private :: h5write_scalar, h5write_1d, h5write_2d, h5write_3d, h5write_4d, h5write_5d, h5write_6d, h5write_7d
 
+generic, public :: read => h5read_scalar, h5read_1d, h5read_2d, h5read_3d, h5read_4d, h5read_5d, h5read_6d, h5read_7d
 procedure, private :: h5read_scalar, h5read_1d, h5read_2d, h5read_3d, h5read_4d, h5read_5d, h5read_6d, h5read_7d
-!! mapped procedures must be declared again like this
+
+!> attributes
+generic, public :: writeattr => writeattr_scalar, writeattr_1d, writeattr_2d, writeattr_3d, writeattr_4d, writeattr_5d, &
+  writeattr_6d, writeattr_7d
+procedure, private :: writeattr_scalar, writeattr_1d, writeattr_2d, writeattr_3d, writeattr_4d, writeattr_5d, &
+  writeattr_6d, writeattr_7d
+
+generic, public :: readattr => readattr_scalar, readattr_1d, readattr_2d, readattr_3d, readattr_4d, readattr_5d, &
+readattr_6d, readattr_7d
+procedure, private :: readattr_scalar, readattr_1d, readattr_2d, readattr_3d, readattr_4d, readattr_5d, &
+readattr_6d, readattr_7d
 
 !> flush file to disk and close file if user forgets to do so.
 final :: destructor
@@ -100,17 +103,16 @@ public :: H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F
 
 interface !< write.f90
 module subroutine hdf_create(self, dname, dtype, mem_dims, dset_dims, &
-  filespace, memspace, dset_id, dtype_id, &
+  filespace_id, memspace, dset_id, dtype_id, &
   istart, iend, chunk_size, compact, charlen)
 
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 integer(HID_T), intent(in) :: dtype
 integer(HSIZE_T), dimension(:), intent(in) :: mem_dims, dset_dims
-integer(HID_T), intent(out) :: filespace, memspace, dset_id
+integer(HID_T), intent(out) :: filespace_id, memspace, dset_id
 integer(HID_T), intent(out), optional :: dtype_id
-integer(HSIZE_T), dimension(:), intent(in), optional :: istart, iend
-integer, dimension(:), intent(in), optional :: chunk_size
+integer, intent(in), dimension(:), optional :: chunk_size, istart, iend
 logical, intent(in), optional :: compact
 integer, intent(in), optional :: charlen !< length of character scalar
 end subroutine
@@ -143,80 +145,66 @@ end interface
 
 interface !< writer.f90
 
-module subroutine h5write_scalar(self, dname, value, compact)
+module subroutine h5write_scalar(self, dname, A, compact)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
-class(*), intent(in) :: value
+class(*), intent(in) :: A
 logical, intent(in), optional :: compact
 end subroutine
 
-module subroutine h5write_1d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
+module subroutine h5write_1d(self, dname, A, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
-class(*), intent(in) :: value(:)
-class(*), intent(in), dimension(1), optional :: dset_dims  !< integer or integer(HSIZE_T) full disk shape (not just per worker)
-integer(HSIZE_T), intent(in), dimension(1), optional :: istart, iend
-integer, intent(in), dimension(1), optional :: chunk_size
+class(*), intent(in) :: A(:)
+integer, intent(in), dimension(1), optional :: istart, iend, chunk_size, dset_dims
 logical, intent(in), optional :: compact
 end subroutine
 
-module subroutine h5write_2d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
+module subroutine h5write_2d(self, dname, A, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
-class(*), intent(in) :: value(:,:)
-class(*), intent(in), dimension(2), optional :: dset_dims
-integer(HSIZE_T), intent(in), dimension(2), optional :: istart, iend
-integer, intent(in), dimension(2), optional :: chunk_size
+class(*), intent(in) :: A(:,:)
+integer, intent(in), dimension(2), optional :: istart, iend, chunk_size, dset_dims
 logical, intent(in), optional :: compact
 end subroutine
 
-module subroutine h5write_3d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
+module subroutine h5write_3d(self, dname, A, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
-class(*), intent(in) :: value(:,:,:)
-class(*), intent(in), dimension(3), optional :: dset_dims
-integer(HSIZE_T), intent(in), dimension(3), optional :: istart, iend
-integer, intent(in), dimension(3), optional :: chunk_size
+class(*), intent(in) :: A(:,:,:)
+integer, intent(in), dimension(3), optional :: istart, iend, chunk_size, dset_dims
 logical, intent(in), optional :: compact
 end subroutine
 
-module subroutine h5write_4d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
+module subroutine h5write_4d(self, dname, A, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
-class(*), intent(in) :: value(:,:,:,:)
-class(*), intent(in), dimension(4), optional :: dset_dims
-integer(HSIZE_T), intent(in), dimension(4), optional :: istart, iend
-integer, intent(in), dimension(4), optional :: chunk_size
+class(*), intent(in) :: A(:,:,:,:)
+integer, intent(in), dimension(4), optional :: istart, iend, chunk_size, dset_dims
 logical, intent(in), optional :: compact
 end subroutine
 
-module subroutine h5write_5d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
+module subroutine h5write_5d(self, dname, A, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
-class(*), intent(in) :: value(:,:,:,:,:)
-class(*), intent(in), dimension(5), optional :: dset_dims
-integer(HSIZE_T), intent(in), dimension(5), optional :: istart, iend
-integer, intent(in), dimension(5), optional :: chunk_size
+class(*), intent(in) :: A(:,:,:,:,:)
+integer, intent(in), dimension(5), optional :: istart, iend, chunk_size, dset_dims
 logical, intent(in), optional :: compact
 end subroutine
 
-module subroutine h5write_6d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
+module subroutine h5write_6d(self, dname, A, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
-class(*), intent(in) :: value(:,:,:,:,:,:)
-class(*), intent(in), dimension(6), optional :: dset_dims
-integer(HSIZE_T), intent(in), dimension(6), optional :: istart, iend
-integer, intent(in), dimension(6), optional :: chunk_size
+class(*), intent(in) :: A(:,:,:,:,:,:)
+integer, intent(in), dimension(6), optional :: istart, iend, chunk_size, dset_dims
 logical, intent(in), optional :: compact
 end subroutine
 
-module subroutine h5write_7d(self, dname, value, dset_dims, istart, iend, chunk_size, compact)
+module subroutine h5write_7d(self, dname, A, dset_dims, istart, iend, chunk_size, compact)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
-class(*), intent(in) :: value(:,:,:,:,:,:,:)
-class(*), intent(in), dimension(7), optional :: dset_dims
-integer(HSIZE_T), intent(in), dimension(7), optional :: istart, iend
-integer, intent(in), dimension(7), optional :: chunk_size
+class(*), intent(in) :: A(:,:,:,:,:,:,:)
+integer, intent(in), dimension(7), optional :: istart, iend, chunk_size, dset_dims
 logical, intent(in), optional :: compact
 end subroutine
 
@@ -295,59 +283,59 @@ character(*), intent(in) :: filename, dname
 logical, intent(in) :: mpi
 end function
 
-module subroutine h5read_scalar(self, dname, value)
+module subroutine h5read_scalar(self, dname, A)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
-class(*), intent(inout)        :: value
+class(*), intent(inout)        :: A
 end subroutine
 
-module subroutine h5read_1d(self, dname, value, istart, iend)
+module subroutine h5read_1d(self, dname, A, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
-class(*), intent(inout) :: value(:)
-integer(HSIZE_T), intent(in), dimension(1), optional :: istart, iend
+class(*), intent(inout) :: A(:)
+integer, intent(in), dimension(1), optional :: istart, iend
 end subroutine
 
-module subroutine h5read_2d(self, dname, value, istart, iend)
+module subroutine h5read_2d(self, dname, A, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
-class(*), intent(inout) :: value(:,:)
-integer(HSIZE_T), intent(in), dimension(2), optional :: istart, iend
+class(*), intent(inout) :: A(:,:)
+integer, intent(in), dimension(2), optional :: istart, iend
 end subroutine
 
-module subroutine h5read_3d(self, dname, value, istart, iend)
+module subroutine h5read_3d(self, dname, A, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
-class(*), intent(inout) :: value(:,:,:)
-integer(HSIZE_T), intent(in), dimension(3), optional :: istart, iend
+class(*), intent(inout) :: A(:,:,:)
+integer, intent(in), dimension(3), optional :: istart, iend
 end subroutine
 
-module subroutine h5read_4d(self, dname, value, istart, iend)
+module subroutine h5read_4d(self, dname, A, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
-class(*), intent(inout) :: value(:,:,:,:)
-integer(HSIZE_T), intent(in), dimension(4), optional :: istart, iend
+class(*), intent(inout) :: A(:,:,:,:)
+integer, intent(in), dimension(4), optional :: istart, iend
 end subroutine
 
-module subroutine h5read_5d(self, dname, value, istart, iend)
+module subroutine h5read_5d(self, dname, A, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
-class(*), intent(inout) :: value(:,:,:,:,:)
-integer(HSIZE_T), intent(in), dimension(5), optional :: istart, iend
+class(*), intent(inout) :: A(:,:,:,:,:)
+integer, intent(in), dimension(5), optional :: istart, iend
 end subroutine
 
-module subroutine h5read_6d(self, dname, value, istart, iend)
+module subroutine h5read_6d(self, dname, A, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
-class(*), intent(inout) :: value(:,:,:,:,:,:)
-integer(HSIZE_T), intent(in), dimension(6), optional :: istart, iend
+class(*), intent(inout) :: A(:,:,:,:,:,:)
+integer, intent(in), dimension(6), optional :: istart, iend
 end subroutine
 
-module subroutine h5read_7d(self, dname, value, istart, iend)
+module subroutine h5read_7d(self, dname, A, istart, iend)
 class(hdf5_file), intent(in)     :: self
 character(*), intent(in)         :: dname
-class(*), intent(inout) :: value(:,:,:,:,:,:,:)
-integer(HSIZE_T), intent(in), dimension(7), optional :: istart, iend
+class(*), intent(inout) :: A(:,:,:,:,:,:,:)
+integer, intent(in), dimension(7), optional :: istart, iend
 end subroutine
 
 end interface
@@ -355,35 +343,124 @@ end interface
 
 interface  !< attributes.f90
 
-module subroutine readattr_char(self, dname, attr, attrval)
+module subroutine readattr_scalar(self, obj_name, attr, A)
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: dname, attr
-character(*), intent(inout) :: attrval
-!! intent(inout) for character
+character(*), intent(in) :: obj_name, attr
+class(*), intent(inout) :: A
 end subroutine
 
-module subroutine readattr_num(self, dname, attr, attrval)
+module subroutine readattr_1d(self, obj_name, attr, A)
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: dname, attr
-class(*), intent(out) :: attrval(:)
+character(*), intent(in) :: obj_name, attr
+class(*), intent(inout) :: A(:)
 end subroutine
 
-module subroutine writeattr_char(self, dname, attr, attrval)
+module subroutine readattr_2d(self, obj_name, attr, A)
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: dname, attr
-character(*), intent(in) :: attrval
+character(*), intent(in) :: obj_name, attr
+class(*), intent(inout) :: A(:,:)
 end subroutine
 
-module subroutine writeattr_num(self, dname, attr, attrval)
+module subroutine readattr_3d(self, obj_name, attr, A)
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: dname, attr
-class(*), intent(in) :: attrval(:)
+character(*), intent(in) :: obj_name, attr
+class(*), intent(inout) :: A(:,:,:)
 end subroutine
+
+module subroutine readattr_4d(self, obj_name, attr, A)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr
+class(*), intent(inout) :: A(:,:,:,:)
+end subroutine
+
+module subroutine readattr_5d(self, obj_name, attr, A)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr
+class(*), intent(inout) :: A(:,:,:,:,:)
+end subroutine
+
+module subroutine readattr_6d(self, obj_name, attr, A)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr
+class(*), intent(inout) :: A(:,:,:,:,:,:)
+end subroutine
+
+module subroutine readattr_7d(self, obj_name, attr, A)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr
+class(*), intent(inout) :: A(:,:,:,:,:,:,:)
+end subroutine
+
+
+module subroutine writeattr_scalar(self, obj_name, attr, A)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr
+class(*), intent(in) :: A
+end subroutine
+
+module subroutine writeattr_1d(self, obj_name, attr, A)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr
+class(*), intent(in) :: A(:)
+end subroutine
+
+module subroutine writeattr_2d(self, obj_name, attr, A)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr
+class(*), intent(in) :: A(:,:)
+end subroutine
+
+module subroutine writeattr_3d(self, obj_name, attr, A)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr
+class(*), intent(in) :: A(:,:,:)
+end subroutine
+
+module subroutine writeattr_4d(self, obj_name, attr, A)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr
+class(*), intent(in) :: A(:,:,:,:)
+end subroutine
+
+module subroutine writeattr_5d(self, obj_name, attr, A)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr
+class(*), intent(in) :: A(:,:,:,:,:)
+end subroutine
+
+module subroutine writeattr_6d(self, obj_name, attr, A)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr
+class(*), intent(in) :: A(:,:,:,:,:,:)
+end subroutine
+
+module subroutine writeattr_7d(self, obj_name, attr, A)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr
+class(*), intent(in) :: A(:,:,:,:,:,:,:)
+end subroutine
+
+
+module subroutine attr_delete(self, obj_name, attr_name)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr_name
+end subroutine
+
+module logical function attr_exist(self, obj_name, attr_name)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name, attr_name
+end function
 
 end interface
 
 
 interface !< utils.f90
+
+module function id2name(id)
+!! get name of object with given id
+integer(HID_T), intent(in) :: id
+character(:), allocatable :: id2name
+end function
 
 module subroutine h5open(self, filename, action, mpi, comp_lvl, shuffle, fletcher32, debug)
 !! collective: open/create file
@@ -466,8 +543,8 @@ module subroutine mpi_hyperslab(mem_dims, dset_dims, dset_id, filespace, memspac
 integer(HSIZE_T), dimension(:), intent(in) :: mem_dims, dset_dims
 integer(HID_T), intent(in) :: dset_id
 integer(HID_T), intent(inout) :: filespace, memspace
-integer(HSIZE_T), dimension(:), intent(in) :: istart
-integer(HSIZE_T), dimension(size(istart)), intent(in) :: iend
+integer, dimension(:), intent(in) :: istart
+integer, dimension(size(istart)), intent(in) :: iend
 end subroutine
 
 module integer(HID_T) function mpi_collective(dname) result(xfer_id)

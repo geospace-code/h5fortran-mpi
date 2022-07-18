@@ -38,16 +38,32 @@ subroutine test_write_attributes(path)
 type(hdf5_file) :: h
 character(*), intent(in) :: path
 
+integer :: i2(1,1), i3(1,1,1), i4(1,1,1,1), i5(1,1,1,1,1), i6(1,1,1,1,1,1), i7(1,1,1,1,1,1,1)
+
 call h%open(path, action='w', mpi=.true.)
 
 call h%write('/x', 1)
 
-call h%writeattr('/x', 'note','this is just a little number')
+call h%writeattr('/x', 'int32-scalar', 42)
+call h%writeattr('/x', 'char','this is just a little number')
 call h%writeattr('/x', 'hello', 'hi')
-call h%writeattr('/x', 'life', [42])
-call h%writeattr('/x', 'life_float', [42._real32, 84._real32])
-call h%writeattr('/x', 'life_double', [42._real64])
+call h%writeattr('/x', 'real32_1d', [real(real32) :: 42, 84])
+call h%writeattr('/x', 'real64_1d0', [42._real64])
 
+call h%writeattr('/x', 'i2', i2)
+call h%writeattr('/x', 'i3', i3)
+call h%writeattr('/x', 'i4', i4)
+call h%writeattr('/x', 'i5', i5)
+call h%writeattr('/x', 'i6', i6)
+call h%writeattr('/x', 'i7', i7)
+
+call h%close()
+
+call h%open(path, action='a', mpi=.true.)
+call h%writeattr('/x', 'int32-scalar', 142)
+call h%writeattr('/x', 'real32_1d', [real(real32) :: 142, 84])
+call h%writeattr('/x', 'char', 'overwrite attrs')
+call h%delete_attr('/x', 'hello')
 call h%close()
 
 end subroutine test_write_attributes
@@ -58,28 +74,39 @@ subroutine test_read_attributes(path)
 type(hdf5_file) :: h
 character(*), intent(in) :: path
 character(1024) :: attr_str
-integer :: attr_int(1)
+integer :: int32_0
 real(real32) :: attr32(2)
-real(real64) :: attr64(1)
+real(real64) :: attr64
 
 integer :: x
+
+integer :: i2(1,1), i3(1,1,1), i4(1,1,1,1), i5(1,1,1,1,1), i6(1,1,1,1,1,1), i7(1,1,1,1,1,1,1)
 
 call h%open(path, action='r', mpi=.true.)
 
 call h%read('/x', x)
 if (x/=1) error stop 'readattr: unexpected value'
 
-call h%readattr('/x', 'note', attr_str)
-if (attr_str /= 'this is just a little number') error stop 'readattr value note'
+call h%readattr('/x', 'char', attr_str)
+if (attr_str /= 'overwrite attrs') error stop 'overwrite attrs failed: ' // attr_str
 
-call h%readattr('/x', 'life', attr_int)
-if (attr_int(1) /= 42) error stop 'readattr: int'
+call h%readattr('/x', 'int32-scalar', int32_0)
+if (int32_0 /= 142) error stop 'readattr: int32-scalar'
 
-call h%readattr('/x', 'life_float', attr32)
-if (any(attr32 /= [42._real32, 84._real32])) error stop 'readattr: real32'
+call h%readattr('/x', 'real32_1d', attr32)
+if (any(attr32 /= [real(real32) :: 142, 84])) error stop 'readattr: real32'
 
-call h%readattr('/x', 'life_double', attr64)
-if (attr64(1) /= 42._real64) error stop 'readattr: real64'
+call h%readattr('/x', 'real64_1d0', attr64)
+if (attr64 /= 42._real64) error stop 'readattr: real64'
+
+if (h%exist_attr('/x', 'hello')) error stop "delete attr failed"
+
+call h%readattr('/x', 'i2', i2)
+call h%readattr('/x', 'i3', i3)
+call h%readattr('/x', 'i4', i4)
+call h%readattr('/x', 'i5', i5)
+call h%readattr('/x', 'i6', i6)
+call h%readattr('/x', 'i7', i7)
 
 call h%close()
 

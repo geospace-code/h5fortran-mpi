@@ -27,7 +27,6 @@ logical :: exists
 integer :: ierr
 integer(HID_T) :: dcpl, type_id
 
-dcpl = H5P_DEFAULT_F
 memspace = H5S_ALL_F
 
 if(dtype == H5T_NATIVE_CHARACTER) then
@@ -42,7 +41,9 @@ if(.not. self%is_open()) error stop 'ERROR:h5fortran:write: file handle is not o
 call h5ltpath_valid_f(self%file_id, dname, .true., exists, ierr)
 if (ierr /= 0) error stop 'ERROR:h5fortran:create: variable path invalid: ' // dname // ' in ' // self%filename
 !! h5lexists_f can false error with groups--just use h5ltpath_valid
-!! stricter than self%exists() since we're creating and/or writing variable
+!! stricter than self%exist() since we're creating and/or writing variable
+
+if(self%debug) print *,'h5fortran:TRACE:create:exists: ' // dname, exists
 
 if(exists) then
   if (.not.present(istart)) then
@@ -60,7 +61,7 @@ if(exists) then
   if (ierr /= 0) error stop 'ERROR:h5fortran:create: could not open ' // dname // ' in ' // self%filename
 
   !> get dataset filespace
-  call h5dget_space_f(dset_id, filespace, ierr)
+  call h5dget_space_f(dset_id, filespace_id, ierr)
   if(ierr /= 0) error stop 'ERROR:h5fortran:create could not get dataset ' // dname // ' in ' // self%filename
 
   if(dtype == H5T_NATIVE_CHARACTER) then
@@ -77,6 +78,7 @@ if(exists) then
 endif
 
 !> Only new datasets go past this point
+dcpl = H5P_DEFAULT_F
 
 call self%write_group(dname)
 !! write_group is needed for any dataset in a group e.g. /hi/there/var
@@ -87,24 +89,13 @@ if(size(mem_dims) >= 2) then
   call set_deflate(self, mem_dims, dcpl, chunk_size)
 endif
 
-!> compact dataset (for very small datasets to increase I/O speed)
-if(present(compact)) then
-!! datasets are EITHER compact or chunked.
-if(compact .and. dcpl == H5P_DEFAULT_F .and. product(dset_dims) * 8 < 60000)  then
-!! 64000 byte limit, here we assumed 8 bytes / element
-  call h5pcreate_f(H5P_DATASET_CREATE_F, dcpl, ierr)
-  if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5pcreate: " // dname // " in " // self%filename
-
-  call h5pset_layout_f(dcpl, H5D_COMPACT_F, ierr)
-  if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5pset_layout: " // dname // " in " // self%filename
-endif
-endif
+if(present(compact)) call set_compact(dcpl, dset_dims, compact)
 
 !> create dataset dataspace
 if(size(dset_dims) == 0) then
-  call h5screate_f(H5S_SCALAR_F, filespace, ierr)
+  call h5screate_f(H5S_SCALAR_F, filespace_id, ierr)
 else
-  call h5screate_simple_f(size(dset_dims), dset_dims, filespace, ierr)
+  call h5screate_simple_f(size(dset_dims), dset_dims, filespace_id, ierr)
 endif
 if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5screate:filespace " // dname // " in " // self%filename
 
@@ -122,7 +113,7 @@ else
 endif
 
 !> create dataset
-call h5dcreate_f(self%file_id, dname, type_id=type_id, space_id=filespace, dset_id=dset_id, hdferr=ierr, dcpl_id=dcpl)
+call h5dcreate_f(self%file_id, dname, type_id=type_id, space_id=filespace_id, dset_id=dset_id, hdferr=ierr, dcpl_id=dcpl)
 if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5dcreate: " // dname // " in " // self%filename
 
 !> free resources
@@ -130,6 +121,32 @@ call h5pclose_f(dcpl, ierr)
 if (ierr /= 0) error stop "ERROR:h5fortran:h5pclose: " // dname // ' in ' // self%filename
 
 end procedure hdf_create
+
+
+subroutine set_compact(dcpl, dset_dims, compact)
+!! compact dataset (for very small datasets to increase I/O speed)
+
+integer(HID_T), intent(inout) :: dcpl
+integer(HSIZE_T), intent(in) :: dset_dims(:)
+logical, intent(in) :: compact
+
+integer :: ierr
+
+if(.not. compact) return
+
+if(dcpl /= H5P_DEFAULT_F) return
+!! datasets are EITHER compact or chunked.
+
+if(product(dset_dims) * 8 > 60000) return
+!! 64000 byte limit, here we assumed 8 bytes / element
+
+call h5pcreate_f(H5P_DATASET_CREATE_F, dcpl, ierr)
+if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5pcreate:set_compact"
+
+call h5pset_layout_f(dcpl, H5D_COMPACT_F, ierr)
+if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5pset_layout:set_compact"
+
+end subroutine set_compact
 
 
 module procedure create_softlink

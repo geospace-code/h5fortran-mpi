@@ -19,10 +19,10 @@ if(.not. self%is_open()) error stop 'ERROR:h5fortran:write: file handle is not o
 
 charlen = 0
 
-select type (value)
+select type (A)
 type is (character(*))
   dtype = H5T_NATIVE_CHARACTER
-  charlen = len(value)
+  charlen = len(A)
 type is (real(real32))
   dtype = H5T_NATIVE_REAL
 type is (real(real64))
@@ -36,7 +36,7 @@ class default
 end select
 
 call hdf_create(self, dname, dtype, mem_dims=mem_dims, dset_dims=dset_dims, &
-    filespace=file_space_id, memspace=mem_space_id, dset_id=dset_id, dtype_id=dtype_id, compact=compact, &
+    filespace_id=file_space_id, memspace=mem_space_id, dset_id=dset_id, dtype_id=dtype_id, compact=compact, &
     charlen=charlen)
 
 if(self%use_mpi) then
@@ -50,17 +50,17 @@ if(self%use_mpi) then
   xfer_id = mpi_collective(dname)
 endif
 
-select type (value)
+select type (A)
 type is (real(real32))
-  call h5dwrite_f(dset_id, dtype, value, dset_dims, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+  call h5dwrite_f(dset_id, dtype, A, dset_dims, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
 type is (real(real64))
-  call h5dwrite_f(dset_id, dtype, value, dset_dims, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+  call h5dwrite_f(dset_id, dtype, A, dset_dims, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
 type is (integer(int32))
-  call h5dwrite_f(dset_id, dtype, value, dset_dims, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+  call h5dwrite_f(dset_id, dtype, A, dset_dims, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
 type is (integer(int64))
-  call h5dwrite_f(dset_id, dtype, value, dset_dims, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+  call h5dwrite_f(dset_id, dtype, A, dset_dims, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
 type is (character(*))
-  call h5dwrite_f(dset_id, dtype_id, value, dset_dims, ier, &
+  call h5dwrite_f(dset_id, dtype_id, A, dset_dims, ier, &
   file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
   if (ier /= 0) error stop 'h5fortran:write:string: could not write ' // dname // ' to ' // self%filename
   call h5tclose_f(dtype_id, ier)

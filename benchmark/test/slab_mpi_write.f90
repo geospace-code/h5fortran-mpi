@@ -34,7 +34,7 @@ character(1000) :: argv
 
 integer :: ierr, dx2, i, i0, i1
 
-integer(HSIZE_T), dimension(rank(S3)) :: istart, iend
+integer, dimension(rank(S3)) :: istart, iend
 
 integer :: Nmpi, mpi_id
 integer, parameter :: mpi_root_id = 0

@@ -78,3 +78,10 @@ set_tests_properties(deflate_props deflate_read PROPERTIES
 FIXTURES_REQUIRED deflate_files
 REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/deflate1.h5
 )
+
+# --- Windows shared DLLs
+if(WIN32 AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
+  set_tests_properties(${test_names} PROPERTIES
+  ENVIRONMENT_MODIFICATION "PATH=path_list_append:${ZLIB_INCLUDE_DIRS}/../bin;PATH=path_list_append:${ZLIB_INCLUDE_DIR}/../bin"
+  )
+endif()

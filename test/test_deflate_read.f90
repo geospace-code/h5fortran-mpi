@@ -3,7 +3,7 @@ program test_deflate_read
 use, intrinsic:: iso_fortran_env, only: int32, int64, real32, real64, stderr=>error_unit
 use mpi, only : mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 
-use h5mpi, only: hdf5_file, HSIZE_T
+use h5mpi, only: hdf5_file
 
 implicit none (type, external)
 
@@ -37,7 +37,7 @@ character(*), intent(in) :: fn
 integer, intent(in) :: N(2), Nmpi, mpi_id
 
 type(hdf5_file) :: h5f
-integer(HSIZE_T) :: i0(2), i1(2), dx2
+integer :: i0(2), i1(2), dx2
 real(real32), allocatable :: A(:,:)
 logical :: debug = .false.
 

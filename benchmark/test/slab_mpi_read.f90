@@ -36,7 +36,7 @@ integer(int64) :: tic, toc
 integer(int64), allocatable :: t_elapsed(:)
 
 integer(HSIZE_T), allocatable :: dims_full(:)
-integer(HSIZE_T), dimension(rank(A3)) :: istart, iend
+integer, dimension(rank(A3)) :: istart, iend
 
 call mpi_init(ierr)
 if(ierr/=0) error stop "mpi_init"

@@ -22,6 +22,21 @@ implicit none (type, external)
 
 contains
 
+module procedure id2name
+
+integer(SIZE_T) :: L
+integer :: ierr
+
+character(2048) :: name
+
+call h5iget_name_f(id, name, len(name, SIZE_T), L, ierr)
+if(ierr /= 0) error stop "ERROR:h5fortran:id2name:h5iget_name"
+
+id2name = name(:L)
+
+end procedure id2name
+
+
 module procedure h5open
 
 character(len=2) :: laction
@@ -33,8 +48,10 @@ if(self%is_open()) then
   return
 endif
 
-laction = "rw"
+laction = 'rw'
 if (present(action)) laction = action
+
+self%filename = filename
 
 self%use_mpi = mpi
 
@@ -70,8 +87,16 @@ elseif(self%comp_lvl > 9) then
   self%comp_lvl = 9
 endif
 
+!> Initialize FORTRAN interface.
 call h5open_f(ier)
 if (ier /= 0) error stop 'ERROR:h5fortran:open: HDF5 library initialize'
+
+if(self%debug) then
+  call h5eset_auto_f(1, ier)
+else
+  call h5eset_auto_f(0, ier)
+endif
+if (ier /= 0) error stop 'ERROR:h5fortran:open: HDF5 library set traceback'
 
 !! OK to call repeatedly
 !! https://support.hdfgroup.org/HDF5/doc/RM/RM_H5.html#Library-Open
@@ -111,8 +136,6 @@ if(fapl /= H5P_DEFAULT_F) then
   call h5pclose_f(fapl, ier)
   if(ier /= 0) error stop "ERROR:h5fortran:open:h5pclose: " // filename
 endif
-
-self%filename = filename
 
 end procedure h5open
 
@@ -267,25 +290,6 @@ if (ierr/=0) is_hdf5 = .false.
 end procedure is_hdf5
 
 
-function id2name(id)
-!! get name of object with given id
-
-integer(HID_T), intent(in) :: id
-character(:), allocatable :: id2name
-
-integer(SIZE_T) :: L
-integer :: ierr
-
-character(2048) :: name
-
-call h5iget_name_f(id, name, len(name, SIZE_T), L, ierr)
-if(ierr /= 0) error stop "h5fortran:id2name:h5iget_name"
-
-id2name = name(:L)
-
-end function id2name
-
-
 module procedure mpi_hyperslab
 
 integer(HSIZE_T), dimension(size(mem_dims)) :: c_mem_dims, i0
@@ -379,12 +383,11 @@ integer :: ierr, drank, type_class
 
 if(present(vector_scalar)) vector_scalar = .false.
 
-if(.not.self%is_open()) error stop 'ERROR:h5fortran:rank_check: file handle is not open: ' // self%filename
-if (.not.self%exist(dname)) error stop 'ERROR::h5fortran:rank_check: ' // dname // ' does not exist in ' // self%filename
+if (.not.self%exist(dname)) error stop 'ERROR:h5fortran:rank_check: ' // dname // ' does not exist in ' // self%filename
 
 !> check for matching rank, else bad reads can occur--doesn't always crash without this check
 call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ierr)
-if (ierr/=0) error stop 'h5fortran:rank_check: get_dataset_ndim ' // dname // ' read ' // self%filename
+if (ierr/=0) error stop 'ERROR:h5fortran:rank_check: get_dataset_ndim ' // dname // ' read ' // self%filename
 
 if (drank == mrank) return
 
@@ -392,14 +395,14 @@ if (present(vector_scalar) .and. drank == 1 .and. mrank == 0) then
   !! check if vector of length 1
   call h5ltget_dataset_info_f(self%file_id, dname, dims=ddims, &
     type_class=type_class, type_size=type_size, errcode=ierr)
-  if (ierr/=0) error stop 'h5fortran:rank_check: get_dataset_info ' // dname // ' read ' // self%filename
+  if (ierr/=0) error stop 'ERROR:h5fortran:rank_check: get_dataset_info ' // dname // ' read ' // self%filename
   if (ddims(1) == 1) then
     vector_scalar = .true.
     return
   endif
 endif
 
-write(stderr,'(A,I0,A,I0)') 'h5fortran:rank_check: rank mismatch ' // dname // ' = ',drank,'  variable rank =', mrank
+write(stderr,'(A,I0,A,I0)') 'ERROR:h5fortran:rank_check: rank mismatch ' // dname // ' = ',drank,'  variable rank =', mrank
 error stop
 
 end procedure hdf_rank_check
@@ -407,24 +410,25 @@ end procedure hdf_rank_check
 
 module procedure hdf_shape_check
 
-integer :: ierr, type_class
+integer :: ierr
 integer(SIZE_T) :: type_size
-integer(HSIZE_T) :: dsdims(size(dims))
+integer(HSIZE_T), dimension(size(dims)):: ddims
+integer :: type_class
 
 call hdf_rank_check(self, dname, size(dims))
 
 !> check for matching size, else bad reads can occur.
 
-call h5ltget_dataset_info_f(self%file_id, dname, dims=dsdims, &
+call h5ltget_dataset_info_f(self%file_id, dname, dims=ddims, &
     type_class=type_class, type_size=type_size, errcode=ierr)
 if (ierr/=0) error stop 'ERROR:h5fortran:shape_check: get_dataset_info ' // dname // ' read ' // self%filename
 
-if(present(dset_dims)) dset_dims = dsdims
+if(present(dset_dims)) dset_dims = ddims
 
 if(self%use_mpi) return
 
-if(any(int(dims, int64) /= dsdims)) then
-  write(stderr,*) 'ERROR:h5fortran:shape_check: shape mismatch ' // dname // ' = ', dsdims, '  variable shape =', dims
+if(any(int(dims, int64) /= ddims)) then
+  write(stderr,*) 'ERROR:h5fortran:shape_check: shape mismatch ' // dname // ' = ',ddims,'  variable shape =', dims
   error stop
 endif
 

@@ -51,7 +51,7 @@ character(*), intent(in) :: fn
 integer, intent(in) :: N(2), mpi_id, Nmpi
 
 type(hdf5_file) :: h5f
-integer(HSIZE_T) :: i0(2), i1(2), dx2
+integer :: i0(2), i1(2), dx2
 real(real32), allocatable :: A(:,:)
 
 !> MPI partition
@@ -107,9 +107,9 @@ integer, intent(in) :: N(2)
 
 type(hdf5_file) :: h5f
 real, allocatable :: A(:,:,:)
-integer(hsize_t) :: chunks(3)
+integer :: chunks(3)
 integer :: ierr, mpi_id, Nmpi
-integer(HSIZE_T) :: dx2, i0(3), i1(3)
+integer :: dx2, i0(3), i1(3)
 real :: fsize, crat
 
 !> MPI partition
@@ -171,9 +171,11 @@ integer, intent(in) :: N(2)
 
 type(hdf5_file) :: h5f
 integer, allocatable :: A(:,:,:)
-integer(hsize_t) :: chunks(3), dx2, i0(3), i1(3)
-integer :: mpi_id, Nmpi, M(3)
+integer :: chunks(3)
+integer :: dx2, i0(3), i1(3)
+integer :: mpi_id, Nmpi
 real :: fsize, crat
+integer :: M(3)
 
 !> MPI partition
 call mpi_comm_size(MPI_COMM_WORLD, Nmpi, ierr)
