@@ -38,8 +38,6 @@ endif()
 find_package(MPI COMPONENTS C Fortran REQUIRED)
 
 
-include(cmake/gcd.cmake)  # math functions
-
 # --- external libraries:  HDF5
 
 include(cmake/check_mpi.cmake)
