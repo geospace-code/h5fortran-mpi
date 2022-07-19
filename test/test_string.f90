@@ -48,6 +48,7 @@ call h%open(fn, action='w', mpi=.true.)
 
 call h%write('/little', '42')
 call h%write('/MySentence', 'this is a little sentence.')
+call h%write('/vector_scalar', ['vector scalar'])
 
 call h%close()
 
@@ -61,12 +62,13 @@ character(*), intent(in) :: fn
 type(hdf5_file) :: h
 character(2) :: value
 character(1024) :: val1k
+character(13) :: vs
 
 call h%open(fn, action='r', mpi=.true.)
 call h%read('/little', value)
 
 if(len_trim(value) /= 2) then
-  write(stderr,*) "test_string: read length ", len_trim(value), " /= 2"
+  write(stderr,'(a,i0,a)') "test_string: read length ", len_trim(value), " /= 2"
   error stop
 endif
 if (value /= '42') error stop 'test_string:  read/write verification failure. Value: '// value
@@ -81,6 +83,10 @@ if (len_trim(val1k) /= 2) then
   write(stderr, '(a,i0,/,a)') 'expected character len_trim 2 but got len_trim() = ', len_trim(val1k), val1k
   error stop
 endif
+
+!> vector scalar (length 1 vector)
+call h%read('/vector_scalar', vs)
+if(vs /= "vector scalar") error stop "test_string: vector_scalar"
 
 call h%close()
 

@@ -84,7 +84,7 @@ INACTIVITY_TIMEOUT 60
 file(MAKE_DIRECTORY ${HDF5_INCLUDE_DIRS})
 # avoid race condition
 
-# this GLOBAL is required to be visible via other project's FetchContent of h5fortran
+# this GLOBAL is required to be visible via other project's FetchContent
 add_library(HDF5::HDF5 INTERFACE IMPORTED GLOBAL)
 target_include_directories(HDF5::HDF5 INTERFACE "${HDF5_INCLUDE_DIRS}")
 target_link_libraries(HDF5::HDF5 INTERFACE "${HDF5_LIBRARIES}")

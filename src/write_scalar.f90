@@ -1,6 +1,6 @@
 submodule (h5mpi:write) write_scalar
 
-use hdf5, only: h5dwrite_f, h5tclose_f, h5sselect_none_f
+use hdf5, only: h5dwrite_f, h5sselect_none_f
 
 implicit none (type, external)
 
@@ -9,20 +9,15 @@ contains
 
 module procedure h5write_scalar
 
-integer :: ier, charlen
 integer(HSIZE_T) :: dset_dims(0), mem_dims(0)
 integer(HID_T) :: file_space_id, mem_space_id, dset_id, dtype_id, xfer_id, dtype
+integer :: ier, L
 
 xfer_id = H5P_DEFAULT_F
 
-if(.not. self%is_open()) error stop 'ERROR:h5fortran:write: file handle is not open'
-
-charlen = 0
+if(.not.self%is_open()) error stop 'ERROR:h5fortran:write: file handle is not open'
 
 select type (A)
-type is (character(*))
-  dtype = H5T_NATIVE_CHARACTER
-  charlen = len(A)
 type is (real(real32))
   dtype = H5T_NATIVE_REAL
 type is (real(real64))
@@ -31,13 +26,16 @@ type is (integer(int32))
   dtype = H5T_NATIVE_INTEGER
 type is (integer(int64))
   dtype = H5T_STD_I64LE
+type is (character(*))
+  dtype = H5T_NATIVE_CHARACTER
+  L = len(A)  !< workaround for GCC 8.3.0 bug
 class default
   error stop "ERROR:h5fortran:write: unknown variable type for " // dname
 end select
 
 call hdf_create(self, dname, dtype, mem_dims=mem_dims, dset_dims=dset_dims, &
     filespace_id=file_space_id, memspace=mem_space_id, dset_id=dset_id, dtype_id=dtype_id, compact=compact, &
-    charlen=charlen)
+    charlen=L)
 
 if(self%use_mpi) then
   if(self%mpi_id > 0) then
@@ -62,7 +60,7 @@ type is (integer(int64))
 type is (character(*))
   call h5dwrite_f(dset_id, dtype_id, A, dset_dims, ier, &
   file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
-  if (ier /= 0) error stop 'h5fortran:write:string: could not write ' // dname // ' to ' // self%filename
+  if (ier /= 0) error stop 'ERROR:h5fortran:write:string: could not write ' // dname // ' to ' // self%filename
   call h5tclose_f(dtype_id, ier)
 class default
   error stop "ERROR:h5fortran:write: unsupported type for " // dname

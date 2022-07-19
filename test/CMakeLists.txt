@@ -1,14 +1,5 @@
 set_directory_properties(PROPERTIES LABELS unit)
 
-# --- coverage
-
-if(ENABLE_COVERAGE)
-setup_target_for_coverage_gcovr_html(
-NAME coverage
-EXECUTABLE ${CMAKE_CTEST_COMMAND}
-)
-endif()
-
 # --- unit tests
 
 add_executable(test_runner runner.f90
@@ -23,43 +14,53 @@ else()
   set_target_properties(test_runner PROPERTIES LINKER_LANGUAGE CXX)
 endif()
 
-foreach(t attributes cast destructor exist groups layout shape string)
+# --- h5fortran unit tests
 
-  add_executable(test_${t} test_${t}.f90)
-  target_link_libraries(test_${t} PRIVATE h5mpi HDF5::HDF5 MPI::MPI_Fortran)
+function(setup_test names use_runner)
 
-  add_test(NAME ${t}
-  COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} $<TARGET_FILE:test_${t}>
-  )
-  # these tests could also be -n 2 instead of max_numprocs.
-  # Just trying to keep aware of possible problems vs. MPI worker count.
+foreach(name IN LISTS names)
+
+add_executable(test_${name} test_${name}.f90)
+target_link_libraries(test_${name} PRIVATE h5mpi::h5mpi)
+
+if(use_runner)
+set(cmd test_runner -exe $<TARGET_FILE:test_${name}> -mpiexec ${MPIEXEC_EXECUTABLE} -lx 1000)
+else()
+set(cmd ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} $<TARGET_FILE:test_${name}>)
+# these tests could also be -n 2 instead of max_numprocs.
+# Just trying to keep aware of possible problems vs. MPI worker count.
+if(${name} STREQUAL "string_read")
+  list(APPEND cmd ${string_file})
+endif()
+endif()
+
+
+
+add_test(NAME ${name} COMMAND ${cmd})
 
 endforeach()
 
+endfunction(setup_test)
 
-foreach(t deflate_write deflate_props deflate_read)
-
-  add_executable(test_${t} test_${t}.f90)
-  target_link_libraries(test_${t} PRIVATE h5mpi HDF5::HDF5 MPI::MPI_Fortran)
-
-  add_test(NAME ${t}
-  COMMAND test_runner -exe $<TARGET_FILE:test_${t}> -mpiexec ${MPIEXEC_EXECUTABLE} -lx 1000
-  )
-
-endforeach()
-
+cmake_path(SET string_file ${CMAKE_CURRENT_BINARY_DIR}/test_string_py.h5)
 
 # --- write test data
 add_executable(test_write test_write.f90)
-target_link_libraries(test_write PRIVATE h5mpi HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(test_write PRIVATE h5mpi::h5mpi)
 
 add_test(NAME write COMMAND test_write)
 
-# --- test dependencies
-
-set_tests_properties(${test_names} write PROPERTIES
-TIMEOUT 10
+set(test_names attributes cast destructor exist groups layout shape
+string string_read
 )
+
+setup_test("${test_names}" false)
+
+set(runner_tests deflate_write deflate_props deflate_read)
+
+setup_test("${runner_tests}" true)
+
+# --- test dependencies
 
 set_tests_properties(write PROPERTIES
 FIXTURES_SETUP test_files
@@ -79,9 +80,51 @@ FIXTURES_REQUIRED deflate_files
 REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/deflate1.h5
 )
 
+if(ENABLE_COVERAGE)
+setup_target_for_coverage_gcovr_html(
+NAME coverage
+EXECUTABLE ${CMAKE_CTEST_COMMAND}
+)
+endif()
+
 # --- Windows shared DLLs
 if(WIN32 AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
   set_tests_properties(${test_names} PROPERTIES
   ENVIRONMENT_MODIFICATION "PATH=path_list_append:${ZLIB_INCLUDE_DIRS}/../bin;PATH=path_list_append:${ZLIB_INCLUDE_DIR}/../bin"
   )
 endif()
+
+# --- Python h5py
+find_package(Python COMPONENTS Interpreter)
+if(NOT DEFINED h5py_ok)
+  execute_process(COMMAND ${Python_EXECUTABLE} -c "import h5py"
+  RESULT_VARIABLE h5py_code
+  )
+  if(h5py_code EQUAL 0)
+    set(h5py_ok true CACHE BOOL "h5py OK")
+  else()
+    set(h5py_ok false CACHE BOOL "h5py not OK")
+  endif()
+endif()
+
+set_tests_properties(string_read PROPERTIES
+FIXTURES_REQUIRED h5str
+DISABLED $<NOT:$<BOOL:${h5py_ok}>>
+)
+
+add_test(NAME PythonString
+COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_string.py ${string_file}
+)
+
+set_tests_properties(PythonString PROPERTIES
+FIXTURES_REQUIRED h5lib
+FIXTURES_SETUP h5str
+DISABLED $<NOT:$<BOOL:${h5py_ok}>>
+)
+
+get_property(test_names DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY TESTS)
+
+set_tests_properties(${test_names} PROPERTIES
+TIMEOUT 10
+WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)

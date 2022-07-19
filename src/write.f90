@@ -8,7 +8,7 @@ h5pset_chunk_f, h5pset_layout_f, h5pset_deflate_f, h5pset_shuffle_f, h5pset_flet
 H5P_DATASET_CREATE_F, &
 h5gopen_f, h5gcreate_f, h5gclose_f, &
 H5Lcreate_soft_f, h5lexists_f, &
-h5tcopy_f, h5tset_size_f, &
+h5tcopy_f, h5tclose_f, h5tset_size_f, &
 H5S_SCALAR_F, &
 H5D_COMPACT_F, &
 H5F_SCOPE_GLOBAL_F
