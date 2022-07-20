@@ -36,7 +36,7 @@ character(*), intent(in) :: fn
 type(hdf5_file) :: h5
 integer(int32) :: d0, d1(1), d2(1,2), d3(1,2,3), d4(1,2,3,4), d5(1,2,3,4,5), d6(1,2,3,4,5,6), d7(1,2,3,4,5,6,7)
 
-call h5%open(fn, action="w", mpi=.false.)
+call h5%open(fn, action="w", mpi=.true.)
 
 call h5%write("/d0", d0)
 call h5%write("/d1", d1)
@@ -65,7 +65,7 @@ d7_32 = 42
 d7_64 = 42
 
 
-call h%open(fn, action="w", mpi=.false.)
+call h%open(fn, action="w", mpi=.true.)
 
 call h%write("/compact1d", [1,2,3], compact=.true.)
 call h%write("/contig1d", [1,2,3], compact=.false.)

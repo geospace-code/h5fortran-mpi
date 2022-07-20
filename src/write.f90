@@ -21,6 +21,40 @@ implicit none (type, external)
 contains
 
 
+module procedure hdf_create_user
+!! for user %create() method
+
+integer(HID_T) :: file_space_id, mem_space_id, dset_id, dtype_id
+integer(HSIZE_T), dimension(size(dset_dims)) :: mdims, ddims
+integer :: ierr
+
+ddims = int(dset_dims, HSIZE_T)
+
+if(present(mem_dims)) then
+  mdims = int(mem_dims, HSIZE_T)
+else
+  mdims = ddims
+endif
+
+call hdf_create(self, dname, dtype, mem_dims=mdims, dset_dims=ddims, &
+  filespace_id=file_space_id, memspace=mem_space_id, dset_id=dset_id, dtype_id=dtype_id, compact=compact, &
+  charlen=charlen)
+
+call h5dclose_f(dset_id, ierr)
+if(ierr /= 0) error stop "ERROR:h5fortran:write:create_user: closing dataset: " // dname // " in " // self%filename
+
+if(file_space_id /= H5S_ALL_F) call h5sclose_f(file_space_id, ierr)
+if(ierr /= 0) error stop "ERROR:h5fortran:write:create_user: closing file dataspace: " // dname // " in " // self%filename
+
+if(mem_space_id /= H5S_ALL_F) call h5sclose_f(mem_space_id, ierr)
+if(ierr /= 0) error stop "ERROR:h5fortran:write:create_user: closing memory dataspace: " // dname // " in " // self%filename
+
+if(dtype == H5T_NATIVE_CHARACTER) call h5tclose_f(dtype_id, ierr)
+if(ierr /= 0) error stop "ERROR:h5fortran:write:create_user: closing datatype: " // dname // " in " // self%filename
+
+end procedure hdf_create_user
+
+
 module procedure hdf_create
 
 logical :: exists
@@ -241,7 +275,7 @@ if (ierr /= 0) error stop "ERROR:h5fortran:set_deflate:h5pset_chunk: " // self%f
 if (self%fletcher32) then
   !! fletcher32 filter adds a checksum to the data
   if (self%use_mpi .and. .not. self%parallel_compression) then
-    write(stderr, '(a)') 'WARNING: h5fortran:set_deflate: fletcher32 parallel filter not supported ' // self%filename
+    if(self%mpi_id == 0) write(stderr, '(a)') 'WARNING: h5fortran:set_deflate: fletcher32 parallel not supported ' // self%filename
   else
     call h5pset_fletcher32_f(dcpl, ierr)
     if (ierr /= 0) error stop "ERROR:h5fortran:set_deflate:h5pset_fletcher32: " // self%filename
@@ -249,7 +283,7 @@ if (self%fletcher32) then
 endif
 
 if (self%use_mpi .and. .not. self%parallel_compression) then
-  write(stderr, '(a)') 'WARNING: h5fortran:set_deflate: deflate parallel filter not supported ' // self%filename
+  if(self%mpi_id == 0) write(stderr, '(a)') 'WARNING: h5fortran:set_deflate: deflate parallel not supported ' // self%filename
   return
 endif
 
@@ -258,7 +292,7 @@ if (self%comp_lvl < 1 .or. self%comp_lvl > 9) return
 if(self%shuffle) then
   !! shuffle filter improves compression
   if (self%use_mpi .and. .not. self%parallel_compression) then
-    write(stderr, '(a)') 'WARNING: h5fortran:set_deflate: shuffle parallel filter not supported ' // self%filename
+    if(self%mpi_id == 0) write(stderr, '(a)') 'WARNING: h5fortran:set_deflate: shuffle parallel not supported ' // self%filename
   else
     call h5pset_shuffle_f(dcpl, ierr)
     if (ierr /= 0) error stop "ERROR:h5fortran:set_deflate:h5pset_shuffle: " // self%filename

@@ -39,16 +39,17 @@ end procedure id2name
 
 module procedure h5open
 
-character(len=2) :: laction
+character(:), allocatable :: laction
 integer :: ier
 integer(HID_T) :: fapl !< file access property list
+integer :: file_mode
 
 if(self%is_open()) then
   write(stderr,*) 'h5fortran:open: file handle already open: '//self%filename
   return
 endif
 
-laction = 'rw'
+laction = 'r'
 if (present(action)) laction = action
 
 self%filename = filename
@@ -103,9 +104,9 @@ if (ier /= 0) error stop 'ERROR:h5fortran:open: HDF5 library set traceback'
 
 if(self%use_mpi) then
   !! collective: setup for MPI access
-  call h5pcreate_f(H5P_FILE_ACCESS_F, fapl, ier)
+  call H5Pcreate_f(H5P_FILE_ACCESS_F, fapl, ier)
   if(ier /= 0) error stop "ERROR:h5fortran:open:h5pcreate could not collective open property for " // filename
-  call h5pset_fapl_mpio_f(fapl, mpi_h5comm, mpi_h5info, ier)
+  call H5Pset_fapl_mpio_f(fapl, mpi_h5comm, mpi_h5info, ier)
   if(ier /= 0) error stop "ERROR:h5fortran:open:h5pset_fapl_mpio could not collective open file for " // filename
 else
   fapl = H5P_DEFAULT_F
@@ -113,24 +114,31 @@ endif
 
 select case(laction)
 case('r')
-  if(.not. is_hdf5(filename)) error stop "ERROR:h5fortran:open: file does not exist: "//filename
-  call h5fopen_f(filename, H5F_ACC_RDONLY_F, self%file_id, ier, access_prp=fapl)
+  file_mode = H5F_ACC_RDONLY_F
 case('r+')
-  if(.not. is_hdf5(filename)) error stop "ERROR:h5fortran:open: file does not exist: "//filename
-  call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ier, access_prp=fapl)
+  file_mode = H5F_ACC_RDWR_F
 case('rw', 'a')
   if(is_hdf5(filename)) then
-    call h5fopen_f(filename, H5F_ACC_RDWR_F, self%file_id, ier, access_prp=fapl)
+    file_mode = H5F_ACC_RDWR_F
   else
-    call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ier, access_prp=fapl)
+    file_mode = H5F_ACC_TRUNC_F
   endif
 case ('w')
-  call h5fcreate_f(filename, H5F_ACC_TRUNC_F, self%file_id, ier, access_prp=fapl)
+  file_mode = H5F_ACC_TRUNC_F
 case default
   error stop 'ERROR:h5fortran:open Unsupported action ' // laction // ' for ' // filename
 end select
 
-if (ier /= 0) error stop "ERROR:h5fortran:open: HDF5 file open failed: "//filename
+if (file_mode == H5F_ACC_RDONLY_F .or. file_mode == H5F_ACC_RDWR_F) then
+  if(.not. is_hdf5(filename)) error stop "ERROR:h5fortran:open: not an HDF5 file: "//filename
+  call H5Fopen_f(filename, file_mode, self%file_id, ier, access_prp=fapl)
+  if (ier /= 0) error stop "ERROR:h5fortran:open:H5Fopen: " // filename
+elseif(file_mode == H5F_ACC_TRUNC_F) then
+  call H5Fcreate_f(filename, file_mode, self%file_id, ier, access_prp=fapl)
+  if (ier /= 0) error stop "ERROR:h5fortran:open:H5Fcreate: " // filename
+else
+  error stop "ERROR:h5fortran:open: Unsupported file mode: " // filename
+endif
 
 if(fapl /= H5P_DEFAULT_F) then
   call h5pclose_f(fapl, ier)
@@ -302,27 +310,30 @@ dset_name = id2name(dset_id)
 
 !> check that all necessary filters to access dataset are available on the system.
 call h5dget_create_plist_f(dset_id, dcpl, ierr)
-if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5dget_create_plist: " // dset_name
+if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5dget_create_plist: " // dset_name
 
 call h5pall_filters_avail_f(dcpl, filters_OK, ierr)
-if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5pall_filters_avail: " // dset_name
+if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5pall_filters_avail: " // dset_name
 if (.not. filters_OK) then
   error stop "h5fortran: filter(s) missing necessary for dataset " // dset_name // " in parallel with MPI. This is " // &
     "typically caused by missing DEFLATE compression with HDF5-MPI."
 endif
 
 call h5pclose_f(dcpl, ierr)
-if(ierr/=0) error stop "h5fortran:mpi_hyperslab:h5pclose: " // dset_name
+if(ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5pclose: " // dset_name
+
+istride = 1
+if(present(stride)) istride = int(stride, HSIZE_T)
 
 if(filespace == H5S_ALL_F) then
   !> create dataspace
   call h5screate_simple_f(rank=size(dset_dims), dims=dset_dims, space_id=filespace, hdferr=ierr)
-  if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5screate_simple:filespace " // dset_name
+  if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5screate_simple:filespace " // dset_name
 endif
 
 !> Select hyperslab in the file.
 call h5dget_space_f(dset_id, filespace, ierr)
-if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5dget_space: " // dset_name
+if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5dget_space: " // dset_name
 
 
 ! blk(1) = 1
@@ -332,9 +343,6 @@ if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5dget_space: " // dset_name
 i0 = istart - 1
 c_mem_dims = iend - i0
 
-istride = 1
-if(present(stride)) istride = int(stride, HSIZE_T)
-
 if(any(c_mem_dims /= mem_dims)) then
   write(stderr,*) "ERROR:h5fortran:mpi_hyperslab: memory size /= dataset size: check variable slice (index). " // &
     " Dset_dims:", dset_dims, "C Mem_dims", c_mem_dims
@@ -343,7 +351,7 @@ endif
 
 ! print *, 'TRACE:mpi_hyperslab: ' // dset_name //': istart', i0, 'C mem_dims: ', c_mem_dims, 'mem_dims', mem_dims
 
-if(any(c_mem_dims < 1)) error stop "h5mpi:hyperslab:non-positive hyperslab: " // dset_name
+if(any(c_mem_dims < 1)) error stop "ERROR:h5mpi:hyperslab:non-positive hyperslab: " // dset_name
 
 call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
 start=i0, &
@@ -352,11 +360,11 @@ count=c_mem_dims, &
 hdferr=ierr)
 ! block=blk  !< would this help performance?
 
-if (ierr/=0) error stop "g5fortran:mpi_hyperslab:h5sselect_hyperslab: " // dset_name
+if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5sselect_hyperslab: " // dset_name
 
 !> create memory dataspace
 call h5screate_simple_f(rank=size(c_mem_dims), dims=c_mem_dims, space_id=memspace, hdferr=ierr)
-if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5screate_simple:memspace " // dset_name
+if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5screate_simple:memspace " // dset_name
 
 end procedure mpi_hyperslab
 
@@ -367,10 +375,10 @@ integer :: ierr
 
 !! Create property list for collective dataset operations
 call h5pcreate_f(H5P_DATASET_XFER_F, xfer_id, ierr)
-if (ierr/=0) error stop "h5pcreate dataset xfer: " // dname
+if (ierr/=0) error stop "ERROR:h5fortran:h5pcreate dataset xfer: " // dname
 
 call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_COLLECTIVE_F, ierr)
-if (ierr/=0) error stop "h5pset_dxpl_mpio collective: " // dname
+if (ierr/=0) error stop "ERROR:h5fortran:h5pset_dxpl_mpio collective: " // dname
 
 ! For independent dataset operations
 ! call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_INDEPENDENT_F, ierr)

@@ -39,7 +39,7 @@ contains
 procedure, public :: open => h5open
 procedure, public :: close => h5close
 procedure, public :: write_group
-procedure, public :: create => hdf_create
+procedure, public :: create => hdf_create_user
 procedure, public :: flush => hdf_flush
 procedure, public :: filesize => hdf_filesize
 procedure, public :: ndim => hdf_get_ndim
@@ -102,6 +102,18 @@ public :: HSIZE_T, H5T_NATIVE_REAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_N
 public :: H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F
 
 interface !< write.f90
+
+module subroutine hdf_create_user(self, dname, dtype, dset_dims, mem_dims, chunk_size, compact, charlen)
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dname
+integer(HID_T), intent(in) :: dtype
+integer, dimension(:), intent(in) :: dset_dims
+integer, dimension(:), intent(in), optional :: mem_dims
+integer, intent(in), dimension(:), optional :: chunk_size  !< (:) instead of size(dims) due to intel fortran quirk
+logical, intent(in), optional :: compact
+integer, intent(in), optional :: charlen
+end subroutine
+
 module subroutine hdf_create(self, dname, dtype, mem_dims, dset_dims, &
   filespace_id, memspace, dset_id, dtype_id, &
   istart, iend, stride, chunk_size, compact, charlen)
