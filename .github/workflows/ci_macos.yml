@@ -24,6 +24,7 @@ jobs:
     strategy:
       matrix:
         shared: [true, false]
+    # HDF5-MPI upstream is broken for shared MacOS builds.
 
     steps:
 
@@ -64,7 +65,8 @@ jobs:
 
     strategy:
       matrix:
-        shared: [true, false]
+        shared: [false]
+    # HDF5-MPI upstream is broken for shared MacOS builds.
 
     steps:
 
