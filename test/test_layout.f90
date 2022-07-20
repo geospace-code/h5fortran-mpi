@@ -1,6 +1,6 @@
 program test_layout
 
-use, intrinsic :: iso_fortran_env, only : real32, real64, int32
+use, intrinsic :: iso_fortran_env, only : real32, real64, int32, stderr => error_unit
 
 use h5mpi, only : hdf5_file
 
@@ -48,18 +48,21 @@ real(real64), dimension(1,1,1,1,1,1,1) :: r7_64
 call h%open(fn, action="r", mpi=.true.)
 
 call h%read("/compact_r32", r64)
-if(r64 /= 142) error stop "read real32 => real64"
+if(abs(r64 - 142) > 0.001) then
+  write(stderr,*) r64
+  error stop "ERROR:test_layout_read: read real32 => real64: " // fn
+endif
 call h%read("/compact_r64", r32)
-if(r32 /= 142) error stop "read real64 => real32"
+if(abs(r32 - 142) > 0.001) error stop "ERROR:test_layout_read: read real64 => real32"
 call h%read("/compact_i32", i32)
-if(r32 /= 142) error stop "read int32 => int32"
+if(r32 /= 142) error stop "ERROR:test_layout_read: read int32 => int32"
 
 
 call h%read("/compact7d_32", r7_64)
-if (any(r7_64 /= 42)) error stop "read real32 => real64"
+if (any(r7_64 /= 42)) error stop "ERROR:test_layout: read real32 => real64"
 
 call h%read("/compact7d_64", r7_32)
-if (any(r7_32 /= 42)) error stop "read real64 => real32"
+if (any(r7_32 /= 42)) error stop "ERROR:test_layout: read real64 => real32"
 
 call h%close()
 

@@ -182,7 +182,7 @@ class(*), intent(in) :: value(..)  !< array to write
 integer, intent(in), dimension(rank(value)), optional :: dset_dims
 integer, intent(in), optional, dimension(rank(value)) :: istart, iend, stride !< array slicing for hyperslab
 integer, intent(in), optional :: chunk_size(rank(value))  !< override auto-chunking
-logical, intent(in), optional :: compact  !< faster I/O for sub-64 kB datasets
+logical, intent(in), optional :: compact  !< faster I/O for sub-64 kB datasets--May not work for MPI collective write
 ```
 
 Write dataset attribute (e.g. units or instrument)

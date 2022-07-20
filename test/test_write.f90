@@ -20,8 +20,10 @@ if (ierr /= 0) error stop "mpi_comm_rank"
 call test_simple_write('test_write.h5')
 if(mpi_id == 0) print *, "OK: test simple write"
 
-call test_layout_write('test_layout.h5')
-if(mpi_id == 0) print *, "OK: test layout write"
+if(mpi_id == 0) then
+  call test_layout_write('test_layout.h5')
+  print *, "OK: test layout write"
+endif
 
 call mpi_finalize(ierr)
 if (ierr /= 0) error stop "mpi_finalize"
@@ -38,6 +40,16 @@ integer(int32) :: d0, d1(1), d2(1,2), d3(1,2,3), d4(1,2,3,4), d5(1,2,3,4,5), d6(
 
 call h5%open(fn, action="w", mpi=.true.)
 
+!> just to have some default value
+d0 = 0
+d1 = 1
+d2 = 2
+d3 = 3
+d4 = 4
+d5 = 5
+d6 = 6
+d7 = 7
+
 call h5%write("/d0", d0)
 call h5%write("/d1", d1)
 call h5%write("/d2", d2)
@@ -53,7 +65,7 @@ end subroutine test_simple_write
 
 
 subroutine test_layout_write(fn)
-
+!! NOTE: compact datsets do not work for collective writes, at least for HDF5 1.12.2. The dataset will be all zero.
 character(*), intent(in) :: fn
 
 type(hdf5_file) :: h
@@ -65,7 +77,7 @@ d7_32 = 42
 d7_64 = 42
 
 
-call h%open(fn, action="w", mpi=.true.)
+call h%open(fn, action="w", mpi=.false.)
 
 call h%write("/compact1d", [1,2,3], compact=.true.)
 call h%write("/contig1d", [1,2,3], compact=.false.)
