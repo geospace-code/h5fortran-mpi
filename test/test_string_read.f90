@@ -2,22 +2,31 @@ program main
 
 use hdf5, only: H5T_STR_NULLPAD_F, H5T_STR_NULLTERM_F
 use h5mpi, only: hdf5_file
+use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank
 
 implicit none (type, external)
+
+external :: mpi_finalize
 
 character(1000) :: pyp, vstr, fstr
 character(4), parameter :: smiley = "😀", wink = "😉"
 character(4) :: u1
 
 
-integer :: i
+integer :: i, mpi_id, ierr
 
 type(hdf5_file) :: h
+
+call mpi_init(ierr)
+if (ierr /= 0) error stop "mpi_init"
+
+call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
+if(ierr/=0) error stop "mpi_comm_rank"
 
 call get_command_argument(1, pyp, status=i)
 if (i/=0) error stop "specify file to read"
 
-call h%open(pyp, "r", mpi=.false.)
+call h%open(pyp, "r", mpi=.true.)
 
 call h%read("/variable", vstr)
 if(vstr /= "Hello World!") error stop "h5py read variable length failed: " // trim(vstr)
@@ -43,9 +52,11 @@ call h%readattr("/nullpad", "wink", u1)
 print '(a)', "attribute: wink: " // u1
 if(u1 /= wink) error stop "test_utf8:attr: wink failed"
 
-
 call h%close()
 
-print *, "OK: variable/nullpad length string read"
+if(mpi_id == 0) print *, "OK: variable/nullpad length string read"
+
+call mpi_finalize(ierr)
+if (ierr /= 0) error stop "mpi_finalize"
 
 end program

@@ -3,14 +3,28 @@ program test_scalar
 use, intrinsic :: iso_fortran_env, only : real32, real64, int32
 
 use h5mpi, only : hdf5_file
+use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank
 
 implicit none (type, external)
 
+external :: mpi_finalize
+
+integer :: ierr, mpi_id
+
+call mpi_init(ierr)
+if (ierr /= 0) error stop "mpi_init"
+
+call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
+if (ierr /= 0) error stop "mpi_comm_rank"
+
 call test_simple_write('test_write.h5')
-print *, "OK: test simple write"
+if(mpi_id == 0) print *, "OK: test simple write"
 
 call test_layout_write('test_layout.h5')
-print *, "OK: test layout write"
+if(mpi_id == 0) print *, "OK: test layout write"
+
+call mpi_finalize(ierr)
+if (ierr /= 0) error stop "mpi_finalize"
 
 
 contains
