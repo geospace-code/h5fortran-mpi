@@ -50,7 +50,7 @@ target_link_libraries(test_write PRIVATE h5mpi::h5mpi)
 
 add_test(NAME write COMMAND test_write)
 
-set(test_names array attributes cast destructor exist groups layout shape
+set(test_names array attributes cast destructor exist fill groups layout shape
 string string_read
 )
 

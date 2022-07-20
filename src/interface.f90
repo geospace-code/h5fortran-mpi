@@ -103,7 +103,7 @@ public :: H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F
 
 interface !< write.f90
 
-module subroutine hdf_create_user(self, dname, dtype, dset_dims, mem_dims, chunk_size, compact, charlen)
+module subroutine hdf_create_user(self, dname, dtype, dset_dims, mem_dims, chunk_size, compact, charlen, fill_value)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 integer(HID_T), intent(in) :: dtype
@@ -112,11 +112,12 @@ integer, dimension(:), intent(in), optional :: mem_dims
 integer, intent(in), dimension(:), optional :: chunk_size  !< (:) instead of size(dims) due to intel fortran quirk
 logical, intent(in), optional :: compact
 integer, intent(in), optional :: charlen
+class(*), intent(in), optional :: fill_value
 end subroutine
 
 module subroutine hdf_create(self, dname, dtype, mem_dims, dset_dims, &
   filespace_id, memspace, dset_id, dtype_id, &
-  istart, iend, stride, chunk_size, compact, charlen)
+  istart, iend, stride, chunk_size, compact, charlen, fill_value)
 
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
@@ -127,6 +128,7 @@ integer(HID_T), intent(out), optional :: dtype_id
 integer, intent(in), dimension(:), optional :: chunk_size, istart, iend, stride
 logical, intent(in), optional :: compact
 integer, intent(in), optional :: charlen !< length of character scalar
+class(*), intent(in), optional :: fill_value
 end subroutine
 
 module subroutine write_group(self, group_path)

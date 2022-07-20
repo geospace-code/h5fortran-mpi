@@ -4,7 +4,8 @@ use hdf5, only: &
 h5fflush_f, &
 h5screate_f, h5sclose_f, h5screate_simple_f, &
 h5dcreate_f, h5dopen_f, h5dclose_f, h5dget_space_f, &
-h5pset_chunk_f, h5pset_layout_f, h5pset_deflate_f, h5pset_shuffle_f, h5pset_fletcher32_f, h5pcreate_f, h5pclose_f, &
+h5pset_chunk_f, h5pset_layout_f, h5pset_deflate_f, h5pset_shuffle_f, h5pset_fletcher32_f, &
+h5pcreate_f, h5pclose_f, h5pset_fill_value_f, &
 H5P_DATASET_CREATE_F, &
 h5gopen_f, h5gcreate_f, h5gclose_f, &
 H5Lcreate_soft_f, h5lexists_f, &
@@ -38,7 +39,7 @@ endif
 
 call hdf_create(self, dname, dtype, mem_dims=mdims, dset_dims=ddims, &
   filespace_id=file_space_id, memspace=mem_space_id, dset_id=dset_id, dtype_id=dtype_id, compact=compact, &
-  charlen=charlen)
+  charlen=charlen, fill_value=fill_value)
 
 call h5dclose_f(dset_id, ierr)
 if(ierr /= 0) error stop "ERROR:h5fortran:write:create_user: closing dataset: " // dname // " in " // self%filename
@@ -144,6 +145,29 @@ if(dtype == H5T_NATIVE_CHARACTER) then
   dtype_id = type_id
 else
   type_id = dtype
+endif
+
+!> fill value
+if(present(fill_value)) then
+  if(dcpl == H5P_DEFAULT_F) then
+    call h5pcreate_f(H5P_DATASET_CREATE_F, dcpl, ierr)
+    if (ierr /= 0) error stop "ERROR:h5fortran:set_fill:h5pcreate: " // self%filename
+  endif
+
+  select type (fill_value)
+  !! type_id MUST equal the fill_value type or "transfer()" like bit pattern unexpected data will result
+  type is (real(real32))
+    call h5pset_fill_value_f(dcpl, H5T_NATIVE_REAL, fill_value, ierr)
+  type is (real(real64))
+    call h5pset_fill_value_f(dcpl, H5T_NATIVE_DOUBLE, fill_value, ierr)
+  type is (integer(int32))
+    call h5pset_fill_value_f(dcpl, H5T_NATIVE_INTEGER, fill_value, ierr)
+  !! int64 is NOT available for h5pset_fill_value_f
+  type is (character(*))
+    call h5pset_fill_value_f(dcpl, type_id, fill_value, ierr)
+  class default
+    error stop "ERROR:h5fortran:create: unknown fill value type"
+  end select
 endif
 
 !> create dataset
