@@ -33,12 +33,12 @@ end select
 !> create or open dataset
 call hdf_create(self, dname, dtype, mem_dims=mem_dims, dset_dims=dims_dset, &
 filespace_id=file_space_id, memspace=mem_space_id, dset_id=dset_id, &
-istart=istart, iend=iend, chunk_size=chunk_size, compact=compact, &
+istart=istart, iend=iend, stride=stride, chunk_size=chunk_size, compact=compact, &
 dtype_id=dtype_id, charlen=charlen)
 
 if(self%use_mpi) then
   if(present(dset_dims)) then
-    call mpi_hyperslab(mem_dims, dims_dset, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend)
+    call mpi_hyperslab(mem_dims, dims_dset, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend, stride=stride)
   elseif(self%mpi_id > 0) then
     call h5sselect_none_f(file_space_id, ier)
     if(ier /= 0) error stop "ERROR:h5fortran:writer:h5sselect_none: selecting no write failed for worker. " // dname

@@ -292,7 +292,7 @@ end procedure is_hdf5
 
 module procedure mpi_hyperslab
 
-integer(HSIZE_T), dimension(size(mem_dims)) :: c_mem_dims, i0
+integer(HSIZE_T), dimension(size(mem_dims)) :: c_mem_dims, i0, istride
 integer(HID_T) :: dcpl
 integer :: ierr
 logical :: filters_OK
@@ -332,6 +332,9 @@ if (ierr/=0) error stop "h5fortran:mpi_hyperslab:h5dget_space: " // dset_name
 i0 = istart - 1
 c_mem_dims = iend - i0
 
+istride = 1
+if(present(stride)) istride = int(stride, HSIZE_T)
+
 if(any(c_mem_dims /= mem_dims)) then
   write(stderr,*) "ERROR:h5fortran:mpi_hyperslab: memory size /= dataset size: check variable slice (index). " // &
     " Dset_dims:", dset_dims, "C Mem_dims", c_mem_dims
@@ -344,9 +347,9 @@ if(any(c_mem_dims < 1)) error stop "h5mpi:hyperslab:non-positive hyperslab: " //
 
 call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
 start=i0, &
+stride=istride, &
 count=c_mem_dims, &
 hdferr=ierr)
-! stride=1, &  !< for now we don't stride data
 ! block=blk  !< would this help performance?
 
 if (ierr/=0) error stop "g5fortran:mpi_hyperslab:h5sselect_hyperslab: " // dset_name
@@ -387,7 +390,7 @@ if (.not.self%exist(dname)) error stop 'ERROR:h5fortran:rank_check: ' // dname /
 
 !> check for matching rank, else bad reads can occur--doesn't always crash without this check
 call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ierr)
-if (ierr/=0) error stop 'ERROR:h5fortran:rank_check: get_dataset_ndim ' // dname // ' read ' // self%filename
+if (ierr/=0) error stop 'ERROR:h5fortran:rank_check:get_dataset_ndims: ' // dname // ' in ' // self%filename
 
 if (drank == mrank) return
 
@@ -395,7 +398,7 @@ if (present(vector_scalar) .and. drank == 1 .and. mrank == 0) then
   !! check if vector of length 1
   call h5ltget_dataset_info_f(self%file_id, dname, dims=ddims, &
     type_class=type_class, type_size=type_size, errcode=ierr)
-  if (ierr/=0) error stop 'ERROR:h5fortran:rank_check: get_dataset_info ' // dname // ' read ' // self%filename
+  if (ierr/=0) error stop 'ERROR:h5fortran:rank_check:get_dataset_info ' // dname // ' in ' // self%filename
   if (ddims(1) == 1) then
     vector_scalar = .true.
     return
