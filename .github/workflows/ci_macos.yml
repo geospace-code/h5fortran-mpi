@@ -2,7 +2,6 @@ name: ci_macos
 
 env:
   CTEST_PARALLEL_LEVEL: 4
-  CMAKE_BUILD_TYPE: Release
   HOMEBREW_NO_INSTALL_CLEANUP: 1
   FC: gfortran-11
 
@@ -28,6 +27,13 @@ jobs:
 
     steps:
 
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+
+    - name: install h5py
+      run: pip install h5py
+
     - run: brew install hdf5-mpi ninja libaec
 
     - uses: actions/checkout@v2
@@ -40,6 +46,38 @@ jobs:
     - run: cmake --build --preset release
     - run: ctest --preset release
 
+    - run: cmake --install build
+
+    - name: configure examples
+      run: cmake -S example -B example/build -DCMAKE_PREFIX_PATH:PATH=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
+    - name: build Examples
+      run: cmake --build example/build --parallel
+    - name: Test Examples
+      run: ctest --test-dir example/build -V
+
+
+  macos-build:
+    needs: macos
+    runs-on: macos-latest
+    timeout-minutes: 20
+
+    strategy:
+      matrix:
+        shared: [true, false]
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - name: Configure HDF5
+      run: cmake -S scripts -B scripts/build -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
+
+    - name: Build/install HDF5
+      run: cmake --build scripts/build --parallel
+
+    - run: cmake -B build -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }} -DCMAKE_PREFIX_PATH=${{ runner.temp }}
+    - run: cmake --build build --parallel
+    - run: ctest --test-dir build --preset default
     - run: cmake --install build
 
     - name: configure examples
