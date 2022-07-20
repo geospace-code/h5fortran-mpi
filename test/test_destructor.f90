@@ -4,7 +4,7 @@ program test_destruct
 
 use, intrinsic :: iso_fortran_env, only : stderr=>error_unit
 
-use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank, mpi_barrier
+use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank
 
 use h5mpi, only: hdf5_file
 

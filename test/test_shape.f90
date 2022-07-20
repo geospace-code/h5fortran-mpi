@@ -3,7 +3,7 @@ program test_shape
 
 use, intrinsic:: iso_fortran_env, only: real64, int32, stdout=>output_unit, stderr=>error_unit
 
-use mpi, only : mpi_init, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
+use mpi, only : mpi_init, mpi_comm_rank, MPI_COMM_WORLD
 
 use h5mpi, only: hdf5_file,hsize_t, is_hdf5
 

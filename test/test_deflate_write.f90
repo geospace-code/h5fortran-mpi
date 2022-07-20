@@ -77,7 +77,7 @@ i1(2) = i0(2) + dx2 - 1
 if(debug) print '(a,i0,1x,2i5,2x,2i5)', "write_deflate partition: mpi_id, i0, i1 ", mpi_id, i0, i1
 
 call h5f%open(fn, action='w', comp_lvl=1, mpi=.true.)
-call h5f%write('/A', A, N, istart=i0, iend=i1, chunk_size=[5, 50])
+call h5f%write('/A', A, dset_dims=N, istart=i0, iend=i1, chunk_size=[5, 50])
 call h5f%close()
 
 deallocate(A)
@@ -131,21 +131,22 @@ i1(3) = size(A, 3)
 
 call h5f%open(fn, action='w', comp_lvl=3, mpi=.true.)
 
-call h5f%write('/A', A, [N(1), N(2), 4], istart=i0, iend=i1, chunk_size=[4, 20, 1])
+call h5f%write('/A', A, dset_dims=[N(1), N(2), 4], istart=i0, iend=i1, chunk_size=[4, 20, 1])
 call h5f%chunks('/A', chunks)
 if(chunks(1) /= 4 .or. chunks(3) /= 1)  then
   write(stderr, '(a,3I5)') "expected chunks: 4,*,1 but got chunks ", chunks
   error stop '#2 manual chunk unexpected chunk size'
 endif
 
-call h5f%write('/A_autochunk', A, [N(1), N(2), 4], istart=i0, iend=i1)
+call h5f%write('/A_autochunk', A, dset_dims=[N(1), N(2), 4], istart=i0, iend=i1)
 call h5f%chunks('/A_autochunk', chunks)
 if(any(chunks < 1)) error stop '#2 auto chunk unexpected chunk size'
 
 call h5f%close()
 
-call h5f%open(fn, action='r', mpi=.false.)
 if(mpi_id == 0) then
+  call h5f%open(fn, action='r', mpi=.false.)
+
   fsize = real(h5f%filesize())
   crat = (2 * N(1) * N(2) * 4 * storage_size(A) / 8) / fsize
   !! 2* since two datasets same size
@@ -157,9 +158,9 @@ if(mpi_id == 0) then
   else
     print *, "test_deflate_whole: MPI commpression was disabled, so " // fn // " was not compressed."
   endif
-endif
 
-call h5f%close()
+  call h5f%close()
+endif
 
 end subroutine test_deflate_whole
 
@@ -205,8 +206,9 @@ call h5f%chunks('/A', chunks)
 if(any(chunks < 1)) error stop '#3 auto chunk unexpected chunk size'
 call h5f%close()
 
-call h5f%open(fn, action='r', mpi=.false.)
 if(mpi_id == 0) then
+  call h5f%open(fn, action='r', mpi=.false.)
+
   fsize = real(h5f%filesize())
   crat = (N(1) * N(2) * storage_size(A) / 8) / fsize
 
@@ -217,9 +219,9 @@ if(mpi_id == 0) then
   else
     print *, "test_deflate_slice: MPI commpression was disabled, so " // fn // " was not compressed."
   endif
-endif
 
-call h5f%close()
+  call h5f%close()
+endif
 
 end subroutine test_deflate_slice
 
