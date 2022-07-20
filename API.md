@@ -31,14 +31,14 @@ call h%open(filename, action, mpi, comp_lvl)
 !! Opens hdf5 file
 
 character(*), intent(in) :: filename
-character(*), intent(in), optional :: action  !< 'r', 'w', 'rw', 'r+'
+character(*), intent(in), optional :: action  !< 'r', 'r+', 'w', 'rw'  (default 'r')
 logical, intent(in) :: mpi  !< .true.: use HDF5-MPI   .false.: use serial HDF5
 integer, intent(in), optional      :: comp_lvl  !< 0: no compression. 1-9: ZLIB compression, higher is more compressior
 ```
 
 ```fortran
 call h%close(close_hdf5_interface)
-!! This must be called on each HDF5 file to flush buffers to disk
+!! This must be called on each open file to flush buffers to disk
 !! data loss can occur if program terminates before this procedure
 !!
 !! close_hdf5_interface is when you know you have exactly one HDF5 file in your
@@ -47,11 +47,12 @@ call h%close(close_hdf5_interface)
 logical, intent(in), optional :: close_hdf5_interface
 ```
 
-To avoid memory leaks or corrupted files, always "close()" all hDF5 files before STOPping the Fortran program.
+To avoid memory leaks or corrupted files, always "close" files before STOPping the Fortran program.
+
+## Flush data to disk while file is open
 
 ```fortran
 call h%flush()
-!! request operating system flush data to disk.
 ```
 
 ## Disk variable (dataset) inquiry
@@ -68,6 +69,7 @@ Get disk dataset shape (1D vector)
 
 ```fortran
 call h%shape(dataset_name, dims)
+
 character(*), intent(in) :: dataset_name
 integer(HSIZE_T), intent(out), allocatable :: dims(:)
 ```
@@ -93,15 +95,24 @@ character(*), intent(in) :: dname
 Does dataset "dname" exist in this HDF5 file?
 
 ```fortran
-exists = h%exist(dname)
+tf = h%exist(dname)
+
 character(*), intent(in) :: dname
+```
+
+Does attribute "attr" exist for object "obj" in this file?
+
+```fortran
+tf = h%exist_attr(obj, attr)
+
+character(*), intent(in) :: obj, attr
 ```
 
 Is dataset "dname" contiguous on disk?
 
 ```fortran
 tf = h%is_contig(dname)
-!! is dataset contiguous
+
 character(*), intent(in) :: dname
 ```
 
@@ -140,18 +151,18 @@ character(*), intent(in) :: dname
 
 ```fortran
 call h%chunks(dname, chunk_size)
+
 character(*), intent(in) :: dname
 integer, intent(out) :: chunk_size(:)
 ```
 
 ## create dataset softlink
 
-HDF5 can create dataset softlinks within an HDF5 file:
+One of the key features of HDF5 is the ability to create dataset softlinks within an HDF5 file:
 
 ```fortran
-call h%softlink(tgt, link)
-
-character(*), intent(in) :: tgt, &  !< target path to link dataset
+call h%softlink(target, link)
+character(*), intent(in) :: target, &  !< target path to link dataset
                             link  !< soft link path to create
 ```
 
@@ -164,20 +175,21 @@ If overall dataset dimensions "dset_dims" is present, data is collectively gathe
 Otherwise, h5fortran-mpi assumes that root has all the data to be written and ignores the workers.
 
 ```fortran
-call h%write(dname, value, dset_dims, istart, iend, chunk_size, compact)
+call h%write(dname, value, dset_dims, istart, iend, stride, chunk_size, compact)
 !! write 0d..7d dataset
 character(*), intent(in) :: dname
 class(*), intent(in) :: value(..)  !< array to write
 integer, intent(in), dimension(rank(value)), optional :: dset_dims
-integer, intent(in), optional, dimension(rank(value)) :: istart, iend !< array slicing for hyperslab
+integer, intent(in), optional, dimension(rank(value)) :: istart, iend, stride !< array slicing for hyperslab
 integer, intent(in), optional :: chunk_size(rank(value))  !< override auto-chunking
 logical, intent(in), optional :: compact  !< faster I/O for sub-64 kB datasets
 ```
 
-Write dataset attribute (e.g. units or instrument):
+Write dataset attribute (e.g. units or instrument)
 
 ```fortran
 call h%writeattr(dname, attr, attrval)
+
 character(*), intent(in) :: dname, attr  !< dataset name, attribute name
 class(*), intent(in) :: attrval(:)  !< character, real, integer
 ```
@@ -203,4 +215,10 @@ Read dataset attribute into memory:
 call h%readattr(dname, attr, attrval)
 character(*), intent(in) :: dname, attr  !< dataset name, attribute name
 class(*), intent(inout) :: attrval(:)  !< character scalar; real vector, integer vector
+```
+
+## delete attribute
+
+```fortran
+call h%delete_attr(dname, attr)
 ```
