@@ -249,14 +249,6 @@ character(*), intent(in) :: dname
 integer(HSIZE_T), intent(out), allocatable :: dims(:)
 end subroutine
 
-module subroutine h5open_read(self, dname, dims, dset_dims, filespace, memspace, dset_id)
-class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: dname
-integer(HSIZE_T), intent(in) :: dims(:)
-integer(HSIZE_T), intent(out) :: dset_dims(:)
-integer(HID_T), intent(out) :: filespace, memspace, dset_id
-end subroutine
-
 module integer function get_strpad(self, dset_name)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dset_name

@@ -2,16 +2,24 @@ integer(HSIZE_T), dimension(rank(A)) :: dims, dset_dims
 integer(HID_T) :: dset_id, file_space_id, mem_space_id, xfer_id
 integer :: dclass, ier
 
-xfer_id = H5P_DEFAULT_F
+file_space_id = H5S_ALL_F
+mem_space_id = H5S_ALL_F
+
 dims = shape(A, HSIZE_T)
 
-call h5open_read(self, dname, dims, dset_dims, file_space_id, mem_space_id, dset_id)
+call H5Dopen_f(self%file_id, dname, dset_id, ier)
+if(ier /= 0) error stop 'ERROR:h5open_read: open ' // dname // ' from ' // self%filename
+
+if(present(istart) .and. present(iend)) then
+  call mpi_hyperslab(dims, dset_dims, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend, stride=stride)
+else
+  call hdf_shape_check(self, dname, dims, dset_dims)
+endif
 
 if(self%use_mpi) then
-  if(present(istart) .and. present(iend)) then
-    call mpi_hyperslab(dims, dset_dims, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend, stride=stride)
-  endif
   xfer_id = mpi_collective(dname)
+else
+  xfer_id = H5P_DEFAULT_F
 endif
 
 call get_dset_class(self, dname, dclass, dset_id)

@@ -181,6 +181,7 @@ if(Ndset > 0) then
     if(ierr /= 0) error stop "ERROR:h5fortran:close:h5fget_name: could not get filename of open dataset: " // self%filename
 
     call h5iget_name_f(obj_ids(i), dset_name, L, Lds_name, ierr)
+    if(ierr /= 0) error stop "ERROR:h5fortran:close:h5iget_name could not get dataset name: " // self%filename
 
     write(stderr,*) "h5fortran:close: open dataset: " // dset_name(:Lds_name) // " in file: " // file_name(:Lf_name)
   end do

@@ -27,6 +27,10 @@ add_test(NAME ${name} COMMAND test_${name})
 
 endforeach()
 
+set_tests_properties(${names} PROPERTIES
+LABELS nompi
+)
+
 endfunction(nompi_test)
 
 
@@ -51,17 +55,22 @@ endif()
 
 add_test(NAME ${name} COMMAND ${cmd})
 
-set_tests_properties(${name} PROPERTIES
-RESOUCE_LOCK cpu_mpi
-)
-
 endforeach()
+
+set_tests_properties(${names} PROPERTIES
+RESOUCE_LOCK cpu_mpi
+LABELS mpi
+)
 
 endfunction(mpi_test)
 
 cmake_path(SET string_file ${CMAKE_CURRENT_BINARY_DIR}/test_string_py.h5)
 
 # --- write test data
+
+set(nompi_tests array)
+
+nompi_test(${nompi_tests})
 
 set(mpi_tests array_mpi attributes cast destructor exist fill groups layout shape
 string string_read write

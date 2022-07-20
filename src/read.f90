@@ -17,23 +17,6 @@ implicit none (type, external)
 contains
 
 
-module procedure h5open_read
-
-integer :: ierr
-integer(HID_T) :: plist_id
-
-filespace = H5S_ALL_F
-memspace = H5S_ALL_F
-plist_id = H5P_DEFAULT_F
-
-call hdf_shape_check(self, dname, dims, dset_dims)
-
-call h5dopen_f(self%file_id, dname, dset_id, ierr)
-if(ierr /= 0) error stop 'ERROR:h5open_read: open ' // dname // ' from ' // self%filename
-
-end procedure h5open_read
-
-
 module procedure get_class
 call get_dset_class(self, dname, get_class)
 end procedure get_class
