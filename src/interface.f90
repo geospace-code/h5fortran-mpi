@@ -3,7 +3,6 @@ module h5fortran
 use, intrinsic :: iso_c_binding, only : c_ptr, c_loc
 use, intrinsic :: iso_fortran_env, only : real32, real64, int32, int64, stderr=>error_unit
 
-use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL, mpi_comm_rank
 use hdf5, only : HID_T, SIZE_T, HSIZE_T, &
 H5S_ALL_F, H5S_SELECT_SET_F, &
 H5T_NATIVE_DOUBLE, H5T_NATIVE_REAL, H5T_NATIVE_INTEGER, H5T_NATIVE_CHARACTER, H5T_STD_I64LE, &
@@ -13,8 +12,6 @@ H5P_DEFAULT_F
 implicit none (type, external)
 
 private
-
-integer, parameter :: mpi_h5comm = MPI_COMM_WORLD, mpi_h5info = MPI_INFO_NULL
 
 !> main type
 type :: hdf5_file
@@ -84,15 +81,7 @@ final :: destructor
 
 end type hdf5_file
 
-
-type :: mpi_tags
-
-integer :: a2=102, a3=103
-
-end type mpi_tags
-
-
-public :: mpi_h5comm,  mpi_tags, has_parallel_compression
+public :: has_parallel_compression
 public :: hdf5_file, is_hdf5
 public :: hdf_rank_check, hdf_shape_check, hdf5version, h5exist, hdf5_close
 public :: mpi_collective, mpi_hyperslab
@@ -583,11 +572,12 @@ character(*), intent(in) :: dname !< just for error messages
 logical, intent(in) :: use_mpi
 end function
 
-module integer(HID_T) function mpi_opener(filename, use_mpi, mpi_id) result(fapl)
+module subroutine mpi_opener(filename, use_mpi, mpi_id, fapl)
 character(*), intent(in) :: filename !< just for error messages
 logical, intent(in) :: use_mpi
-integer, intent(in) :: mpi_id
-end function
+integer, intent(out) :: mpi_id
+integer(HID_T), intent(out) :: fapl
+end subroutine
 
 end interface
 

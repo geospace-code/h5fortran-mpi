@@ -112,7 +112,7 @@ case default
   error stop 'ERROR:h5fortran:open Unsupported action ' // laction // ' for ' // filename
 end select
 
-fapl = mpi_opener(filename, self%use_mpi, self%mpi_id)
+call mpi_opener(filename, self%use_mpi, self%mpi_id, fapl)
 
 if (file_mode == H5F_ACC_RDONLY_F .or. file_mode == H5F_ACC_RDWR_F) then
   if(.not. is_hdf5(filename)) error stop "ERROR:h5fortran:open: not an HDF5 file: "//filename

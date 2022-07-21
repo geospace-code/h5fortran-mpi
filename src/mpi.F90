@@ -6,6 +6,8 @@ submodule (h5fortran) mpi_smod
 use hdf5, only : h5pcreate_f, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, &
 H5FD_MPIO_COLLECTIVE_F, &
 H5P_DATASET_XFER_F
+
+use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL, mpi_comm_rank
 #endif
 
 use hdf5, only : H5P_FILE_ACCESS_F
@@ -45,19 +47,20 @@ module procedure mpi_opener
 integer :: ier
 
 fapl = H5P_DEFAULT_F
+mpi_id = -1
 
 if (.not. use_mpi) return
 
 #ifdef h5fortran_HAVE_PARALLEL
 
-call mpi_comm_rank(mpi_h5comm, mpi_id, ier)
+call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:opener: could not get MPI ID"
 
 !! collective: setup for MPI access
 call H5Pcreate_f(H5P_FILE_ACCESS_F, fapl, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:opener:h5pcreate could not collective open property for " // filename
 
-call H5Pset_fapl_mpio_f(fapl, mpi_h5comm, mpi_h5info, ier)
+call H5Pset_fapl_mpio_f(fapl, MPI_COMM_WORLD, MPI_INFO_NULL, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:opener:h5pset_fapl_mpio could not collective open file for " // filename
 
 #endif
