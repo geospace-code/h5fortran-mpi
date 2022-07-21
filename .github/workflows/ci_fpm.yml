@@ -33,4 +33,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - run: fpm build
+      env:
+        FPM_FFLAGS: -Dh5fortran_HAVE_PARALLEL
+
     - run: fpm test

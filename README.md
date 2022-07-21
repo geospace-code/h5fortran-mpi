@@ -62,6 +62,16 @@ cmake -B build -DHDF5_ROOT=~/lib_par
 cmake --build build
 ```
 
+---
+
+Fortran Package Manager (FPM) users build like:
+
+```sh
+fpm build --flag -Dh5fortran_HAVE_PARALLEL
+
+fpm test
+```
+
 ## Notes
 
 To build and install the HDF5 parallel library use the script:

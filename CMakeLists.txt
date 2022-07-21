@@ -51,6 +51,7 @@ endif()
 # --- HDF5-MPI object oriented API
 
 add_library(h5fortran)
+target_compile_definitions(h5fortran PRIVATE -Dh5fortran_HAVE_PARALLEL)
 target_include_directories(h5fortran PUBLIC
 $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
 $<INSTALL_INTERFACE:include>

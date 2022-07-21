@@ -9,12 +9,10 @@ h5fget_obj_count_f, h5fget_obj_ids_f, h5fget_name_f, &
 h5sselect_hyperslab_f, h5screate_simple_f, &
 h5dopen_f, h5dclose_f, h5dget_space_f, &
 h5dget_create_plist_f, &
-h5pcreate_f, h5pset_fapl_mpio_f, h5pall_filters_avail_f, h5pset_dxpl_mpio_f, h5pclose_f, &
+h5pcreate_f, h5pall_filters_avail_f, h5pclose_f, &
 H5F_ACC_RDONLY_F, H5F_ACC_RDWR_F, H5F_ACC_TRUNC_F, &
 H5F_OBJ_FILE_F, H5F_OBJ_GROUP_F, H5F_OBJ_DATASET_F, H5F_OBJ_DATATYPE_F, H5F_OBJ_ALL_F, &
-H5D_CONTIGUOUS_F, H5D_CHUNKED_F, H5D_COMPACT_F, &
-H5FD_MPIO_COLLECTIVE_F, &
-H5P_DATASET_XFER_F, H5P_FILE_ACCESS_F
+H5D_CONTIGUOUS_F, H5D_CHUNKED_F, H5D_COMPACT_F
 
 use h5lt, only : h5ltget_dataset_ndims_f, h5ltget_dataset_info_f
 
@@ -55,11 +53,6 @@ if (present(action)) laction = action
 self%filename = filename
 
 self%use_mpi = mpi
-
-if(self%use_mpi) then
-  call mpi_comm_rank(mpi_h5comm, self%mpi_id, ier)
-  if(ier /= 0) error stop "ERROR:h5fortran:open: could not get MPI ID"
-endif
 
 if(present(debug)) self%debug = debug
 
@@ -102,16 +95,6 @@ if (ier /= 0) error stop 'ERROR:h5fortran:open: HDF5 library set traceback'
 !! OK to call repeatedly
 !! https://support.hdfgroup.org/HDF5/doc/RM/RM_H5.html#Library-Open
 
-if(self%use_mpi) then
-  !! collective: setup for MPI access
-  call H5Pcreate_f(H5P_FILE_ACCESS_F, fapl, ier)
-  if(ier /= 0) error stop "ERROR:h5fortran:open:h5pcreate could not collective open property for " // filename
-  call H5Pset_fapl_mpio_f(fapl, mpi_h5comm, mpi_h5info, ier)
-  if(ier /= 0) error stop "ERROR:h5fortran:open:h5pset_fapl_mpio could not collective open file for " // filename
-else
-  fapl = H5P_DEFAULT_F
-endif
-
 select case(laction)
 case('r')
   file_mode = H5F_ACC_RDONLY_F
@@ -128,6 +111,8 @@ case ('w')
 case default
   error stop 'ERROR:h5fortran:open Unsupported action ' // laction // ' for ' // filename
 end select
+
+fapl = mpi_opener(filename, self%use_mpi, self%mpi_id)
 
 if (file_mode == H5F_ACC_RDONLY_F .or. file_mode == H5F_ACC_RDWR_F) then
   if(.not. is_hdf5(filename)) error stop "ERROR:h5fortran:open: not an HDF5 file: "//filename
@@ -368,23 +353,6 @@ call h5screate_simple_f(rank=size(c_mem_dims), dims=c_mem_dims, space_id=memspac
 if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5screate_simple:memspace " // dset_name
 
 end procedure mpi_hyperslab
-
-
-module procedure mpi_collective
-
-integer :: ierr
-
-!! Create property list for collective dataset operations
-call h5pcreate_f(H5P_DATASET_XFER_F, xfer_id, ierr)
-if (ierr/=0) error stop "ERROR:h5fortran:h5pcreate dataset xfer: " // dname
-
-call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_COLLECTIVE_F, ierr)
-if (ierr/=0) error stop "ERROR:h5fortran:h5pset_dxpl_mpio collective: " // dname
-
-! For independent dataset operations
-! call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_INDEPENDENT_F, ierr)
-
-end procedure mpi_collective
 
 
 module procedure hdf_rank_check

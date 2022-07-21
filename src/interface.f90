@@ -554,10 +554,6 @@ integer, dimension(size(istart)), intent(in) :: iend
 integer, dimension(size(istart)), intent(in), optional :: stride
 end subroutine
 
-module integer(HID_T) function mpi_collective(dname) result(xfer_id)
-character(*), intent(in) :: dname !< just for error messages
-end function
-
 module subroutine hdf_rank_check(self, dname, mrank, vector_scalar)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
@@ -575,6 +571,22 @@ end subroutine
 module integer(HSIZE_T) function hdf_filesize(self)
 !! returns the size of the HDF5 file in bytes
 class(hdf5_file), intent(in) :: self
+end function
+
+end interface
+
+
+interface !< mpi.f90
+
+module integer(HID_T) function mpi_collective(dname, use_mpi) result(xfer_id)
+character(*), intent(in) :: dname !< just for error messages
+logical, intent(in) :: use_mpi
+end function
+
+module integer(HID_T) function mpi_opener(filename, use_mpi, mpi_id) result(fapl)
+character(*), intent(in) :: filename !< just for error messages
+logical, intent(in) :: use_mpi
+integer, intent(in) :: mpi_id
 end function
 
 end interface

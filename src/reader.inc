@@ -16,11 +16,7 @@ else
   call hdf_shape_check(self, dname, dims, dset_dims)
 endif
 
-if(self%use_mpi) then
-  xfer_id = mpi_collective(dname)
-else
-  xfer_id = H5P_DEFAULT_F
-endif
+xfer_id = mpi_collective(dname, self%use_mpi)
 
 call get_dset_class(self, dname, dclass, dset_id)
 

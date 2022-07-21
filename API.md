@@ -32,7 +32,7 @@ call h%open(filename, action, mpi, comp_lvl)
 
 character(*), intent(in) :: filename
 character(*), intent(in), optional :: action  !< 'r', 'r+', 'w', 'rw'  (default 'r')
-logical, intent(in) :: mpi  !< .true.: use HDF5-MPI   .false.: use serial HDF5
+logical, intent(in) :: mpi  !< .true.: use HDF5-MPI   .false.: non-MPI HDF5 (default)
 integer, intent(in), optional      :: comp_lvl  !< 0: no compression. 1-9: ZLIB compression, higher is more compressior
 ```
 

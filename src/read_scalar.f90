@@ -37,9 +37,7 @@ if(ier/=0) error stop 'ERROR:h5fortran:reader: ' // dname // ' could not be open
 
 call get_dset_class(self, dname, dclass, dset_id)
 
-if(self%use_mpi) then
-  xfer_id = mpi_collective(dname)
-endif
+xfer_id = mpi_collective(dname, self%use_mpi)
 
 !> cast the dataset read from disk to the variable type presented by user h5f%read("/my_dataset", x)
 !> We only cast when needed to save memory.
