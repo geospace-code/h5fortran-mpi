@@ -1,4 +1,4 @@
-submodule (h5mpi:hdf5_read) read_scalar
+submodule (h5fortran:hdf5_read) read_scalar
 
 use hdf5, only : H5Dread_f, &
 H5Sclose_f

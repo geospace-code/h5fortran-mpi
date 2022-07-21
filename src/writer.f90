@@ -1,4 +1,4 @@
-submodule (h5mpi:write) writer
+submodule (h5fortran:write) writer
 
 use hdf5, only: h5dwrite_f, h5sselect_none_f
 

@@ -5,7 +5,7 @@ use, intrinsic:: iso_fortran_env, only:  stderr=>error_unit
 use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank
 
 use hdf5, only: H5T_STR_SPACEPAD_F
-use h5mpi, only: hdf5_file
+use h5fortran, only: hdf5_file
 
 implicit none (type, external)
 

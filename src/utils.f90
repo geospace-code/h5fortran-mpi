@@ -1,4 +1,4 @@
-submodule (h5mpi) utils_smod
+submodule (h5fortran) utils_smod
 
 use hdf5, only: h5get_libversion_f, &
 h5eset_auto_f, &
@@ -352,7 +352,7 @@ endif
 
 ! print *, 'TRACE:mpi_hyperslab: ' // dset_name //': istart', i0, 'C mem_dims: ', c_mem_dims, 'mem_dims', mem_dims
 
-if(any(c_mem_dims < 1)) error stop "ERROR:h5mpi:hyperslab:non-positive hyperslab: " // dset_name
+if(any(c_mem_dims < 1)) error stop "ERROR:h5fortran:hyperslab:non-positive hyperslab: " // dset_name
 
 call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
 start=i0, &

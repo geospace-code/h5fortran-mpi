@@ -1,4 +1,4 @@
-submodule (h5mpi:attr_smod) attr_read
+submodule (h5fortran:attr_smod) attr_read
 
 use, intrinsic :: iso_c_binding, only : C_CHAR, C_NULL_CHAR, C_F_POINTER
 

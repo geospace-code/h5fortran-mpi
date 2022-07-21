@@ -1,7 +1,7 @@
 program main
 
 use hdf5, only: H5T_STR_NULLPAD_F, H5T_STR_NULLTERM_F
-use h5mpi, only: hdf5_file
+use h5fortran, only: hdf5_file
 use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank
 
 implicit none (type, external)

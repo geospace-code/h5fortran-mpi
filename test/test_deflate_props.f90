@@ -5,7 +5,7 @@ use, intrinsic :: iso_fortran_env, only : int64, stderr=>output_unit
 use hdf5, only : H5D_CHUNKED_F, H5D_CONTIGUOUS_F
 use mpi, only : mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 
-use h5mpi, only: hdf5_file, HSIZE_T, has_parallel_compression
+use h5fortran, only: hdf5_file, HSIZE_T, has_parallel_compression
 
 implicit none (type, external)
 

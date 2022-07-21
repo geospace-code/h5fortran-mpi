@@ -8,7 +8,7 @@ use, intrinsic:: iso_fortran_env, only: int32, int64, real32, real64, stderr=>er
 
 use mpi, only : mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 
-use h5mpi, only: hdf5_file, HSIZE_T
+use h5fortran, only: hdf5_file, HSIZE_T
 
 implicit none (type, external)
 

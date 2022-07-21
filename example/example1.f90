@@ -4,7 +4,7 @@ use, intrinsic :: iso_fortran_env, only : real32, int32
 
 use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
 
-use h5mpi, only : hdf5_file, HSIZE_T
+use h5fortran, only : hdf5_file, HSIZE_T
 
 implicit none (type, external)
 

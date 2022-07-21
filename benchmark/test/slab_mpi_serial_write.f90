@@ -8,7 +8,7 @@ use, intrinsic :: iso_fortran_env, only : int64, real32, real64, stderr=>error_u
 
 use mpi, only : mpi_comm_rank, mpi_comm_size, mpi_integer, mpi_real, mpi_status_ignore
 
-use h5mpi, only : mpi_h5comm, hdf5_file, mpi_tags
+use h5fortran, only : mpi_h5comm, hdf5_file, mpi_tags
 
 use cli, only : get_cli, get_simsize
 use perf, only : print_timing, sysclock2ms

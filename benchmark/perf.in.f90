@@ -3,7 +3,7 @@ module perf
 use, intrinsic :: iso_fortran_env, only : int64, stderr=>error_unit, stdout=>output_unit, compiler_version
 use mpi, only : mpi_get_version, MPI_Get_library_version
 
-use h5mpi, only : hdf5_file, hdf5version, HSIZE_T
+use h5fortran, only : hdf5_file, hdf5version, HSIZE_T
 
 use median_mod, only : median
 
@@ -83,11 +83,11 @@ call f%write("/os", @runner_os@)
 call f%write("/hdf5version", hdf5version())
 
 call mpi_get_version(mpi_api_version(1), mpi_api_version(2), ierr)
-if(ierr /= 0) error stop "h5mpi:perf: mpi_get_version failed"
+if(ierr /= 0) error stop "h5fortran:perf: mpi_get_version failed"
 call f%write("/mpi_api_version", mpi_api_version)
 
 call MPI_Get_library_version(mpi_lib_version, L, ierr)
-if(ierr /= 0) error stop "h5mpi:perf: MPI_Get_library_version failed"
+if(ierr /= 0) error stop "h5fortran:perf: MPI_Get_library_version failed"
 call f%write("/mpi_lib_version", mpi_lib_version)
 
 call f%close()

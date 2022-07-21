@@ -1,4 +1,4 @@
-submodule (h5mpi:hdf5_read) hdf5_reader
+submodule (h5fortran:hdf5_read) hdf5_reader
 
 use hdf5, only: h5dread_f, h5sclose_f
 

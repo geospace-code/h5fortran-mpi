@@ -1,4 +1,4 @@
-submodule (h5mpi) h5conf
+submodule (h5fortran) h5conf
 
 implicit none (type, external)
 

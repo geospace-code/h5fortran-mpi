@@ -12,7 +12,7 @@ endif()
 file(READ ${CMAKE_CURRENT_LIST_DIR}/codemeta.json _j)
 string(JSON PROJECT_VERSION GET ${_j} version)
 
-project(h5mpi
+project(h5fortran
 LANGUAGES C Fortran
 VERSION ${PROJECT_VERSION}
 DESCRIPTION "Lightweight object-oriented HDF5 MPI parallel Fortran interface"
@@ -50,25 +50,25 @@ endif()
 
 # --- HDF5-MPI object oriented API
 
-add_library(h5mpi)
-target_include_directories(h5mpi PUBLIC
+add_library(h5fortran)
+target_include_directories(h5fortran PUBLIC
 $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
 $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(h5mpi PUBLIC HDF5::HDF5 MPI::MPI_Fortran)
-set_target_properties(h5mpi PROPERTIES
+target_link_libraries(h5fortran PUBLIC HDF5::HDF5 MPI::MPI_Fortran)
+set_target_properties(h5fortran PROPERTIES
 Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include
 LABELS core
 VERSION ${PROJECT_VERSION}
 )
 
 # GLOBAL needed for use by FetchContent
-add_library(h5mpi::h5mpi INTERFACE IMPORTED GLOBAL)
-target_link_libraries(h5mpi::h5mpi INTERFACE h5mpi)
+add_library(h5fortran::h5fortran INTERFACE IMPORTED GLOBAL)
+target_link_libraries(h5fortran::h5fortran INTERFACE h5fortran)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/h5mpi.mod TYPE INCLUDE)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/h5fortran.mod TYPE INCLUDE)
 
-install(TARGETS h5mpi EXPORT ${PROJECT_NAME}-targets)
+install(TARGETS h5fortran EXPORT ${PROJECT_NAME}-targets)
 
 add_subdirectory(src)
 

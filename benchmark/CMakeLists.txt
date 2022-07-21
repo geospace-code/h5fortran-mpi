@@ -22,7 +22,7 @@ add_library(perf OBJECT
 median.f90
 ${CMAKE_CURRENT_BINARY_DIR}/perf.f90
 )
-target_link_libraries(perf PRIVATE h5mpi HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(perf PRIVATE h5fortran HDF5::HDF5 MPI::MPI_Fortran)
 
 add_library(kernel OBJECT kernel.f90)
 add_library(partition OBJECT partition.f90)

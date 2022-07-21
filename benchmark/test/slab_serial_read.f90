@@ -3,7 +3,7 @@ program read_slab_serial
 
 use, intrinsic :: iso_fortran_env, only : int64, real32, real64, stderr=>error_unit
 
-use h5mpi, only : hdf5_file, HSIZE_T
+use h5fortran, only : hdf5_file, HSIZE_T
 
 use cli, only : get_cli
 use perf, only : print_timing

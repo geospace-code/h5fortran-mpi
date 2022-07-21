@@ -2,7 +2,7 @@ program test_attributes
 
 use, intrinsic:: iso_fortran_env, only: int32, real32, real64, stderr=>error_unit
 
-use h5mpi, only: hdf5_file
+use h5fortran, only: hdf5_file
 use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank
 
 implicit none (type, external)

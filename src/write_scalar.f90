@@ -1,4 +1,4 @@
-submodule (h5mpi:write) write_scalar
+submodule (h5fortran:write) write_scalar
 
 use hdf5, only: h5dwrite_f, h5sselect_none_f
 

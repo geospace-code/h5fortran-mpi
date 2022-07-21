@@ -1,4 +1,4 @@
-submodule (h5mpi:attr_smod) attr_write
+submodule (h5fortran:attr_smod) attr_write
 
 use hdf5, only: H5Awrite_f
 

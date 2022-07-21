@@ -1,20 +1,20 @@
 add_executable(slab_mpi_write slab_mpi_write.f90)
-target_link_libraries(slab_mpi_write PRIVATE h5mpi cli perf test_utils kernel HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab_mpi_write PRIVATE h5fortran cli perf test_utils kernel HDF5::HDF5 MPI::MPI_Fortran)
 add_executable(slab_mpi_read slab_mpi_read.f90)
-target_link_libraries(slab_mpi_read PRIVATE h5mpi cli perf HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab_mpi_read PRIVATE h5fortran cli perf HDF5::HDF5 MPI::MPI_Fortran)
 
 add_library(test_utils OBJECT utils.f90)
 target_link_libraries(test_utils PRIVATE kernel MPI::MPI_Fortran)
 
 add_executable(slab_mpi_serial_write slab_mpi_serial_write.f90)
-target_link_libraries(slab_mpi_serial_write PRIVATE h5mpi cli perf test_utils kernel HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab_mpi_serial_write PRIVATE h5fortran cli perf test_utils kernel HDF5::HDF5 MPI::MPI_Fortran)
 add_executable(slab_mpi_serial_read slab_mpi_serial_read.f90)
-target_link_libraries(slab_mpi_serial_read PRIVATE h5mpi cli perf HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab_mpi_serial_read PRIVATE h5fortran cli perf HDF5::HDF5 MPI::MPI_Fortran)
 
 add_executable(slab_serial_write slab_serial_write.f90)
-target_link_libraries(slab_serial_write PRIVATE h5mpi cli perf test_utils kernel HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab_serial_write PRIVATE h5fortran cli perf test_utils kernel HDF5::HDF5 MPI::MPI_Fortran)
 add_executable(slab_serial_read slab_serial_read.f90)
-target_link_libraries(slab_serial_read PRIVATE h5mpi cli perf HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab_serial_read PRIVATE h5fortran cli perf HDF5::HDF5 MPI::MPI_Fortran)
 
 cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
 cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)

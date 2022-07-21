@@ -21,7 +21,7 @@ function(nompi_test names)
 foreach(name IN LISTS names)
 
 add_executable(test_${name} test_${name}.f90)
-target_link_libraries(test_${name} PRIVATE h5mpi::h5mpi)
+target_link_libraries(test_${name} PRIVATE h5fortran::h5fortran)
 
 add_test(NAME ${name} COMMAND test_${name})
 
@@ -39,7 +39,7 @@ function(mpi_test names use_runner)
 foreach(name IN LISTS names)
 
 add_executable(test_${name} test_${name}.f90)
-target_link_libraries(test_${name} PRIVATE h5mpi::h5mpi)
+target_link_libraries(test_${name} PRIVATE h5fortran::h5fortran)
 
 if(use_runner)
   set(cmd test_runner -exe $<TARGET_FILE:test_${name}> -mpiexec ${MPIEXEC_EXECUTABLE} -lx 1000)

@@ -1,4 +1,4 @@
-submodule (h5mpi) hdf5_read
+submodule (h5fortran) hdf5_read
 
 use, intrinsic:: iso_c_binding, only : c_null_char
 

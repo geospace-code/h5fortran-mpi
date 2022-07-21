@@ -1,4 +1,4 @@
-module h5mpi
+module h5fortran
 
 use, intrinsic :: iso_c_binding, only : c_ptr, c_loc
 use, intrinsic :: iso_fortran_env, only : real32, real64, int32, int64, stderr=>error_unit
@@ -579,4 +579,4 @@ end function
 
 end interface
 
-end module h5mpi
+end module h5fortran

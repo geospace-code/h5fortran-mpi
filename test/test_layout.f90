@@ -2,7 +2,7 @@ program test_layout
 
 use, intrinsic :: iso_fortran_env, only : real32, real64, int32, stderr => error_unit
 
-use h5mpi, only : hdf5_file
+use h5fortran, only : hdf5_file
 
 use hdf5, only : H5D_COMPACT_F
 use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank

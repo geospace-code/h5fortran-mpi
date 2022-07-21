@@ -1,4 +1,4 @@
-submodule (h5mpi) write
+submodule (h5fortran) write
 
 use hdf5, only: &
 h5fflush_f, &

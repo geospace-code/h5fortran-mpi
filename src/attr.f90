@@ -1,4 +1,4 @@
-submodule (h5mpi) attr_smod
+submodule (h5fortran) attr_smod
 
 use hdf5, only : H5S_SCALAR_F, &
 H5Aexists_by_name_f, H5Aopen_by_name_f, H5Aclose_f, H5Acreate_by_name_f, H5Adelete_f, &
