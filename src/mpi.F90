@@ -63,6 +63,10 @@ if(ier /= 0) error stop "ERROR:h5fortran:opener:h5pcreate could not collective o
 call H5Pset_fapl_mpio_f(fapl, MPI_COMM_WORLD, MPI_INFO_NULL, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:opener:h5pset_fapl_mpio could not collective open file for " // filename
 
+#else
+
+error stop "%open(mpi=.true.) requires HDF5-MPI, which is not currently linked to h5fortran." // filename
+
 #endif
 
 end procedure mpi_opener

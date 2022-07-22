@@ -52,7 +52,7 @@ if (present(action)) laction = action
 
 self%filename = filename
 
-self%use_mpi = mpi
+if(present(mpi)) self%use_mpi = mpi
 
 if(present(debug)) self%debug = debug
 

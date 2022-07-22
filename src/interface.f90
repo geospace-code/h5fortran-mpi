@@ -468,7 +468,7 @@ module subroutine h5open(self, filename, action, mpi, comp_lvl, shuffle, fletche
 class(hdf5_file), intent(inout) :: self
 character(*), intent(in) :: filename
 character(*), intent(in), optional :: action !< r, r+, rw, w, a
-logical, intent(in) :: mpi
+logical, intent(in), optional :: mpi
 integer, intent(in), optional :: comp_lvl  !< 0: no compression. 1-9: ZLIB compression, higher is more compressior
 logical, intent(in), optional :: shuffle
 logical, intent(in), optional :: fletcher32
