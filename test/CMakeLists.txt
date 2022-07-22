@@ -56,7 +56,7 @@ cmake_path(SET string_file ${CMAKE_CURRENT_BINARY_DIR}/test_string_py.h5)
 
 # --- non-MPI tests
 
-set(nompi_tests array attributes)
+set(nompi_tests array attributes cast)
 
 nompi_test("${nompi_tests}")
 
@@ -80,7 +80,7 @@ endif()
 
 # --- MPI tests
 
-set(mpi_tests array_mpi attributes_mpi cast destructor exist fill groups layout shape
+set(mpi_tests array_mpi attributes_mpi cast_mpi destructor exist fill groups layout shape
 string string_read write
 )
 

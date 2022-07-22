@@ -52,7 +52,7 @@ enddo
 r1 = i1
 r2 = i2
 
-call h%open(filename, action='w', comp_lvl=1, mpi=.false.)
+call h%open(filename, action='w', comp_lvl=1)
 
 call h%write('/int32-1d', i1)
 call h%write('/test/group2/int32-2d', i2)
@@ -62,7 +62,7 @@ call h%write('/nan', nan)
 call h%close()
 
 !! read
-call h%open(filename, action='r', mpi=.false.)
+call h%open(filename, action='r')
 
 !> int32
 call h%read('/int32-1d', i1t)
@@ -112,7 +112,7 @@ do i = 1,size(i2,2)
   i2(i,:) = i2(1,:) * i
 enddo
 
-call h%open(filename, action='r', mpi=.false.)
+call h%open(filename, action='r')
 
 i1t = 0
 call h%read('/int32-1d', i1t(:2), istart=[2], iend=[3], stride=[1])
@@ -151,7 +151,7 @@ integer :: dims(1), dims2(2)
 
 dims = [3]
 
-call h%open(filename, action='r+', debug=.true., mpi=.false.)
+call h%open(filename, action='r+', debug=.true.)
 
 call h%create('/int32a-1d', dtype=H5T_NATIVE_INTEGER, dset_dims=dims)
 call h%write('/int32a-1d', [1,3], dset_dims=dims, istart=[1], iend=[2])
@@ -203,7 +203,7 @@ allocate(flux(nn,ng),fo(nn))
 flux = 1.0
 write(pnc,'(I2)') pn
 
-call h%open(filename, action='rw', mpi=.false.)
+call h%open(filename, action='rw')
 
 do i = 1,ng
   write(ic,'(I2)') i

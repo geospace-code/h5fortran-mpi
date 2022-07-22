@@ -2,19 +2,36 @@ program test_cast
 !! test HDF5 built-in casting
 
 use h5fortran, only : hdf5_file, &
- H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F, &
- H5T_NATIVE_REAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_NATIVE_CHARACTER, H5T_STD_I64LE
+H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F, &
+H5T_NATIVE_REAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_NATIVE_CHARACTER, H5T_STD_I64LE
+
+use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank
+
 use, intrinsic :: iso_fortran_env, only : real32, real64, int32, int64
 
 implicit none (type, external)
 
+external :: mpi_finalize
+
 character(*), parameter :: fn = 'test_cast.h5'
+integer :: ierr, mpi_id
+
+call mpi_init(ierr)
+if (ierr /= 0) error stop "mpi_init"
+
+call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
+if (ierr /= 0) error stop "mpi_comm_rank"
+
 
 call test_cast_write(fn)
-print "(A)", "OK: cast write"
+if(mpi_id == 0) print "(A)", "OK: cast write"
 
 call test_cast_read(fn)
-print "(A)", "OK: cast read"
+if(mpi_id == 0) print "(A)", "OK: cast read"
+
+
+call mpi_finalize(ierr)
+if (ierr /= 0) error stop "mpi_finalize"
 
 
 contains
@@ -26,7 +43,7 @@ character(*), intent(in) :: fn
 
 type(hdf5_file) :: h
 
-call h%open(fn, action='w')
+call h%open(fn, action='w', mpi=.true.)
 
 !> test values
 call h%write('/scalar_int32', 42_int32)
@@ -53,7 +70,7 @@ real(real32) :: r32
 integer(int32) :: i32
 integer(int64) :: i64, i1_64(2)
 
-call h%open(fn, action='r')
+call h%open(fn, action='r', mpi=.true.)
 
 !> %class method
 if (h%class("/scalar_int32") /= H5T_INTEGER_F) error stop "int32 not integer"
@@ -78,7 +95,6 @@ call h%read('/scalar_int32', i64)
 if(i64 /= 42) error stop 'scalar cast int32 => int64'
 call h%read('/scalar_int64', i32)
 if(i32 /= 42) error stop 'scalar cast int64 => int32'
-print *, 'PASSED: scalar cast on read'
 
 !> 1D vector read casting -- real to int and int to real
 call h%read('/1d_real32', r1_64)
@@ -87,8 +103,6 @@ call h%read('/1d_int32', i1_64)
 if (.not.all([2, 4] == i1_64)) error stop '1D cast int32 => int64'
 
 call h%close()
-
-print "(A)", "OK: cast"
 
 end subroutine test_cast_read
 
