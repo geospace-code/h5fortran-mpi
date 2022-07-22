@@ -8,7 +8,7 @@ if(hdf5_parallel)
   find_package(MPI REQUIRED COMPONENTS C)
 endif()
 
-# pass MPI hints to HDF5
+# pass MPI hints to HDF5, which needs it as a CMake variable--HDF5 project doesn't detect ENV{MPI_ROOT}
 if(NOT MPI_ROOT AND DEFINED ENV{MPI_ROOT})
   set(MPI_ROOT $ENV{MPI_ROOT})
 endif()

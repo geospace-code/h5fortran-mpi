@@ -1,20 +1,6 @@
 set_directory_properties(PROPERTIES LABELS unit)
 
-# --- unit tests
-
-add_executable(test_runner runner.f90
-${PROJECT_SOURCE_DIR}/benchmark/cpu.cpp
-${PROJECT_SOURCE_DIR}/benchmark/partition.f90
-${PROJECT_SOURCE_DIR}/benchmark/cli.f90
-)
-# not linked as libraries in case benchmarks aren't built
-if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
-  set_target_properties(test_runner PROPERTIES LINKER_LANGUAGE Fortran)
-else()
-  set_target_properties(test_runner PROPERTIES LINKER_LANGUAGE CXX)
-endif()
-
-# --- h5fortran unit tests
+# --- helper functions
 
 function(nompi_test names)
 
@@ -58,19 +44,41 @@ add_test(NAME ${name} COMMAND ${cmd})
 endforeach()
 
 set_tests_properties(${names} PROPERTIES
-RESOUCE_LOCK cpu_mpi
+RESOURCE_LOCK cpu_mpi
 LABELS mpi
 )
 
 endfunction(mpi_test)
 
+# --- test files
+
 cmake_path(SET string_file ${CMAKE_CURRENT_BINARY_DIR}/test_string_py.h5)
 
-# --- write test data
+# --- non-MPI tests
 
 set(nompi_tests array)
 
 nompi_test(${nompi_tests})
+
+
+# --- runner
+
+if(hdf5_parallel)
+
+add_executable(test_runner runner.f90
+${PROJECT_SOURCE_DIR}/benchmark/cpu.cpp
+${PROJECT_SOURCE_DIR}/benchmark/partition.f90
+${PROJECT_SOURCE_DIR}/benchmark/cli.f90
+)
+# not linked as libraries in case benchmarks aren't built
+if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
+  set_target_properties(test_runner PROPERTIES LINKER_LANGUAGE Fortran)
+else()
+  set_target_properties(test_runner PROPERTIES LINKER_LANGUAGE CXX)
+endif()
+
+
+# --- MPI tests
 
 set(mpi_tests array_mpi attributes cast destructor exist fill groups layout shape
 string string_read write
@@ -135,6 +143,8 @@ set_tests_properties(PythonString PROPERTIES
 FIXTURES_SETUP h5str
 DISABLED $<NOT:$<BOOL:${h5py_ok}>>
 )
+
+endif(hdf5_parallel)
 
 # --- test properties
 

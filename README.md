@@ -7,11 +7,9 @@
 [![intel-oneapi](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/intel-oneapi.yml/badge.svg)](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/intel-oneapi.yml)
 
 Easy to use object-oriented Fortran [parallel HDF5-MPI](https://portal.hdfgroup.org/display/HDF5/Parallel+HDF5) interface.
-This interface requires MPI, although it is capable of non-MPI file I/O.
-The original object-oriented Fortran HDF5 interface **without MPI** is [h5fortran](https://github.com/geospace-code/h5fortran).
-The [h5fortran-mpi API](./API.md)
-is by design nearly identical to the non-MPI serial h5fortran API.
-A very similar NetCDF4 interface is [nc4fortran](https://github.com/geospace-code/nc4fortran).
+The [h5fortran-mpi API](./API.md) can be used with or with MPI.
+A very similar NetCDF4 interface is
+[nc4fortran](https://github.com/geospace-code/nc4fortran).
 
 Many computer systems default to the serial HDF5 API, which lacks the HDF5 parallel MPI layer.
 The scripts/CMakeLists.txt can build the HDF5-MPI stack if needed.
@@ -24,7 +22,7 @@ Some OS have an installable parallel HDF5 package:
 * MacOS Homebrew: `brew install hdf5-mpi`
 * MacOS MacPorts: `port install hdf5 +fortran +mpich`
 
-While HDF5 1.10.2 is the oldest working HDF5 version, and the CI includes HDF5 1.10.4, in general for bugfixes and performance HDF5 &ge; 1.10.5 is [recommended](https://portal.hdfgroup.org/display/knowledge/OpenMPI+Build+Issues).
+While HDF5 1.10.2 is the oldest working HDF5 version, in general for bugfixes and performance HDF5 &ge; 1.10.5 is [recommended](https://portal.hdfgroup.org/display/knowledge/OpenMPI+Build+Issues).
 For highest performance with parallel compressed writes consider HDF5 &ge; 1.12.2.
 
 ## Compressed parallel HDF5
@@ -62,12 +60,19 @@ cmake -B build -DHDF5_ROOT=~/lib_par
 cmake --build build
 ```
 
+To build without MPI (serial HDF5 file operations only):
+
+```sh
+cmake -B build -Dhdf5_parallel=off
+```
+
 ---
 
 Fortran Package Manager (FPM) users build like:
 
 ```sh
 fpm build --flag -Dh5fortran_HAVE_PARALLEL
+# omitting this flag builds the serial API only
 
 fpm test
 ```

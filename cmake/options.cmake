@@ -1,22 +1,15 @@
-option(ENABLE_BENCHMARKS "write / read benchmarks")
-
-option(ENABLE_COVERAGE "Code coverage tests")
-
-option(ourFindMPI "Use our FindMPI")
-
 message(STATUS "${PROJECT_NAME} ${PROJECT_VERSION}  CMake ${CMAKE_VERSION}")
+
+option(ENABLE_BENCHMARKS "write / read benchmarks")
+option(ENABLE_COVERAGE "Code coverage tests")
+option(hdf5_parallel "use HDF5-MPI layer" true)
 
 set(CMAKE_TLS_VERIFY true)
 
 
-if(BUILD_SHARED_LIBS)
-  if(WIN32 AND CMAKE_VERSION VERSION_LESS 3.21 AND ${PROJECT_NAME}_BUILD_TESTING)
-    message(STATUS "Windows with shared libs needs CMake >= 3.21 to run tests")
-  endif()
-  if(MSVC)
-    message(WARNING "Intel oneAPI has trouble with shared libs in general on Windows, try
-      cmake -DBUILD_SHARED_LIBS=off")
-  endif()
+if(BUILD_SHARED_LIBS AND MSVC)
+  message(WARNING "Intel oneAPI has trouble with shared libs in general on Windows, try
+    cmake -DBUILD_SHARED_LIBS=off")
 endif()
 
 cmake_path(SET CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/Modules)

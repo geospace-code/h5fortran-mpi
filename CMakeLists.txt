@@ -31,32 +31,33 @@ endif()
 include(cmake/options.cmake)
 include(cmake/compilers.cmake)
 
-if(ourFindMPI)
-  list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules/MPI)
+if(hdf5_parallel)
+  find_package(MPI COMPONENTS C Fortran REQUIRED)
+
+  include(cmake/check_mpi.cmake)
+  check_mpi_version()
+
+  find_package(HDF5 COMPONENTS Fortran parallel REQUIRED)
+  if(HDF5_VERSION VERSION_LESS 1.10.2)
+    message(WARNING "HDF5 >= 1.10.2 is needed for HDF5-MPI")
+  endif()
+else()
+  find_package(HDF5 COMPONENTS Fortran REQUIRED)
 endif()
 
-find_package(MPI COMPONENTS C Fortran REQUIRED)
-
-
-# --- external libraries:  HDF5
-
-include(cmake/check_mpi.cmake)
-check_mpi_version()
-
-find_package(HDF5 COMPONENTS Fortran HL parallel REQUIRED)
-if(HDF5_VERSION VERSION_LESS 1.10.2)
-  message(WARNING "HDF5 >= 1.10.2 is needed for HDF5-MPI")
-endif()
-
-# --- HDF5-MPI object oriented API
+# --- h5fortran object oriented API
 
 add_library(h5fortran)
-target_compile_definitions(h5fortran PRIVATE -Dh5fortran_HAVE_PARALLEL)
+target_compile_definitions(h5fortran PRIVATE
+$<$<BOOL:${hdf5_parallel}>:h5fortran_HAVE_PARALLEL>
+)
 target_include_directories(h5fortran PUBLIC
 $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
 $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(h5fortran PUBLIC HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(h5fortran PUBLIC HDF5::HDF5
+$<$<BOOL:${hdf5_parallel}>:MPI::MPI_Fortran>
+)
 set_target_properties(h5fortran PROPERTIES
 Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include
 LABELS core
