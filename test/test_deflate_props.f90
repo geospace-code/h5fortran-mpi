@@ -3,62 +3,42 @@ program test_deflate_props
 use, intrinsic :: iso_fortran_env, only : int64, stderr=>output_unit
 
 use hdf5, only : H5D_CHUNKED_F, H5D_CONTIGUOUS_F
-use mpi, only : mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 
-use h5fortran, only: hdf5_file, HSIZE_T, has_parallel_compression
+use h5fortran, only: hdf5_file, HSIZE_T
 
 implicit none (type, external)
-
-external :: mpi_finalize
 
 character(*), parameter :: fn1='deflate1.h5'
 integer, parameter :: N(2) = [50, 1000], &
 MIN_COMP = 2  !< lots of CPUs, smaller arrays => poorer compression
 
-integer :: ierr, mpi_id
-
-
-call mpi_init(ierr)
-if (ierr /= 0) error stop "mpi_init"
-
-call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
-if(ierr/=0) error stop "mpi_comm_rank"
-
-call test_read_deflate_props(fn1, N, mpi_id)
-if(mpi_id == 0) print *,'OK: HDF5 read deflate properties'
+call test_read_deflate_props(fn1, N)
+print *,'OK: HDF5 read deflate properties'
 
 call test_get_deflate(fn1)
-if(mpi_id == 0) print *, 'OK: HDF5 get deflate'
-
-call mpi_finalize(ierr)
-if (ierr /= 0) error stop "mpi_finalize"
+print *, 'OK: HDF5 get deflate'
 
 contains
 
 
-subroutine test_read_deflate_props(fn, N, mpi_id)
+subroutine test_read_deflate_props(fn, N)
 
 character(*), intent(in) :: fn
-integer, intent(in) :: N(2), mpi_id
+integer, intent(in) :: N(2)
 
 type(hdf5_file) :: h5f
 
-integer ::  fsize, layout
-integer(int64) :: crat
+integer :: layout
+real :: fsize, crat
 integer(HSIZE_T) :: chunks(2)
 
-if(mpi_id == 0) then
-  inquire(file=fn, size=fsize)
-  crat = (N(1) * N(2) * 32 / 8) / fsize
-  print '(A,F6.2,A,I6)','#1 filesize (Mbytes): ',fsize/1e6, '  compression ratio:',crat
-  if (has_parallel_compression()) then
-    if(crat < MIN_COMP) error stop '2D low compression'
-  else
-    print *, "test_read_deflate_props: MPI commpression was disabled, so " // fn // " was not compressed."
-  endif
-endif
+call h5f%open(fn, action='r')
 
-call h5f%open(fn, action='r', mpi=.true.)
+fsize = real(h5f%filesize())
+
+crat = (N(1) * N(2) * 32 / 8) / fsize
+print '(A,F6.2,A,f7.1)','#1 filesize (Mbytes): ',fsize/1e6, '  compression ratio:',crat
+if(crat < MIN_COMP) error stop '2D low compression'
 
 layout = h5f%layout('/A')
 if(layout /= H5D_CHUNKED_F) error stop '#1 not chunked layout: ' // fn
@@ -85,15 +65,9 @@ character(*), intent(in) :: fn
 
 type(hdf5_file) :: h5f
 
-call h5f%open(fn, action='r', mpi=.true.)
+call h5f%open(fn, action='r')
 
-if (h5f%parallel_compression) then
-  if (.not. h5f%deflate("/A")) error stop "test_get_deflate: expected deflate MPI"
-else
-  if (h5f%deflate("/A")) error stop "test_get_deflate: expected no deflate MPI"
-endif
-
-if (.not. h5f%deflate("/noMPI")) error stop "expected deflate as dataset was written without MPI"
+if (.not. h5f%deflate("/A")) error stop "test_get_deflate: expected deflate"
 
 call h5f%close()
 

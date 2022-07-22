@@ -56,9 +56,20 @@ cmake_path(SET string_file ${CMAKE_CURRENT_BINARY_DIR}/test_string_py.h5)
 
 # --- non-MPI tests
 
-set(nompi_tests array attributes cast)
+set(nompi_tests array attributes cast deflate_props deflate_read deflate_write destructor
+exist
+)
 
 nompi_test("${nompi_tests}")
+
+set_tests_properties(deflate_write PROPERTIES
+FIXTURES_SETUP deflate_files
+)
+
+set_tests_properties(deflate_props deflate_read PROPERTIES
+FIXTURES_REQUIRED deflate_files
+REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/deflate1.h5
+)
 
 
 # --- runner
@@ -80,13 +91,14 @@ endif()
 
 # --- MPI tests
 
-set(mpi_tests array_mpi attributes_mpi cast_mpi destructor exist fill groups layout shape
+set(mpi_tests array_mpi attributes_mpi cast_mpi destructor_mpi exist_mpi
+fill groups layout shape
 string string_read write
 )
 
 mpi_test("${mpi_tests}" false)
 
-set(runner_tests deflate_write deflate_props deflate_read)
+set(runner_tests deflate_write_mpi deflate_props_mpi deflate_read_mpi)
 
 mpi_test("${runner_tests}" true)
 
@@ -101,12 +113,12 @@ FIXTURES_REQUIRED test_files
 REQUIRED_FILES "${CMAKE_CURRENT_BINARY_DIR}/test_write.h5;${CMAKE_CURRENT_BINARY_DIR}/test_layout.h5"
 )
 
-set_tests_properties(deflate_write PROPERTIES
-FIXTURES_SETUP deflate_files
+set_tests_properties(deflate_write_mpi PROPERTIES
+FIXTURES_SETUP deflate_files_mpi
 )
 
-set_tests_properties(deflate_props deflate_read PROPERTIES
-FIXTURES_REQUIRED deflate_files
+set_tests_properties(deflate_props_mpi deflate_read_mpi PROPERTIES
+FIXTURES_REQUIRED deflate_files_mpi
 REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/deflate1.h5
 )
 

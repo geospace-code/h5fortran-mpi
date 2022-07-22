@@ -1,21 +1,41 @@
 program exist_tests
 !! test "exist" variable
+
 use, intrinsic :: iso_fortran_env, only : stderr=>error_unit
-use h5fortran, only: hdf5_file, h5write, h5exist, is_hdf5, hdf5_close
+
+use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank
+
+use h5fortran, only: hdf5_file, h5exist, is_hdf5, hdf5_close
+
 
 implicit none (type, external)
 
+external :: mpi_finalize
+
+integer :: ierr, mpi_id
+
+
+call mpi_init(ierr)
+if (ierr /= 0) error stop "mpi_init"
+
+call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
+if(ierr /= 0) error stop "mpi_comm_rank"
+
 call test_is_hdf5()
-print *, 'OK: is_hdf5'
+if(mpi_id == 0) print *, 'OK: is_hdf5'
 
 call test_exist('exist.h5')
-print *, 'OK: exist'
+if(mpi_id == 0) print *, 'OK: exist'
 
 call test_softlink('soft.h5')
-print *, "OK: softlink"
+if(mpi_id == 0) print *, "OK: softlink"
 
 call test_multifiles()
-print *, 'OK: multiple files open at once'
+if(mpi_id == 0) print *, 'OK: multiple files open at once'
+
+call mpi_finalize(ierr)
+if (ierr /= 0) error stop "mpi_finalize"
+
 
 contains
 
@@ -40,20 +60,23 @@ type(hdf5_file) :: h
 
 character(*), intent(in) :: fn
 
-call h5write(fn, '/x', 42)
-if(.not.is_hdf5(fn)) error stop 'file does not exist'
+call h%open(fn, "w", mpi=.true.)
+call h%write('/x', 42)
+call h%close()
 
-call h%open(fn)
-if (.not. h%exist('/x')) error stop 'x exists'
+if(.not.is_hdf5(fn)) error stop fn // ' does not exist'
 
-if (h%exist('/A')) error stop 'variable /A should not exist in ' // h%filename
+call h%open(fn, "r", mpi=.true.)
+if (.not. h%exist('/x')) error stop fn // ' /x exists'
+
+if (h%exist('/A')) error stop 'variable /A should not exist in ' // fn
 
 call h%close()
 
 if(h%is_open()) error stop 'file is closed'
 
-if (.not. h5exist(fn, '/x')) error stop 'x exists'
-if (h5exist(fn, '/A')) error stop 'A not exist'
+if (.not. h5exist(fn, '/x', mpi=.true.)) error stop 'x exists'
+if (h5exist(fn, '/A', mpi=.true.)) error stop 'A not exist'
 
 end subroutine test_exist
 
@@ -65,7 +88,7 @@ character(*), intent(in) :: fn
 
 integer :: y
 
-call h%open(fn, action='w')
+call h%open(fn, action='w', mpi=.true.)
 
 call h%write("/actual", 142)
 call h%softlink("/actual", "/additional")
@@ -93,15 +116,15 @@ subroutine test_multifiles()
 
 type(hdf5_file) :: f,g,h
 
-call f%open(filename='A.h5', action='w')
-call g%open(filename='B.h5', action='w')
-if (h%is_open()) error stop 'is_open() not isolated at constructor'
-call h%open(filename='C.h5', action='w')
+call f%open(filename='A.h5', action='w', mpi=.true.)
+call g%open(filename='B.h5', action='w', mpi=.true.)
+if (h%is_open()) error stop 'is_open not isolated at constructor'
+call h%open(filename='C.h5', action='w', mpi=.true.)
 
 call f%flush()
 
 call f%close()
-if (.not.g%is_open() .or. .not. h%is_open()) error stop 'is_open() not isolated at destructor'
+if (.not.g%is_open() .or. .not. h%is_open()) error stop 'is_open not isolated at destructor'
 call g%close()
 call h%close()
 
