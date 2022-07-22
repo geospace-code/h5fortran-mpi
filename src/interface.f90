@@ -1,7 +1,7 @@
 module h5fortran
 
 use, intrinsic :: iso_c_binding, only : c_ptr, c_loc
-use, intrinsic :: iso_fortran_env, only : real32, real64, int32, int64, stderr=>error_unit
+use, intrinsic :: iso_fortran_env, only : real32, real64, int64, int32, stderr=>error_unit
 
 use hdf5, only : HID_T, SIZE_T, HSIZE_T, &
 H5S_ALL_F, H5S_SELECT_SET_F, &
@@ -31,8 +31,9 @@ integer :: comp_lvl = 0
 !! compression level (1-9)  0: disable compression
 !! compression with MPI requires MPI-3 and HDF5 >= 1.10.2
 
-contains
 
+contains
+!> define methods (procedures) that don't need generic procedure
 procedure, public :: open => h5open
 procedure, public :: close => h5close
 procedure, public :: write_group
@@ -85,6 +86,16 @@ public :: has_parallel_compression
 public :: hdf5_file, is_hdf5
 public :: hdf_rank_check, hdf_shape_check, hdf5version, h5exist, hdf5_close
 public :: mpi_collective, mpi_hyperslab
+public :: h5write_attr, h5read_attr
+
+interface h5write_attr
+procedure lt0writeattr, lt1writeattr
+end interface
+
+interface h5read_attr
+procedure lt0readattr, lt1readattr
+end interface
+
 
 !! for submodules only
 public :: HSIZE_T, H5T_NATIVE_REAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_NATIVE_CHARACTER, H5T_STD_I64LE
@@ -435,6 +446,30 @@ character(*), intent(in) :: obj_name, attr
 class(*), intent(in) :: A(:,:,:,:,:,:,:)
 end subroutine
 
+
+module subroutine lt0writeattr(filename, obj_name, attr, A)
+character(*), intent(in) :: filename
+character(*), intent(in) :: obj_name, attr
+class(*), intent(in) :: A
+end subroutine
+
+module subroutine lt1writeattr(filename, obj_name, attr, A)
+character(*), intent(in) :: filename
+character(*), intent(in) :: obj_name, attr
+class(*), intent(in) :: A(:)
+end subroutine
+
+module subroutine lt0readattr(filename, obj_name, attr, A)
+character(*), intent(in) :: filename
+character(*), intent(in) :: obj_name, attr
+class(*), intent(inout) :: A
+end subroutine
+
+module subroutine lt1readattr(filename, obj_name, attr, A)
+character(*), intent(in) :: filename
+character(*), intent(in) :: obj_name, attr
+class(*), intent(inout) :: A(:)
+end subroutine
 
 module subroutine attr_delete(self, obj_name, attr_name)
 class(hdf5_file), intent(in) :: self

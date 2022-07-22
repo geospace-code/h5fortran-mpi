@@ -75,4 +75,26 @@ include 'attr_write.inc'
 end procedure
 
 
+module procedure lt0writeattr
+
+type(hdf5_file) :: h
+
+call h%open(filename, action='r+')
+call h%writeattr(obj_name, attr, A)
+call h%close()
+
+end procedure lt0writeattr
+
+
+module procedure lt1writeattr
+
+type(hdf5_file) :: h
+
+call h%open(filename, action='r+')
+call h%writeattr(obj_name, attr, A)
+call h%close()
+
+end procedure lt1writeattr
+
+
 end submodule attr_write

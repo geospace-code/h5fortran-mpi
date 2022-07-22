@@ -1,27 +1,34 @@
 program test_attributes
 
 use, intrinsic:: iso_fortran_env, only: int32, real32, real64, stderr=>error_unit
-use h5fortran, only: hdf5_file, h5write_attr, h5read_attr
+
+use h5fortran, only: hdf5_file
+use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank
 
 implicit none (type, external)
 
+external :: mpi_finalize
+
 character(*), parameter :: filename = 'test_attr.h5'
-character(8) :: s32  !< arbitrary length
-integer :: i32(1)
+
+integer :: ierr, mpi_id
+
+call mpi_init(ierr)
+if (ierr /= 0) error stop "mpi_init"
+
+call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
+if (ierr /= 0) error stop "mpi_comm_rank"
+
 
 call test_write_attributes(filename)
-call h5write_attr(filename, '/x', 'str29', '29')
-call h5write_attr(filename, '/x', 'int29', [29])
-print *,'PASSED: HDF5 write attributes'
+if(mpi_id == 0) print *,'PASSED: HDF5 write attributes'
 
 call test_read_attributes(filename)
-call h5read_attr(filename, '/x', 'str29', s32)
-if (s32 /= '29') error stop 'readattr_lt string'
+if(mpi_id == 0) print *, 'PASSED: HDF5 read attributes'
 
-call h5read_attr(filename, '/x', 'int29', i32)
-if (i32(1) /= 29) error stop 'readattr_lt integer'
+call mpi_finalize(ierr)
+if (ierr /= 0) error stop "mpi_finalize"
 
-print *, 'PASSED: HDF5 read attributes'
 
 contains
 
@@ -32,7 +39,7 @@ character(*), intent(in) :: path
 
 integer :: i2(1,1), i3(1,1,1), i4(1,1,1,1), i5(1,1,1,1,1), i6(1,1,1,1,1,1), i7(1,1,1,1,1,1,1)
 
-call h%open(path, action='w')
+call h%open(path, action='w', mpi=.true.)
 
 call h%write('/x', 1)
 
@@ -51,7 +58,7 @@ call h%writeattr('/x', 'i7', i7)
 
 call h%close()
 
-call h%open(path, action='a')
+call h%open(path, action='a', mpi=.true.)
 call h%writeattr('/x', 'int32-scalar', 142)
 call h%writeattr('/x', 'real32_1d', [real(real32) :: 142, 84])
 call h%writeattr('/x', 'char', 'overwrite attrs')
@@ -74,7 +81,7 @@ integer :: x
 
 integer :: i2(1,1), i3(1,1,1), i4(1,1,1,1), i5(1,1,1,1,1), i6(1,1,1,1,1,1), i7(1,1,1,1,1,1,1)
 
-call h%open(path, action='r')
+call h%open(path, action='r', mpi=.true.)
 
 call h%read('/x', x)
 if (x/=1) error stop 'readattr: unexpected value'

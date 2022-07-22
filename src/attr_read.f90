@@ -180,6 +180,27 @@ module procedure readattr_7d
 include 'attr_read.inc'
 end procedure
 
+module procedure lt0readattr
+
+type(hdf5_file) :: h
+
+call h%open(filename, action='r')
+call h%readattr(obj_name, attr, A)
+call h%close()
+
+end procedure lt0readattr
+
+
+module procedure lt1readattr
+
+type(hdf5_file) :: h
+
+call h%open(filename, action='r')
+call h%readattr(obj_name, attr, A)
+call h%close()
+
+end procedure lt1readattr
+
 
 subroutine get_attr_class(self, obj_name, attr_name, class, attr_id, size_bytes, pad_type)
 !! get the attribute class (integer, float, string, ...)

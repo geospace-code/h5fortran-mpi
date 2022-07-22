@@ -211,8 +211,6 @@ if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5pcreate:set_compact"
 call h5pset_layout_f(dcpl, H5D_COMPACT_F, ierr)
 if (ierr /= 0) error stop "ERROR:h5fortran:hdf_create:h5pset_layout:set_compact"
 
-print *, "TRACE:h5fortran:set_compact: " // dset_name
-
 end subroutine set_compact
 
 
