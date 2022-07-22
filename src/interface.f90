@@ -86,7 +86,15 @@ public :: has_parallel_compression
 public :: hdf5_file, is_hdf5
 public :: hdf_rank_check, hdf_shape_check, hdf5version, h5exist, hdf5_close
 public :: mpi_collective, mpi_hyperslab
-public :: h5write_attr, h5read_attr
+public :: h5write, h5read, h5write_attr, h5read_attr
+
+interface h5write
+procedure lt0write, lt1write, lt2write, lt3write, lt4write, lt5write, lt6write, lt7write
+end interface
+
+interface h5read
+procedure lt0read, lt1read, lt2read, lt3read, lt4read, lt5read, lt6read, lt7read
+end interface
 
 interface h5write_attr
 procedure lt0writeattr, lt1writeattr
@@ -153,6 +161,99 @@ end interface
 interface !< hdf5_config.f90
 module subroutine get_hdf5_config(parallel_compression)
 logical, intent(out) :: parallel_compression
+end subroutine
+end interface
+
+interface !< writer_lt.f90
+
+module subroutine lt0write(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(in) :: A
+end subroutine
+
+module subroutine lt1write(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(in) :: A(:)
+end subroutine
+
+module subroutine lt2write(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(in) :: A(:,:)
+end subroutine
+
+module subroutine lt3write(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(in) :: A(:,:,:)
+end subroutine
+
+module subroutine lt4write(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(in) :: A(:,:,:,:)
+end subroutine
+
+module subroutine lt5write(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(in) :: A(:,:,:,:,:)
+end subroutine
+
+module subroutine lt6write(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(in) :: A(:,:,:,:,:,:)
+end subroutine
+
+module subroutine lt7write(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(in) :: A(:,:,:,:,:,:,:)
+end subroutine
+
+end interface
+
+
+interface !< reader_lt.f90
+
+module logical function h5exist(filename, dname, mpi)
+character(*), intent(in) :: filename, dname
+logical, intent(in), optional :: mpi
+end function
+
+module subroutine lt0read(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(out) :: A
+end subroutine
+
+module subroutine lt1read(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(inout) :: A(:)
+end subroutine
+
+module subroutine lt2read(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(inout) :: A(:,:)
+end subroutine
+
+module subroutine lt3read(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(inout) :: A(:,:,:)
+end subroutine
+
+module subroutine lt4read(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(inout) :: A(:,:,:,:)
+end subroutine
+
+module subroutine lt5read(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(inout) :: A(:,:,:,:,:)
+end subroutine
+
+module subroutine lt6read(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(inout) :: A(:,:,:,:,:,:)
+end subroutine
+
+module subroutine lt7read(filename, dname, A)
+character(*), intent(in) :: filename, dname
+class(*), intent(inout) :: A(:,:,:,:,:,:,:)
 end subroutine
 end interface
 
@@ -283,11 +384,6 @@ interface !< reader.f90
 !! the read "value" are intent(inout) because:
 !! * arrays: to work correctly when actual argument is allocatable
 !! * scalar: to work correctly with character type
-
-module logical function h5exist(filename, dname, mpi)
-character(*), intent(in) :: filename, dname
-logical, intent(in) :: mpi
-end function
 
 module subroutine h5read_scalar(self, dname, A)
 class(hdf5_file), intent(in)     :: self
