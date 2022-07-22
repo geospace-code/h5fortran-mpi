@@ -3,7 +3,7 @@
 [![DOI](https://zenodo.org/badge/377901005.svg)](https://zenodo.org/badge/latestdoi/377901005)
 
 [![ci](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/ci.yml/badge.svg)](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/ci.yml)
-[![ci_macos](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/ci_macos.yml/badge.svg)](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/ci_macos.yml)
+[![ci](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/ci_build.yml/badge.svg)](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/ci_build.yml)
 [![intel-oneapi](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/intel-oneapi.yml/badge.svg)](https://github.com/geospace-code/h5fortran-mpi/actions/workflows/intel-oneapi.yml)
 
 Easy to use object-oriented Fortran [parallel HDF5-MPI](https://portal.hdfgroup.org/display/HDF5/Parallel+HDF5) interface.

@@ -1,8 +1,7 @@
 name: ci
 
 env:
-  CTEST_PARALLEL_LEVEL: 4
-  CMAKE_BUILD_TYPE: Release
+   HOMEBREW_NO_INSTALL_CLEANUP: 1
 
 on:
   push:
@@ -18,14 +17,21 @@ on:
 jobs:
 
   linux:
-    runs-on: ubuntu-latest
     timeout-minutes: 15
 
     strategy:
       matrix:
+        os: [ubuntu-latest, macos-latest]
         shared: [true, false]
         gcc: [8, 11]
+        mpi: [mpich, openmpi]
+      exclude:
+        - os: macos-latest
+          mpi: mpich
+        - os: macos-latest
+          gcc: 8
 
+    runs-on: ${{ matrix.os }}
     env:
       CC: gcc-${{ matrix.gcc }}
       FC: gfortran-${{ matrix.gcc }}
@@ -37,12 +43,17 @@ jobs:
         python-version: '3.10'
 
     - name: Python pkgs
-      run: pip install numpy h5py pandas matplotlib
+      run: pip install numpy h5py
 
-    - name: install hdf5
+    - name: install HDF5-${{ matrix.mpi }} (Linux)
+      if: runner.os == 'Linux'
       run: |
         sudo apt update
-        sudo apt install --no-install-recommends gcc-${{ matrix.gcc }} gfortran-${{ matrix.gcc}} ninja-build libhdf5-openmpi-dev hdf5-tools libopenmpi-dev openmpi-bin
+        sudo apt install --no-install-recommends gcc-${{ matrix.gcc }} gfortran-${{ matrix.gcc}} ninja-build libhdf5-${{ matrix.mpi }}-dev hdf5-tools lib${{ matrix.mpi }}-dev
+
+    - name: Install HDF5-${{ matrix.mpi }} (MacOS)
+      if: runner.os == 'macOS'
+      run: brew install hdf5-mpi ninja ${{ matrix.mpi }}
 
     - uses: actions/checkout@v2
 
@@ -82,7 +93,7 @@ jobs:
     - name: install hdf5
       run: |
         sudo apt update
-        sudo apt install --no-install-recommends libhdf5-openmpi-dev hdf5-tools libopenmpi-dev openmpi-bin
+        sudo apt install --no-install-recommends libhdf5-mpi-dev hdf5-tools mpi-default-dev mpi-default-bin
 
     - name: install Gcovr
       run: pip install gcovr
@@ -97,47 +108,3 @@ jobs:
       with:
         name: coverage-report-html
         path: build-coverage/coverage/
-
-
-  linux-build:
-    needs: linux
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    strategy:
-      matrix:
-        shared: [true, false]
-
-    steps:
-
-    - name: install MPI
-      run: |
-        sudo apt update
-        sudo apt install --no-install-recommends libopenmpi-dev openmpi-bin
-
-    - uses: actions/checkout@v2
-
-    - name: Configure HDF5-MPI
-      run: cmake -S scripts -B scripts/build -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
-
-    - name: Build/install HDF5
-      run: cmake --build scripts/build --parallel
-
-    - name: configure h5fortran
-      run: cmake -B build -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }} -DCMAKE_PREFIX_PATH=${{ runner.temp }}
-
-    - name: build h5fortran
-      run: cmake --build build --parallel
-
-    - name: test h5fortran
-      run: ctest --test-dir build --preset default
-
-    - name: install h5fortran
-      run: cmake --install build
-
-    - name: configure examples
-      run: cmake -S example -B example/build -DCMAKE_PREFIX_PATH:PATH=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
-    - name: build Examples
-      run: cmake --build example/build --parallel
-    - name: Test Examples
-      run: ctest --test-dir example/build -V
