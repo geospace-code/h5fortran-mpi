@@ -6,13 +6,15 @@ function(mpi_test names use_runner)
 
 foreach(name IN LISTS names)
 
-add_executable(test_${name} test_${name}.f90)
-target_link_libraries(test_${name} PRIVATE h5fortran::h5fortran)
+set(tname "${name}_mpi")
+
+add_executable(test_${tname} test_${name}.f90)
+target_link_libraries(test_${tname} PRIVATE h5fortran::h5fortran)
 
 if(use_runner)
-  set(cmd test_runner -exe $<TARGET_FILE:test_${name}> -mpiexec ${MPIEXEC_EXECUTABLE} -lx 1000)
+  set(cmd test_runner -exe $<TARGET_FILE:test_${tname}> -mpiexec ${MPIEXEC_EXECUTABLE} -lx 1000)
 else()
-  set(cmd ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} $<TARGET_FILE:test_${name}>)
+  set(cmd ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} $<TARGET_FILE:test_${tname}>)
   # these tests could also be -n 2 instead of max_numprocs.
   # Just trying to keep aware of possible problems vs. MPI worker count.
 endif()
@@ -21,14 +23,9 @@ if(${name} STREQUAL "string_read")
   list(APPEND cmd ${string_file})
 endif()
 
-add_test(NAME ${name} COMMAND ${cmd})
+add_test(NAME ${tname} COMMAND ${cmd})
 
 endforeach()
-
-set_tests_properties(${names} PROPERTIES
-RESOURCE_LOCK cpu_mpi
-LABELS mpi
-)
 
 endfunction(mpi_test)
 
@@ -51,24 +48,24 @@ endif()
 
 # --- MPI tests
 
-set(mpi_tests array_mpi attributes_mpi cast_mpi destructor_mpi exist_mpi
-fill_mpi groups_mpi layout shape
+set(mpi_tests array attributes cast destructor exist
+fill groups layout shape
 string string_read write
 )
 
 mpi_test("${mpi_tests}" false)
 
-set(runner_tests deflate_write_mpi deflate_props_mpi deflate_read_mpi)
+set(runner_tests deflate_write deflate_props deflate_read)
 
 mpi_test("${runner_tests}" true)
 
 # --- test dependencies
 
-set_tests_properties(write PROPERTIES
+set_tests_properties(write_mpi PROPERTIES
 FIXTURES_SETUP test_files
 )
 
-set_tests_properties(layout shape PROPERTIES
+set_tests_properties(layout_mpi shape_mpi PROPERTIES
 FIXTURES_REQUIRED test_files
 REQUIRED_FILES "${CMAKE_CURRENT_BINARY_DIR}/test_write.h5;${CMAKE_CURRENT_BINARY_DIR}/test_layout.h5"
 )
@@ -89,30 +86,17 @@ EXECUTABLE ${CMAKE_CTEST_COMMAND}
 )
 endif()
 
-# --- Python h5py
-find_package(Python COMPONENTS Interpreter)
-if(NOT DEFINED h5py_ok)
-  execute_process(COMMAND ${Python_EXECUTABLE} -c "import h5py"
-  RESULT_VARIABLE h5py_code
-  )
-  if(h5py_code EQUAL 0)
-    set(h5py_ok true CACHE BOOL "h5py OK")
-  else()
-    set(h5py_ok false CACHE BOOL "h5py not OK")
-  endif()
-endif()
-
-set_tests_properties(string_read PROPERTIES
-FIXTURES_REQUIRED h5str
+set_tests_properties(string_read_mpi PROPERTIES
+FIXTURES_REQUIRED h5str_mpi
 DISABLED $<NOT:$<BOOL:${h5py_ok}>>
 )
 
-add_test(NAME PythonString
+add_test(NAME PythonString_mpi
 COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_string.py ${string_file}
 )
 
-set_tests_properties(PythonString PROPERTIES
-FIXTURES_SETUP h5str
+set_tests_properties(PythonString_mpi PROPERTIES
+FIXTURES_SETUP h5str_mpi
 DISABLED $<NOT:$<BOOL:${h5py_ok}>>
 )
 
@@ -123,6 +107,7 @@ get_property(test_names DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY TESTS)
 set_tests_properties(${test_names} PROPERTIES
 TIMEOUT 30
 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+RESOURCE_LOCK cpu_mpi
 )
 
 # --- Windows shared DLLs
