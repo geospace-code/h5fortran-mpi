@@ -25,7 +25,7 @@ jobs:
         shared: [true, false]
         gcc: [8, 11]
         mpi: [mpich, openmpi]
-      exclude:
+        exclude:
         - os: macos-latest
           mpi: mpich
         - os: macos-latest
