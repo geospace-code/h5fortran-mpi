@@ -6,25 +6,38 @@ on:
       - "scripts/CMakeLists.txt"
       - "cmake/libraries.json"
       - ".github/workflows/ci_build.yml"
-  release:
-    types: [published]
 
 jobs:
 
-  linux:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  linux_mac:
+    timeout-minutes: 20
 
     strategy:
       matrix:
+        cfg: [{os: ubuntu-latest, fc: gfortran},
+              {os: macos-latest, fc: gfortran-11}]
         shared: [true, false]
+        mpi: [mpich, openmpi]
+        exclude:
+        - cfg: {os: macos-latest, fc: gfortran-11}
+          shared: true
+
+    runs-on: ${{ matrix.cfg.os}}
+
+    env:
+      FC: ${{ matrix.cfg.fc }}
 
     steps:
 
-    - name: install MPI
+    - name: install MPI (Linux)
+      if: runner.os == 'Linux'
       run: |
         sudo apt update
-        sudo apt install --no-install-recommends libopenmpi-dev openmpi-bin
+        sudo apt install --no-install-recommends lib${{ matrix.mpi }}-dev
+
+    - name: install MPI (MacOS)
+      if: runner.os == 'macOS'
+      run: brew install ${{ matrix.mpi }}
 
     - uses: actions/checkout@v2
 
@@ -50,51 +63,5 @@ jobs:
       run: cmake -S example -B example/build -DCMAKE_PREFIX_PATH:PATH=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
     - name: build Examples
       run: cmake --build example/build --parallel
-    - name: Test Examples
-      run: ctest --test-dir example/build -V
-
-
-
-  macos:
-    runs-on: macos-latest
-    timeout-minutes: 20
-
-    strategy:
-      matrix:
-        shared: [false]
-        mpi: [mpich, open-mpi]
-    # HDF5-MPI upstream is broken for shared MacOS builds.
-
-    steps:
-
-    - uses: actions/checkout@v2
-
-    - name: Install MPI
-      run: brew install ${{ matrix.mpi }}
-
-    - name: Configure HDF5 with ${{ matrix.mpi }}
-      run: cmake -S scripts -B scripts/build -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
-
-    - name: Build/install HDF5
-      run: cmake --build scripts/build --parallel
-
-    - name: configure h5fortran with ${{ matrix.mpi }}
-      run: cmake -B build -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }} -DCMAKE_PREFIX_PATH=${{ runner.temp }}
-
-    - name: build h5fortran
-      run: cmake --build build --parallel
-
-    - name: test h5fortran
-      run: ctest --test-dir build --preset default
-
-    - name: install h5fortran
-      run: cmake --install build
-
-    - name: configure examples
-      run: cmake -S example -B example/build -DCMAKE_PREFIX_PATH:PATH=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
-
-    - name: build Examples
-      run: cmake --build example/build --parallel
-
     - name: Test Examples
       run: ctest --test-dir example/build -V
