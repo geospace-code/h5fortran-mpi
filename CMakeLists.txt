@@ -58,11 +58,9 @@ $<INSTALL_INTERFACE:include>
 target_link_libraries(h5fortran PUBLIC HDF5::HDF5
 $<$<BOOL:${hdf5_parallel}>:MPI::MPI_Fortran>
 )
-set_target_properties(h5fortran PROPERTIES
-Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include
-LABELS core
-VERSION ${PROJECT_VERSION}
-)
+set_property(TARGET h5fortran PROPERTY Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
+set_property(TARGET h5fortran PROPERTY LABELS core)
+set_property(TARGET h5fortran PROPERTY VERSION ${PROJECT_VERSION})
 
 # GLOBAL needed for use by FetchContent
 add_library(h5fortran::h5fortran INTERFACE IMPORTED GLOBAL)

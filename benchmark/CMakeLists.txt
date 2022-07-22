@@ -4,7 +4,7 @@ project(h5mpi-benchmark
 LANGUAGES C CXX Fortran
 )
 
-set_directory_properties(PROPERTIES LABELS benchmark)
+set_property(DIRECTORY PROPERTY LABELS benchmark)
 
 cmake_path(SET CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../cmake/Modules)
 
@@ -32,13 +32,13 @@ add_library(cli OBJECT cli.f90)
 add_executable(runner frontend.f90 cpu.cpp)
 target_link_libraries(runner PRIVATE partition cli)
 if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
-  set_target_properties(runner PROPERTIES LINKER_LANGUAGE Fortran)
+  set_property(TARGET runner PROPERTY LINKER_LANGUAGE Fortran)
 else()
-  set_target_properties(runner PROPERTIES LINKER_LANGUAGE CXX)
+  set_property(TARGET runner PROPERTY LINKER_LANGUAGE CXX)
 endif()
 
 foreach(t cli kernel perf)
-  set_target_properties(${t} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
+  set_property(TARGET ${t} PROPERTY Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
   target_include_directories(${t} INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/include)
 endforeach()
 

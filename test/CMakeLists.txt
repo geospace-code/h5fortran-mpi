@@ -11,10 +11,27 @@ if(NOT DEFINED h5py_ok)
   endif()
 endif()
 
+
+cmake_path(SET string_file ${CMAKE_CURRENT_BINARY_DIR}/test_string_py.h5)
+
+add_test(NAME PythonString
+COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_string.py ${string_file}
+)
+
+set_property(TEST PythonString PROPERTY FIXTURES_SETUP h5str)
+set_property(TEST PythonString PROPERTY DISABLED $<NOT:$<BOOL:${h5py_ok}>>)
+
 # --- test subdirs
 
 add_subdirectory(nompi)
 
 if(hdf5_parallel)
   add_subdirectory(mpi)
+endif()
+
+if(ENABLE_COVERAGE)
+  setup_target_for_coverage_gcovr_html(
+  NAME coverage
+  EXECUTABLE ${CMAKE_CTEST_COMMAND}
+  )
 endif()
