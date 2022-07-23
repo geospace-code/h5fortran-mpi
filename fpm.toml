@@ -16,23 +16,3 @@ link = ["hdf5_openmpihl_fortran", "hdf5_openmpi_fortran", "hdf5_openmpi_hl", "hd
 
 [install]
 library = true
-
-[[test]]
-name = "attributes"
-main = "test_attributes.f90"
-
-[[test]]
-name = "cast"
-main = "test_cast.f90"
-
-[[test]]
-name = "destructor"
-main = "test_destructor.f90"
-
-[[test]]
-name = "exist"
-main = "test_exist.f90"
-
-[[test]]
-name = "string"
-main = "test_string.f90"

@@ -10,8 +10,6 @@ on:
       - "**.cmake"
       - "**.f90"
       - ".github/workflows/ci.yml"
-  release:
-    types: [published]
 
 
 jobs:
