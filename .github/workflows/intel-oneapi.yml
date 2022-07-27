@@ -1,7 +1,6 @@
 name: intel-oneapi
 
 env:
-  CTEST_PARALLEL_LEVEL: 2
   CMAKE_GENERATOR: Ninja
   CC: icx
   FC: ifx
@@ -9,6 +8,8 @@ env:
 on:
   push:
     paths:
+      - "**.c"
+      - "**.cpp"
       - "**.f90"
       - "**.F90"
       - "**.cmake"
@@ -18,7 +19,7 @@ on:
 
 jobs:
 
-  linux-intel-oneapi:
+  linux:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -45,7 +46,7 @@ jobs:
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Configure HDF5
       run: cmake -S scripts -B scripts/build -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
@@ -71,12 +72,18 @@ jobs:
     - name: debug unit test
       run: ctest --preset debug --output-junit test-debug-oneapi.xml
 
-    - name: Install our package
+    - name: install package
       run: cmake --install build
 
-    - name: configure examples
-      run: cmake -S example -B example/build -DCMAKE_PREFIX_PATH:PATH=${{ runner.temp }}
-    - name: build examples
-      run: cmake --build example/build
-    - name: Test examples
+    - name: configure example
+      run: cmake -S example -B example/build -DCMAKE_PREFIX_PATH=${{ runner.temp }}
+
+    - name: print config log
+      if: ${{ failure() }}
+      run: cat example/build/CMakeFiles/CMakeError.log
+
+    - name: build example
+      run: cmake --build example/build --parallel || cmake --build example/build -v
+
+    - name: test example
       run: ctest --test-dir example/build -V

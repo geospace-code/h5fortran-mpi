@@ -39,7 +39,7 @@ jobs:
       if: runner.os == 'macOS'
       run: brew install ${{ matrix.mpi }}
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Configure HDF5-MPI
       run: cmake -S scripts -B scripts/build -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
