@@ -3,7 +3,7 @@ module test_utils
 use, intrinsic :: ieee_arithmetic, only : ieee_value, ieee_quiet_nan, ieee_is_finite
 use, intrinsic :: iso_fortran_env, only : real32
 
-use mpi, only : MPI_STATUS_IGNORE, MPI_REAL
+use mpi, only : MPI_STATUS_IGNORE, MPI_REAL, MPI_COMM_WORLD
 
 use kernel, only : phantom
 
@@ -16,9 +16,9 @@ public :: generate_and_send
 
 contains
 
-subroutine generate_and_send(Nmpi, mpi_id, mpi_root_id, dx2, lx1, lx2, lx3, tagA3, mpi_h5comm, noise, gensig, A3)
+subroutine generate_and_send(Nmpi, mpi_id, mpi_root_id, dx2, lx1, lx2, lx3, tagA3, noise, gensig, A3)
 
-integer, intent(in) :: Nmpi, mpi_id, mpi_root_id, dx2, lx1, lx2, lx3, tagA3, mpi_h5comm
+integer, intent(in) :: Nmpi, mpi_id, mpi_root_id, dx2, lx1, lx2, lx3, tagA3
 real(real32), intent(in) :: noise, gensig
 real(real32), intent(inout), allocatable :: A3(:,:,:)
 
@@ -52,14 +52,14 @@ if(mpi_id == mpi_root_id) then
     i0 = i*dx2 + 1
     i1 = (i + 1)*dx2
     ! print '(a,i0,1x,i0)', "TRACE: generate istart, iend: ", i0, i1
-    call mpi_send(t3(:, i0:i1, :), lx1*dx2*lx3, MPI_REAL, i, tagA3, mpi_h5comm, ierr)
+    call mpi_send(t3(:, i0:i1, :), lx1*dx2*lx3, MPI_REAL, i, tagA3, MPI_COMM_WORLD, ierr)
     if (ierr /= 0) error stop "generate: root => worker: mpi_send 3D"
   end do
 
   !> root's subarray
   A3(:, 1:dx2, :) = t3(:, 1:dx2, :)
 else
-  call mpi_recv(A3, lx1*dx2*lx3, MPI_REAL, mpi_root_id, tagA3, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
+  call mpi_recv(A3, lx1*dx2*lx3, MPI_REAL, mpi_root_id, tagA3, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
   if (ierr /= 0) error stop "generate: root => worker: mpi_recv 3D"
 endif
 

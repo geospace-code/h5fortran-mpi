@@ -4,9 +4,9 @@ program read_slab_mpi_root
 !! https://support.hdfgroup.org/ftp/HDF5/examples/parallel/hyperslab_by_row.f90
 
 use, intrinsic :: iso_fortran_env, only : int32, int64, real64, stderr=>error_unit
-use mpi, only : mpi_comm_rank, mpi_comm_size, mpi_integer, mpi_real, mpi_status_ignore
+use mpi, only : mpi_comm_rank, mpi_comm_size, mpi_integer, mpi_real, MPI_STATUS_IGNORE, MPI_COMM_WORLD
 
-use h5fortran, only : mpi_h5comm, hdf5_file, mpi_tags, HSIZE_T
+use h5fortran, only : hdf5_file, HSIZE_T
 
 use cli, only : get_cli
 use perf, only : print_timing, sysclock2ms
@@ -15,10 +15,9 @@ implicit none
 
 external :: mpi_bcast, mpi_init, mpi_finalize, mpi_send, mpi_recv
 
-type(mpi_tags) :: mt
-
 type(hdf5_file) :: h5
 
+integer, parameter :: tA3 = 100
 real, allocatable ::  A3(:,:,:), t3(:,:,:)
 character(1000) :: argv
 
@@ -41,8 +40,8 @@ integer(int64), allocatable :: t_elapsed(:)
 call mpi_init(ierr)
 if(ierr/=0) error stop "mpi_init"
 
-call mpi_comm_size(mpi_h5comm, Nmpi, ierr)
-call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
+call mpi_comm_size(MPI_COMM_WORLD, Nmpi, ierr)
+call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
 
 do i = 1, command_argument_count()
   call get_command_argument(i, argv, status=ierr)
@@ -76,15 +75,15 @@ if(mpi_id == mpi_root_id) then
   print '(a,i0,a,i0,1x,i0,1x,i0)', "MPI-root: ", Nmpi, " total MPI processes. shape: ", lx1, lx2, lx3
 endif
 
-! call mpi_ibcast(lx1, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, mpi_req, ierr)
-! call mpi_ibcast(lx2, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, mpi_req, ierr)
-! call mpi_ibcast(lx3, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, mpi_req, ierr)
+! call mpi_ibcast(lx1, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
+! call mpi_ibcast(lx2, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
+! call mpi_ibcast(lx3, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
 ! call mpi_wait(mpi_req, MPI_STATUS_IGNORE, ierr)
-call mpi_bcast(lx1, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
+call mpi_bcast(lx1, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, ierr)
 if(ierr/=0) error stop "failed to broadcast lx1"
-call mpi_bcast(lx2, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
+call mpi_bcast(lx2, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, ierr)
 if(ierr/=0) error stop "failed to broadcast lx2"
-call mpi_bcast(lx3, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
+call mpi_bcast(lx3, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, ierr)
 if(ierr/=0) error stop "failed to broadcast lx3"
 if(lx3 < 0 .or. lx2 < 1 .or. lx1 < 1) then
   write(stderr,"(A,i0,A,i0,1x,i0,1x,i0)") "ERROR: MPI ID: ", mpi_id, " failed to receive lx1, lx2, lx3: ", lx1, lx2, lx3
@@ -125,12 +124,12 @@ main : do j = 1, Nrun
     do i = 1, Nmpi-1
       i0 = mpi_id * dx2 + 1
       i1 = (mpi_id + 1) * dx2
-      call mpi_send(A3(:, i0:i1, :), lx1*dx2*lx3, MPI_REAL, i, mt%a3, mpi_h5comm, ierr)
+      call mpi_send(A3(:, i0:i1, :), lx1*dx2*lx3, MPI_REAL, i, tA3, MPI_COMM_WORLD, ierr)
       if(ierr/=0) error stop "root => worker: mpi_send 3D"
     end do
   else
     !! workers receive data from root
-    call mpi_recv(A3, lx1*dx2*lx3, MPI_REAL, mpi_root_id, mt%a3, mpi_h5comm, MPI_STATUS_IGNORE, ierr)
+    call mpi_recv(A3, lx1*dx2*lx3, MPI_REAL, mpi_root_id, tA3, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
     if(ierr/=0) error stop "root => worker: mpi_recv 3D"
   endif
 

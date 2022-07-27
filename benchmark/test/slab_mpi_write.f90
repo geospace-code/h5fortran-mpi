@@ -6,9 +6,9 @@ program write_slab_mpi
 use, intrinsic :: ieee_arithmetic, only : ieee_is_finite
 use, intrinsic :: iso_fortran_env, only : int64, real64, real32, stderr=>error_unit
 
-use mpi, only : mpi_comm_size, mpi_comm_rank, mpi_integer
+use mpi, only : mpi_comm_size, mpi_comm_rank, mpi_integer, MPI_COMM_WORLD
 
-use h5fortran, only : mpi_h5comm, hdf5_file, mpi_tags, HSIZE_T
+use h5fortran, only : hdf5_file
 
 use cli, only : get_cli, get_simsize
 use perf, only : print_timing, sysclock2ms
@@ -19,7 +19,8 @@ implicit none
 external :: mpi_bcast, mpi_init, mpi_finalize
 
 type(hdf5_file) :: h5
-type(mpi_tags) :: mt
+
+integer, parameter :: ta3 = 100
 
 real(real32), allocatable :: S3(:,:,:), ts3(:,:,:), V3(:), dv3(:)
 
@@ -47,9 +48,9 @@ integer(int64), allocatable :: t_elapsed(:)
 call mpi_init(ierr)
 if(ierr/=0) error stop "mpi_init"
 
-call mpi_comm_size(mpi_h5comm, Nmpi, ierr)
+call mpi_comm_size(MPI_COMM_WORLD, Nmpi, ierr)
 if(ierr/=0) error stop "mpi_comm_size"
-call mpi_comm_rank(mpi_h5comm, mpi_id, ierr)
+call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
 if(ierr/=0) error stop "mpi_comm_rank"
 
 do i = 1, command_argument_count()
@@ -83,15 +84,15 @@ if(mpi_id == mpi_root_id) then
   print '(a,i0,a,i0,1x,i0,1x,i0)', "MPI-HDF5 parallel write. ", Nmpi, " total MPI processes. shape: ", lx1, lx2, lx3
 endif
 
-! call mpi_ibcast(lx1, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, mpi_req, ierr)
-! call mpi_ibcast(lx2, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, mpi_req, ierr)
-! call mpi_ibcast(lx3, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, mpi_req, ierr)
+! call mpi_ibcast(lx1, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
+! call mpi_ibcast(lx2, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
+! call mpi_ibcast(lx3, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, mpi_req, ierr)
 ! call mpi_wait(mpi_req, MPI_STATUS_IGNORE, ierr)
-call mpi_bcast(lx1, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
+call mpi_bcast(lx1, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, ierr)
 if(ierr/=0) error stop "failed to broadcast lx1"
-call mpi_bcast(lx2, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
+call mpi_bcast(lx2, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, ierr)
 if(ierr/=0) error stop "failed to broadcast lx2"
-call mpi_bcast(lx3, 1, MPI_INTEGER, mpi_root_id, mpi_h5comm, ierr)
+call mpi_bcast(lx3, 1, MPI_INTEGER, mpi_root_id, MPI_COMM_WORLD, ierr)
 if(ierr/=0) error stop "failed to broadcast lx3"
 if(lx3 < 1 .or. lx2 < 1 .or. lx1 < 1) then
   write(stderr,"(A,i0,A,i0,1x,i0,1x,i0)") "ERROR: MPI ID: ", mpi_id, " failed to receive lx1, lx2, lx3: ", lx1, lx2, lx3
@@ -111,7 +112,7 @@ allocate(S3(lx1, dx2, lx3))
 tic = 0
 if (mpi_id == mpi_root_id) call system_clock(count=tic)
 
-call generate_and_send(Nmpi, mpi_id, mpi_root_id, dx2, lx1, lx2, lx3, mt%A3, mpi_h5comm, noise, gensig, S3)
+call generate_and_send(Nmpi, mpi_id, mpi_root_id, dx2, lx1, lx2, lx3, tA3, noise, gensig, S3)
 
 if (mpi_id == mpi_root_id) then
   call system_clock(count=toc)
