@@ -6,17 +6,27 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 
 echo "I_MPI_ROOT: %I_MPI_ROOT%"
 
-echo "configure"
+echo "Configure HDF5"
+cmake -S scripts -B scripts/build -DCMAKE_INSTALL_PREFIX=%RUNNER_TEMP%
+if %errorlevel% neq 0 (
+  type scripts\build\CMakeFiles\CMakeError.log & exit /b %errorlevel%
+)
+
+echo "Build/install HDF5"
+cmake --build scripts/build --parallel
+if %errorlevel% neq 0 exit /b %errorlevel%
+
+echo "configure %GITHUB_REPOSITORY%"
 cmake -B build -DCMAKE_INSTALL_PREFIX=%RUNNER_TEMP%
 if %errorlevel% neq 0 (
   type build\CMakeFiles\CMakeError.log & exit /b %errorlevel%
 )
 
-echo "build"
+echo "build %GITHUB_REPOSITORY%"
 cmake --build build --parallel
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-echo "Run tests"
+echo "test %GITHUB_REPOSITORY%"
 ctest --test-dir build --preset default -V
 if %errorlevel% neq 0 exit /b %errorlevel%
 
