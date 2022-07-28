@@ -63,11 +63,13 @@ jobs:
 
     - name: Release build
       run: cmake --build --preset release --parallel
+
     - name: Release unit test
       run: ctest --preset release --output-junit test-release-oneapi.xml
 
     - name: debug build
       run: cmake --build --preset debug --parallel
+
     - name: debug unit test
       run: ctest --preset debug --output-junit test-debug-oneapi.xml
 
