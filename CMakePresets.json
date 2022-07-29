@@ -15,7 +15,7 @@
   "description": "Build with code coverage enabled.",
   "cacheVariables": {
     "CMAKE_BUILD_TYPE": "Debug",
-    "ENABLE_COVERAGE": true
+    "coverage": true
   }
 },
 {
