@@ -29,9 +29,9 @@ add_library(partition OBJECT partition.f90)
 
 add_library(cli OBJECT cli.f90)
 
-add_executable(runner frontend.f90 cpu_count.cpp)
+add_executable(runner frontend.f90)
 target_include_directories(runner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(runner PRIVATE partition cli)
+target_link_libraries(runner PRIVATE partition cli cpu_count)
 if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
   set_property(TARGET runner PROPERTY LINKER_LANGUAGE Fortran)
 else()

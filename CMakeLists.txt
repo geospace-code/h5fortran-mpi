@@ -19,9 +19,18 @@ DESCRIPTION "Lightweight object-oriented HDF5 MPI parallel Fortran interface"
 HOMEPAGE_URL https://github.com/geospace-code/h5fortran-mpi
 )
 
-include(CTest)
+enable_testing()
+
 if(NOT DEFINED ${PROJECT_NAME}_BUILD_TESTING)
-  set(${PROJECT_NAME}_BUILD_TESTING ${BUILD_TESTING})
+  if(DEFINED BUILD_TESTING)
+    set(${PROJECT_NAME}_BUILD_TESTING ${BUILD_TESTING})
+  else()
+    set(${PROJECT_NAME}_BUILD_TESTING true)
+  endif()
+endif()
+
+if(benchmark)
+  set(${PROJECT_NAME}_BUILD_TESTING true)
 endif()
 
 if(${PROJECT_NAME}_BUILD_TESTING)
@@ -76,10 +85,9 @@ if(${PROJECT_NAME}_BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-if(ENABLE_BENCHMARKS)
+if(benchmark)
   add_subdirectory(benchmark)
 endif()
-
 
 # additional Find*.cmake necessary
 install(FILES

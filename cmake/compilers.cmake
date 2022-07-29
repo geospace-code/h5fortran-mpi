@@ -37,7 +37,7 @@ $<$<COMPILE_LANGUAGE:Fortran>:-fimplicit-none>
 endif()
 
 # --- code coverage
-if(ENABLE_COVERAGE)
+if(coverage)
 include(CodeCoverage)
 append_coverage_compiler_flags()
 set(COVERAGE_EXCLUDES ${PROJECT_SOURCE_DIR}/test)

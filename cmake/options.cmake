@@ -1,7 +1,7 @@
 message(STATUS "${PROJECT_NAME} ${PROJECT_VERSION}  CMake ${CMAKE_VERSION}")
 
-option(ENABLE_BENCHMARKS "write / read benchmarks")
-option(ENABLE_COVERAGE "Code coverage tests")
+option(benchmark "Run benchmarks")
+option(coverage "Code coverage tests")
 option(hdf5_parallel "use HDF5-MPI layer" true)
 
 set(CMAKE_TLS_VERIFY true)

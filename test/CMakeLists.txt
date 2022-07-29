@@ -1,3 +1,8 @@
+add_library(cpu_count OBJECT cpu_count.cpp)
+target_compile_features(cpu_count PRIVATE cxx_std_11)
+target_compile_definitions(cpu_count PRIVATE $<$<BOOL:${MSVC}>:_CRT_SECURE_NO_WARNINGS>)
+target_include_directories(cpu_count PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 # --- Python h5py
 find_package(Python COMPONENTS Interpreter)
 if(NOT DEFINED h5py_ok)
@@ -29,7 +34,7 @@ if(hdf5_parallel)
   add_subdirectory(mpi)
 endif()
 
-if(ENABLE_COVERAGE)
+if(coverage)
   setup_target_for_coverage_gcovr_html(
   NAME coverage
   EXECUTABLE ${CMAKE_CTEST_COMMAND}
