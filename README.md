@@ -13,7 +13,7 @@ A very similar NetCDF4 interface is
 
 Many computer systems default to the serial HDF5 API, which lacks the HDF5 parallel MPI layer.
 The scripts/CMakeLists.txt can build the HDF5-MPI stack if needed.
-The system must have a working MPI library installed already (e.g. OpenMPI, MPICH, Intel MPI, MS-MPI).
+To use HDF5-MPI features, the computer must have a working MPI library installed already (e.g. OpenMPI, MPICH, Intel MPI, MS-MPI).
 
 Some OS have an installable parallel HDF5 package:
 
@@ -64,6 +64,12 @@ To build without MPI (serial HDF5 file operations only):
 
 ```sh
 cmake -B build -Dhdf5_parallel=off
+```
+
+Cray computers may use the CMake toolchain file to work with Intel or GCC backend.
+
+```sh
+cmake --toolchain cray.cmake -B build
 ```
 
 ---

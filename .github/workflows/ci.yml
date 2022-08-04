@@ -6,10 +6,14 @@ env:
 on:
   push:
     paths:
+      - "**.c"
+      - "**.cpp"
+      - "**.f90"
+      - "**.F90"
       - "**/CMakeLists.txt"
       - "**.cmake"
-      - "**.f90"
       - ".github/workflows/ci.yml"
+      - "!cray.cmake"
 
 
 jobs:
