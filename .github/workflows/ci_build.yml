@@ -14,18 +14,14 @@ jobs:
 
     strategy:
       matrix:
-        cfg: [{os: ubuntu-latest, fc: gfortran},
-              {os: macos-latest, fc: gfortran-11}]
+        os: [ubuntu-latest, macos-latest]
         shared: [true, false]
         mpi: [mpich, openmpi]
         exclude:
-        - cfg: {os: macos-latest, fc: gfortran-11}
+        - os: macos-latest
           shared: true
 
-    runs-on: ${{ matrix.cfg.os}}
-
-    env:
-      FC: ${{ matrix.cfg.fc }}
+    runs-on: ${{ matrix.os}}
 
     steps:
 
@@ -37,7 +33,9 @@ jobs:
 
     - name: install MPI (MacOS)
       if: runner.os == 'macOS'
-      run: brew install ${{ matrix.mpi }}
+      run: |
+        brew install ${{ matrix.mpi }}
+        brew reinstall gcc
 
     - uses: actions/checkout@v3
 

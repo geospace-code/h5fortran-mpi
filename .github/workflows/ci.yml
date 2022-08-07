@@ -55,7 +55,9 @@ jobs:
 
     - name: Install HDF5-${{ matrix.mpi }} (MacOS)
       if: runner.os == 'macOS'
-      run: brew install hdf5-mpi ninja ${{ matrix.mpi }}
+      run: |
+        brew install hdf5-mpi ninja ${{ matrix.mpi }}
+        brew reinstall gcc
 
     - uses: actions/checkout@v3
 

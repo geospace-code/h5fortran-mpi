@@ -2,54 +2,11 @@
 # needs a run test as sometimes libhdf5.settings says filter collective
 # is enabled when it actually fails at runtime (Windows Intel oneAPI)
 
-include(CheckSourceRuns)
+function(check_compression)
 
-
-function(hdf5_compression_flag)
-
-if(DEFINED CACHE{hdf5_parallel_compression})
-  return()
-endif()
-
-cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
-cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
-
-message(CHECK_START "Checking if HDF5 configured for parallel compression")
-
-if(HDF5_VERSION VERSION_LESS 1.10.2)
-  # https://www.hdfgroup.org/2018/04/why-should-i-care-about-the-hdf5-1-10-2-release/
-  set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression: HDF5 < 1.10.2")
-  message(CHECK_FAIL "NO - HDF5 version ${HDF5_VERSION} < 1.10.2")
-  return()
-endif()
-
-if(MPI_VERSION VERSION_LESS 3)
-  message(CHECK_FAIL "NO - MPI version ${MPI_VERSION} < 3")
-  set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression: MPI < 3")
-  return()
-endif()
-
-find_file(hdf5_settings_file
-NAMES libhdf5_openmpi.settings libhdf5_mpich.settings libhdf5.settings
-HINTS ${HDF5_LIBRARY_DIR} ${HDF5_DIR}
-PATH_SUFFIXES lib hdf5/openmpi hdf5/mpich share/hdf5-mpi share/hdf5 share
-NO_DEFAULT_PATH
-REQUIRED
-)
-
-# self/general: lib share
-# Ubuntu: hdf5/openmpi hdf5/mpich
-# Homebrew: share/hdf5-mpi share/hdf5
-
-file(READ ${hdf5_settings_file} hdf5_settings)
-string(REGEX MATCH "Parallel Filtered Dataset Writes:[ ]*([a-zA-Z]+)" hdf5_parallel_compression_match ${hdf5_settings})
-if(${CMAKE_MATCH_1})
-
-  set(CMAKE_REQUIRED_LIBRARIES HDF5::HDF5 MPI::MPI_Fortran MPI::MPI_C)
-
-  set(src
-  [=[
-  program test_fortran_mpi
+set(src
+[=[
+program test_fortran_mpi
 
 use, intrinsic :: iso_fortran_env, only : real32
 use hdf5
@@ -86,18 +43,18 @@ call h5pset_dxpl_mpio_f(xfer_id, H5FD_MPIO_COLLECTIVE_F, ierr)
 if (ierr/=0) error stop "h5pset_dxpl_mpio"
 
 if (mpi_id == 0) then
-  allocate(A(10, 10))
+allocate(A(10, 10))
 
-  call h5pcreate_f(H5P_DATASET_CREATE_F, dcpl, ierr)
-  if (ierr/=0) error stop "h5pcreate"
+call h5pcreate_f(H5P_DATASET_CREATE_F, dcpl, ierr)
+if (ierr/=0) error stop "h5pcreate"
 
-  call h5pset_chunk_f(dcpl, rank(A), chunk_size, ierr)
-  if (ierr/=0) error stop "h5pset_chunk"
+call h5pset_chunk_f(dcpl, rank(A), chunk_size, ierr)
+if (ierr/=0) error stop "h5pset_chunk"
 
-  call h5pset_deflate_f(dcpl, 1, ierr)
-  if (ierr/=0) error stop "h5pset_deflate"
+call h5pset_deflate_f(dcpl, 1, ierr)
+if (ierr/=0) error stop "h5pset_deflate"
 else
-  call h5sselect_none_f(filespace, ierr)
+call h5sselect_none_f(filespace, ierr)
 endif
 
 call h5screate_simple_f(rank(A), shape(A, HSIZE_T), space_id=filespace, hdferr=ierr)
@@ -126,15 +83,77 @@ call mpi_finalize(ierr)
 end program
 ]=])
 
-  check_source_runs(Fortran ${src} hdf5_parallel_compression_run)
+set(CMAKE_REQUIRED_LIBRARIES HDF5::HDF5 MPI::MPI_Fortran MPI::MPI_C)
 
-  if(hdf5_parallel_compression_run)
-    message(CHECK_PASS "${CMAKE_MATCH_1}")
-    set(hdf5_parallel_compression .true. CACHE STRING "HDF5-MPI configured for parallel compression")
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.14)
+  # need this if() for parser
+  include(CheckFortranSourceRuns)
+  check_fortran_source_runs(${src} hdf5_parallel_compression_run)
+endif()
+
+if(hdf5_parallel_compression_run)
+  message(CHECK_PASS "${CMAKE_MATCH_1}")
+  set(hdf5_parallel_compression .true. CACHE STRING "HDF5-MPI configured for parallel compression")
+else()
+  message(CHECK_FAIL "HDF5-MPI run check failed")
+  set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression")
+endif()
+
+endfunction()
+
+
+function(hdf5_compression_flag)
+
+if(DEFINED CACHE{hdf5_parallel_compression})
+  return()
+endif()
+
+if(CMAKE_VERSION VERSION_LESS 3.20)
+  get_filename_component(HDF5_LIBRARY_DIR ${HDF5_C_LIBRARY} DIRECTORY)
+  get_filename_component(HDF5_DIR ${HDF5_LIBRARY_DIR} DIRECTORY)
+else()
+  cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
+  cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
+endif()
+
+message(CHECK_START "Checking if HDF5 configured for parallel compression")
+
+if(HDF5_VERSION VERSION_LESS 1.10.2)
+  # https://www.hdfgroup.org/2018/04/why-should-i-care-about-the-hdf5-1-10-2-release/
+  set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression: HDF5 < 1.10.2")
+  message(CHECK_FAIL "NO - HDF5 version ${HDF5_VERSION} < 1.10.2")
+  return()
+endif()
+
+if(MPI_VERSION VERSION_LESS 3)
+  message(CHECK_FAIL "NO - MPI version ${MPI_VERSION} < 3")
+  set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression: MPI < 3")
+  return()
+endif()
+
+find_file(hdf5_settings_file
+NAMES libhdf5_openmpi.settings libhdf5_mpich.settings libhdf5.settings
+HINTS ${HDF5_LIBRARY_DIR} ${HDF5_DIR}
+PATH_SUFFIXES lib hdf5/openmpi hdf5/mpich share/hdf5-mpi share/hdf5 share
+NO_DEFAULT_PATH
+REQUIRED
+)
+
+# self/general: lib share
+# Ubuntu: hdf5/openmpi hdf5/mpich
+# Homebrew: share/hdf5-mpi share/hdf5
+
+file(READ ${hdf5_settings_file} hdf5_settings)
+string(REGEX MATCH "Parallel Filtered Dataset Writes:[ ]*([a-zA-Z]+)" hdf5_parallel_compression_match ${hdf5_settings})
+
+if(${CMAKE_MATCH_1})
+
+  if(CMAKE_VERSION VERSION_LESS 3.14)
+    check_compression()
   else()
-    message(CHECK_FAIL "HDF5-MPI run check failed")
-    set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression")
+    set(hdf5_parallel_compression .true. CACHE STRING "HDF5-MPI configured for parallel compression (assumed due to CMake < 3.14)")
   endif()
+
 else()
   message(CHECK_FAIL "NO")
   set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression")

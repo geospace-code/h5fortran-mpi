@@ -1,22 +1,13 @@
-cmake_minimum_required(VERSION 3.20...3.24)
-
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
-  message(FATAL_ERROR "cmake -B <build> to specify build directory")
-endif()
+cmake_minimum_required(VERSION 3.11...3.25)
 
 get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(NOT is_multi_config AND NOT (CMAKE_BUILD_TYPE OR DEFINED ENV{CMAKE_BUILD_TYPE}))
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Release default")
 endif()
 
-file(READ ${CMAKE_CURRENT_LIST_DIR}/codemeta.json _j)
-string(JSON PROJECT_VERSION GET ${_j} version)
-
 project(h5fortran
 LANGUAGES C Fortran
-VERSION ${PROJECT_VERSION}
-DESCRIPTION "Lightweight object-oriented HDF5 MPI parallel Fortran interface"
-HOMEPAGE_URL https://github.com/geospace-code/h5fortran-mpi
+VERSION 2.0.2
 )
 
 enable_testing()
@@ -75,9 +66,14 @@ set_property(TARGET h5fortran PROPERTY VERSION ${PROJECT_VERSION})
 add_library(h5fortran::h5fortran INTERFACE IMPORTED GLOBAL)
 target_link_libraries(h5fortran::h5fortran INTERFACE h5fortran)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/h5fortran.mod TYPE INCLUDE)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/h5fortran.mod DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-install(TARGETS h5fortran EXPORT ${PROJECT_NAME}-targets)
+install(TARGETS h5fortran EXPORT ${PROJECT_NAME}-targets
+LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 add_subdirectory(src)
 
@@ -91,7 +87,7 @@ endif()
 
 # additional Find*.cmake necessary
 install(FILES
-${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/FindHDF5.cmake
+${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindHDF5.cmake
 DESTINATION cmake
 )
 

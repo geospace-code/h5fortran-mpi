@@ -34,9 +34,9 @@ endfunction(mpi_test)
 add_executable(test_runner runner.f90
 ${PROJECT_SOURCE_DIR}/benchmark/partition.f90
 ${PROJECT_SOURCE_DIR}/benchmark/cli.f90
+$<TARGET_OBJECTS:cpu_count>
 )
 target_include_directories(test_runner PRIVATE ${PROJECT_SOURCE_DIR}/benchmark)
-target_link_libraries(test_runner PRIVATE cpu_count)
 # not linked as libraries in case benchmarks aren't built
 if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
   set_property(TARGET test_runner PROPERTY LINKER_LANGUAGE Fortran)

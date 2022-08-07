@@ -6,13 +6,15 @@ option(hdf5_parallel "use HDF5-MPI layer" true)
 
 set(CMAKE_TLS_VERIFY true)
 
+include(GNUInstallDirs)
+
 
 if(BUILD_SHARED_LIBS AND MSVC)
   message(WARNING "Intel oneAPI has trouble with shared libs in general on Windows, try
     cmake -DBUILD_SHARED_LIBS=off")
 endif()
 
-cmake_path(SET CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/Modules)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
 # Rpath options necessary for shared library install to work correctly in user projects
 set(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/lib)

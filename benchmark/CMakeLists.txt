@@ -6,7 +6,7 @@ LANGUAGES C CXX Fortran
 
 set_property(DIRECTORY PROPERTY LABELS benchmark)
 
-cmake_path(SET CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../cmake/Modules)
+cmake_path(SET CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../cmake)
 
 find_package(MPI COMPONENTS Fortran REQUIRED)
 find_package(HDF5 COMPONENTS parallel Fortran REQUIRED)

@@ -66,11 +66,7 @@ To build without MPI (serial HDF5 file operations only):
 cmake -B build -Dhdf5_parallel=off
 ```
 
-Cray computers may use the CMake toolchain file to work with Intel or GCC backend.
-
-```sh
-cmake --toolchain cray.cmake -B build
-```
+Cray computers may use a CMake toolchain file to work with Intel or GCC backend.
 
 ---
 
