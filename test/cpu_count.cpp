@@ -19,10 +19,19 @@
 #include <thread>
 
 #ifdef _WIN32
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <windows.h>
 #elif defined (__APPLE__)
 #include <sys/sysctl.h>
+#elif defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
+#include <sys/sysctl.h>
+#elif defined(__hpux)
+#include <sys/param.h>
+#include <sys/mpctl.h>
+#elif defined(__HAIKU__)
+#include <OS.h>
 #elif __has_include(<unistd.h>)
 #include <unistd.h>
 #endif
@@ -30,6 +39,9 @@
 unsigned int CPUCountWindows();
 unsigned int ParseSysCtl();
 unsigned int RetrieveInformationFromCpuInfoFile();
+unsigned int QueryBSDProcessor();
+unsigned int QueryHaikuInfo();
+unsigned int QueryHPUXProcessor();
 unsigned int QueryProcessorBySysconf();
 unsigned int QueryThreads();
 
@@ -48,8 +60,17 @@ unsigned int cpu_count(){
   NumberOfPhysicalCPU = CPUCountWindows();
 #elif defined (__APPLE__)
   NumberOfPhysicalCPU = ParseSysCtl();
-#elif defined (__unix__)
+#elif defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
+  NumberOfPhysicalCPU = QueryBSDProcessor();
+#elif defined(__linux) || defined(__CYGWIN__)
   NumberOfPhysicalCPU = RetrieveInformationFromCpuInfoFile();
+#elif defined(__QNX__)
+  // kwSys uses other kwSys functions for QNX. Is there a QNX library call to do this?
+#elif defined(_AIX)
+  // https://www.ibm.com/support/pages/determining-how-many-cpus-you-have-under-aix
+  // looks like parsing text is required
+#elif defined(__hpux)
+  NumberOfPhysicalCPU = QueryHPUXProcessor();
 #endif
 
   if (NumberOfPhysicalCPU == 0)
@@ -198,9 +219,66 @@ unsigned int ParseSysCtl(){
 
 }
 
+unsigned int QueryHaikuInfo(){
+
+  unsigned int NumberOfPhysicalCPU = 0;
+
+#if defined(__HAIKU__)
+
+  system_info info;
+  get_system_info(&info);
+  NumberOfPhysicalCPU = info.cpu_count;
+
+#endif
+
+  return NumberOfPhysicalCPU;
+
+}
+
+unsigned int QueryBSDProcessor(){
+
+  unsigned int NumberOfPhysicalCPU = 0;
+
+#if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
+
+  int k;
+  size_t sz = sizeof(k);
+  int ctrl[2] = { CTL_HW, HW_NCPU };
+
+  if (sysctl(ctrl, 2, &k, &sz, nullptr, 0) != 0) {
+    return 0;
+  }
+
+  NumberOfPhysicalCPU = k;
+
+#endif
+
+  return NumberOfPhysicalCPU;
+
+}
+
+
+unsigned int QueryHPUXProcessor(){
+
+  unsigned int NumberOfPhysicalCPU = 0;
+
+#if defined(__hpux)
+  int c = mpctl(MPC_GETNUMSPUS_SYS, 0, 0);
+  if (c <= 0) {
+    return 0;
+  }
+
+  NumberOfPhysicalCPU = c;
+#endif
+
+  return NumberOfPhysicalCPU;
+
+}
+
+
 unsigned int QueryProcessorBySysconf(){
 
-unsigned int NumberOfPhysicalCPU = 0;
+  unsigned int NumberOfPhysicalCPU = 0;
 
 #if defined(_SC_NPROCESSORS_ONLN)
 

@@ -1,23 +1,28 @@
-add_executable(slab_mpi_write slab_mpi_write.f90)
-target_link_libraries(slab_mpi_write PRIVATE h5fortran cli perf test_utils kernel HDF5::HDF5 MPI::MPI_Fortran)
-add_executable(slab_mpi_read slab_mpi_read.f90)
-target_link_libraries(slab_mpi_read PRIVATE h5fortran cli perf HDF5::HDF5 MPI::MPI_Fortran)
-
-add_library(test_utils OBJECT utils.f90)
+add_library(test_utils utils.f90)
 target_link_libraries(test_utils PRIVATE kernel MPI::MPI_Fortran)
 
+add_executable(slab_mpi_write slab_mpi_write.f90)
+target_link_libraries(slab_mpi_write PRIVATE cli perf test_utils kernel h5fortran::h5fortran)
+add_executable(slab_mpi_read slab_mpi_read.f90)
+target_link_libraries(slab_mpi_read PRIVATE cli perf h5fortran::h5fortran)
+
 add_executable(slab_mpi_serial_write slab_mpi_serial_write.f90)
-target_link_libraries(slab_mpi_serial_write PRIVATE h5fortran cli perf test_utils kernel HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab_mpi_serial_write PRIVATE cli perf test_utils kernel h5fortran::h5fortran)
 add_executable(slab_mpi_serial_read slab_mpi_serial_read.f90)
-target_link_libraries(slab_mpi_serial_read PRIVATE h5fortran cli perf HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab_mpi_serial_read PRIVATE cli perf h5fortran::h5fortran)
 
 add_executable(slab_serial_write slab_serial_write.f90)
-target_link_libraries(slab_serial_write PRIVATE h5fortran cli perf test_utils kernel HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab_serial_write PRIVATE cli perf test_utils kernel h5fortran::h5fortran)
 add_executable(slab_serial_read slab_serial_read.f90)
-target_link_libraries(slab_serial_read PRIVATE h5fortran cli perf HDF5::HDF5 MPI::MPI_Fortran)
+target_link_libraries(slab_serial_read PRIVATE cli perf h5fortran::h5fortran)
 
-cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
-cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
+if(CMAKE_VERSION VERSION_LESS 3.20)
+  get_filename_component(HDF5_LIBRARY_DIR ${HDF5_C_LIBRARY} DIRECTORY)
+  get_filename_component(HDF5_DIR ${HDF5_LIBRARY_DIR} DIRECTORY)
+else()
+  cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
+  cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
+endif()
 find_program(H5DIFF
 NAMES h5diff
 HINTS ${HDF5_ROOT} ${HDF5_DIR}
@@ -133,7 +138,9 @@ foreach(comp_lvl 0 1)
   set_property(TEST mpi-cleanup-comp${comp_lvl} PROPERTY TIMEOUT ${read_timeout})
 endforeach()
 
-find_package(Python COMPONENTS Interpreter)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
+  find_package(Python COMPONENTS Interpreter)
+endif()
 if(NOT Python_FOUND)
   set(PySkip 1 CACHE STRING "python not ready")
 endif()
