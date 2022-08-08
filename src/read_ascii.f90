@@ -2,8 +2,7 @@ submodule (h5fortran:read_scalar) read_scalar_ascii
 
 use, intrinsic :: iso_c_binding, only : C_CHAR, C_F_POINTER
 use hdf5, only : H5T_STR_NULLTERM_F, &
-H5Dget_space_f, H5Dvlen_get_max_len_f, H5Dread_vl_f, H5Dvlen_reclaim_f, &
-H5Sget_simple_extent_dims_f, &
+H5Dvlen_get_max_len_f, H5Dread_vl_f, H5Dvlen_reclaim_f, &
 H5Tis_variable_str_f
 
 implicit none (type, external)
@@ -12,13 +11,13 @@ contains
 
 module procedure read_scalar_char
 
-integer(HID_T) :: type_id
+integer(HID_T) :: type_id, mem_space_id
 integer :: ier, i, pad_type, L
 integer(SIZE_T) :: dsize
 logical :: vstatus
 
 !> variable length string
-integer(HSIZE_T) :: dset_dims(1), maxdims(2)
+integer(HSIZE_T) :: dset_dims(1), maxdims(1)
 TYPE(C_PTR), DIMENSION(:), ALLOCATABLE, TARGET :: cbuf
 TYPE(C_PTR) :: f_ptr
 
@@ -42,7 +41,7 @@ call H5Tis_variable_str_f(type_id, vstatus, ier)
 if(ier/=0) error stop "ERROR:h5fortran:read:H5Tis_variable_str " // trim(dset_name)
 
 if(vstatus) then
-  if(mem_space_id == H5S_ALL_F) call H5Dget_space_f(dset_id, mem_space_id, ier)
+  call H5Dget_space_f(dset_id, mem_space_id, ier)
   if(ier/=0) error stop "ERROR:h5fortran:read:vlen_char:H5Dget_space " // trim(dset_name)
   !call H5Dvlen_get_max_len_f(dset_id, type_id, space_id, dsize, ier)
   !if(ier/=0) error stop "h5fortran:read:H5Dvlen_get_max_len " // trim(dset_name)
@@ -53,8 +52,11 @@ if(vstatus) then
   allocate(cbuf(1:dset_dims(1)))
   f_ptr = C_LOC(cbuf(1))
 
-  call H5Dread_f(dset_id, type_id, f_ptr, ier)
+  call H5Dread_f(dset_id, type_id, f_ptr, ier, mem_space_id)
   if(ier/=0) error stop "h5fortran:read:vlen_char:H5Dread " // trim(dset_name)
+
+  call H5Sclose_f(mem_space_id, ier)
+  if(ier /= 0) error stop "ERROR:h5fortran:read_char H5Sclose memory space " // trim(dset_name)
 
   call C_F_POINTER(cbuf(1), cstr)
 
@@ -83,7 +85,7 @@ else
 
   allocate(character(dsize) :: buf_char)
 
-  call H5Dread_f(dset_id, type_id, buf_char, dims, ier, mem_space_id, file_space_id)
+  call H5Dread_f(dset_id, type_id, buf_char, dims, ier, file_space_id=file_space_id)
   if(ier/=0) error stop "ERROR:h5fortran:read:H5Dread character " // trim(dset_name)
 
   i = index(buf_char, c_null_char) - 1

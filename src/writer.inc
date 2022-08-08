@@ -33,12 +33,14 @@ end select
 
 !> create or open dataset
 call hdf_create(self, dname, dtype, mem_dims=mem_dims, dset_dims=dims_dset, &
-filespace_id=file_space_id, memspace=mem_space_id, dset_id=dset_id, &
+filespace_id=file_space_id, dset_id=dset_id, &
 istart=istart, iend=iend, stride=stride, chunk_size=chunk_size, compact=compact, &
 dtype_id=dtype_id, charlen=charlen)
 
 if((self%use_mpi .and. present(dset_dims)) .or. (present(istart) .and. present(iend))) then
   call mpi_hyperslab(mem_dims, dims_dset, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend, stride=stride)
+else
+  mem_space_id = H5S_ALL_F
 endif
 
 if(self%use_mpi) then
@@ -76,7 +78,7 @@ if(ier /= 0) error stop "ERROR:h5fortran:writer: closing dataset: " // dname // 
 if(mem_space_id /= H5S_ALL_F) call h5sclose_f(mem_space_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:writer closing memory dataspace: " // dname // " in " // self%filename
 
-if(file_space_id /= H5S_ALL_F) call h5sclose_f(file_space_id, ier)
+call h5sclose_f(file_space_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:writer closing file dataspace: " // dname // " in " // self%filename
 
 if(self%use_mpi) call h5pclose_f(xfer_id, ier)

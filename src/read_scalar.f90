@@ -1,16 +1,14 @@
 submodule (h5fortran:hdf5_read) read_scalar
 
-use hdf5, only : H5Dread_f, &
-H5Sclose_f
+use hdf5, only : H5Dread_f
 
 implicit none (type, external)
 
 interface
 
-module subroutine read_scalar_char(A, dset_id, file_space_id, mem_space_id, dims)
+module subroutine read_scalar_char(A, dset_id, file_space_id, dims)
 class(*), intent(inout) :: A
 integer(HID_T), intent(in) :: dset_id, file_space_id
-integer(HID_T), intent(inout) :: mem_space_id
 integer(HSIZE_T), intent(in) :: dims(:)
 end subroutine
 
@@ -22,20 +20,20 @@ contains
 module procedure h5read_scalar
 
 integer(HSIZE_T) :: dims(0)
-integer(HID_T) :: dset_id, xfer_id, file_space_id, mem_space_id
+integer(HID_T) :: dset_id, xfer_id, file_space_id
 integer :: dclass, ier
 
 logical :: is_scalar
 
-file_space_id = H5S_ALL_F
-mem_space_id = H5S_ALL_F
-
-call hdf_rank_check(self, dname, rank(A), is_scalar)
 
 call H5Dopen_f(self%file_id, dname, dset_id, ier)
 if(ier/=0) error stop 'ERROR:h5fortran:reader: ' // dname // ' could not be opened in ' // self%filename
+call H5Dget_space_f(dset_id, file_space_id, ier)
+if(ier/=0) error stop 'ERROR:h5fortran:reader:H5Dget_space ' // dname // ' from ' // self%filename
 
-call get_dset_class(self, dname, dclass, dset_id)
+call hdf_rank_check(self, dname, file_space_id, rank(A), is_scalar)
+
+call get_obj_class(self, dname, dset_id, dclass)
 
 xfer_id = mpi_collective(dname, self%use_mpi)
 
@@ -62,7 +60,7 @@ elseif(dclass == H5T_INTEGER_F) then
     error stop 'ERROR:h5fortran:read: integer disk dataset ' // dname // ' needs integer memory variable'
   end select
 elseif(dclass == H5T_STRING_F) then
-  call read_scalar_char(A, dset_id, file_space_id, mem_space_id, dims)
+  call read_scalar_char(A, dset_id, file_space_id, dims)
 else
   error stop 'ERROR:h5fortran:reader: non-handled datatype--please reach out to developers.'
 end if
@@ -74,10 +72,7 @@ if(ier /= 0) error stop "ERROR:h5fortran:read_scalar: closing dataset: " // dnam
 if(self%use_mpi) call H5Pclose_f(xfer_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:writer closing property: " // dname // " in " // self%filename
 
-if(mem_space_id /= H5S_ALL_F) call H5Sclose_f(mem_space_id, ier)
-if(ier /= 0) error stop "ERROR:h5fortran:read_scalar closing memory dataspace: " // dname // " in " // self%filename
-
-if(file_space_id /= H5S_ALL_F) call H5Sclose_f(file_space_id, ier)
+call H5Sclose_f(file_space_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:read_scalar closing file dataspace: " // dname // " in " // self%filename
 
 end procedure h5read_scalar

@@ -1,4 +1,5 @@
 module h5fortran
+!! HDF5 object-oriented polymorphic interface
 
 use, intrinsic :: iso_c_binding, only : c_ptr, c_loc
 use, intrinsic :: iso_fortran_env, only : real32, real64, int64, int32, stderr=>error_unit
@@ -12,6 +13,7 @@ H5P_DEFAULT_F
 implicit none (type, external)
 
 private
+
 
 !> main type
 type :: hdf5_file
@@ -124,14 +126,14 @@ class(*), intent(in), optional :: fill_value
 end subroutine
 
 module subroutine hdf_create(self, dname, dtype, mem_dims, dset_dims, &
-  filespace_id, memspace, dset_id, dtype_id, &
+  filespace_id, dset_id, dtype_id, &
   istart, iend, stride, chunk_size, compact, charlen, fill_value)
 
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 integer(HID_T), intent(in) :: dtype
 integer(HSIZE_T), dimension(:), intent(in) :: mem_dims, dset_dims
-integer(HID_T), intent(out) :: filespace_id, memspace, dset_id
+integer(HID_T), intent(out) :: filespace_id, dset_id
 integer(HID_T), intent(out), optional :: dtype_id
 integer, intent(in), dimension(:), optional :: chunk_size, istart, iend, stride
 logical, intent(in), optional :: compact
@@ -333,10 +335,21 @@ class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 end function
 
-module integer(hid_t) function get_native_dtype(self, dname, ds_id)
+module subroutine get_obj_class(self, obj_name, obj_id, class, size_bytes, pad_type)
+!! get the object class (integer, float, string, ...)
+!! {H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F}
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: obj_name
+integer(HID_T), intent(in) :: obj_id
+integer, intent(out) :: class
+integer(SIZE_T), intent(out), optional :: size_bytes
+integer, intent(out), optional :: pad_type
+end subroutine
+
+module integer(hid_t) function get_native_dtype(self, dname, obj_id)
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
-integer(hid_t), intent(in), optional :: ds_id
+integer(hid_t), intent(in), optional :: obj_id
 end function
 
 module integer function hdf_get_ndim(self, dname) result (drank)
@@ -344,10 +357,11 @@ class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
 end function
 
-module subroutine hdf_get_shape(self, dname, dims)
+module subroutine hdf_get_shape(self, obj_name, dims, attr_name)
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: dname
+character(*), intent(in) :: obj_name
 integer(HSIZE_T), intent(out), allocatable :: dims(:)
+character(*), intent(in), optional :: attr_name
 end subroutine
 
 module integer function get_strpad(self, dset_name)
@@ -445,51 +459,51 @@ end interface
 
 interface  !< attributes.f90
 
-module subroutine readattr_scalar(self, obj_name, attr, A)
+module subroutine readattr_scalar(self, obj_name, attr_name, A)
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: obj_name, attr
+character(*), intent(in) :: obj_name, attr_name
 class(*), intent(inout) :: A
 end subroutine
 
-module subroutine readattr_1d(self, obj_name, attr, A)
+module subroutine readattr_1d(self, obj_name, attr_name, A)
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: obj_name, attr
+character(*), intent(in) :: obj_name, attr_name
 class(*), intent(inout) :: A(:)
 end subroutine
 
-module subroutine readattr_2d(self, obj_name, attr, A)
+module subroutine readattr_2d(self, obj_name, attr_name, A)
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: obj_name, attr
+character(*), intent(in) :: obj_name, attr_name
 class(*), intent(inout) :: A(:,:)
 end subroutine
 
-module subroutine readattr_3d(self, obj_name, attr, A)
+module subroutine readattr_3d(self, obj_name, attr_name, A)
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: obj_name, attr
+character(*), intent(in) :: obj_name, attr_name
 class(*), intent(inout) :: A(:,:,:)
 end subroutine
 
-module subroutine readattr_4d(self, obj_name, attr, A)
+module subroutine readattr_4d(self, obj_name, attr_name, A)
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: obj_name, attr
+character(*), intent(in) :: obj_name, attr_name
 class(*), intent(inout) :: A(:,:,:,:)
 end subroutine
 
-module subroutine readattr_5d(self, obj_name, attr, A)
+module subroutine readattr_5d(self, obj_name, attr_name, A)
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: obj_name, attr
+character(*), intent(in) :: obj_name, attr_name
 class(*), intent(inout) :: A(:,:,:,:,:)
 end subroutine
 
-module subroutine readattr_6d(self, obj_name, attr, A)
+module subroutine readattr_6d(self, obj_name, attr_name, A)
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: obj_name, attr
+character(*), intent(in) :: obj_name, attr_name
 class(*), intent(inout) :: A(:,:,:,:,:,:)
 end subroutine
 
-module subroutine readattr_7d(self, obj_name, attr, A)
+module subroutine readattr_7d(self, obj_name, attr_name, A)
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: obj_name, attr
+character(*), intent(in) :: obj_name, attr_name
 class(*), intent(inout) :: A(:,:,:,:,:,:,:)
 end subroutine
 
@@ -668,24 +682,28 @@ module subroutine mpi_hyperslab(mem_dims, dset_dims, dset_id, filespace, memspac
 !! Each process defines dataset in memory and writes it to the hyperslab in the file.
 integer(HSIZE_T), dimension(:), intent(in) :: mem_dims, dset_dims
 integer(HID_T), intent(in) :: dset_id
-integer(HID_T), intent(inout) :: filespace, memspace
+integer(HID_T), intent(inout) :: filespace
+integer(HID_T), intent(out) :: memspace
 integer, dimension(:), intent(in) :: istart
 integer, dimension(size(istart)), intent(in) :: iend
 integer, dimension(size(istart)), intent(in), optional :: stride
 end subroutine
 
-module subroutine hdf_rank_check(self, dname, mrank, vector_scalar)
+module subroutine hdf_rank_check(self, obj_name, file_space_id, mrank, is_scalar)
+!! check for matching rank, else bad reads can occur--doesn't always crash without this check
 class(hdf5_file), intent(in) :: self
-character(*), intent(in) :: dname
+character(*), intent(in) :: obj_name
+integer(HID_T), intent(in) :: file_space_id
 integer, intent(in) :: mrank
-logical, intent(out), optional :: vector_scalar
+logical, intent(out), optional :: is_scalar
 end subroutine
 
-module subroutine hdf_shape_check(self, dname, dims, dset_dims)
+module subroutine hdf_shape_check(self, dname, file_space_id, dims)
+!! check for matching size, else bad reads can occur.
 class(hdf5_file), intent(in) :: self
 character(*), intent(in) :: dname
+integer(HID_T), intent(in) :: file_space_id
 integer(HSIZE_T), intent(in) :: dims(:)
-integer(HSIZE_T), intent(out), optional :: dset_dims(size(dims))
 end subroutine
 
 module integer(HSIZE_T) function hdf_filesize(self)

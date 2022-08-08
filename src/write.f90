@@ -25,7 +25,7 @@ contains
 module procedure hdf_create_user
 !! for user %create() method
 
-integer(HID_T) :: file_space_id, mem_space_id, dset_id, dtype_id
+integer(HID_T) :: file_space_id, dset_id, dtype_id
 integer(HSIZE_T), dimension(size(dset_dims)) :: mdims, ddims
 integer :: ierr
 
@@ -38,7 +38,7 @@ else
 endif
 
 call hdf_create(self, dname, dtype, mem_dims=mdims, dset_dims=ddims, &
-  filespace_id=file_space_id, memspace=mem_space_id, dset_id=dset_id, dtype_id=dtype_id, compact=compact, &
+  filespace_id=file_space_id, dset_id=dset_id, dtype_id=dtype_id, compact=compact, &
   charlen=charlen, fill_value=fill_value)
 
 call h5dclose_f(dset_id, ierr)
@@ -46,9 +46,6 @@ if(ierr /= 0) error stop "ERROR:h5fortran:write:create_user: closing dataset: " 
 
 if(file_space_id /= H5S_ALL_F) call h5sclose_f(file_space_id, ierr)
 if(ierr /= 0) error stop "ERROR:h5fortran:write:create_user: closing file dataspace: " // dname // " in " // self%filename
-
-if(mem_space_id /= H5S_ALL_F) call h5sclose_f(mem_space_id, ierr)
-if(ierr /= 0) error stop "ERROR:h5fortran:write:create_user: closing memory dataspace: " // dname // " in " // self%filename
 
 if(dtype == H5T_NATIVE_CHARACTER) call h5tclose_f(dtype_id, ierr)
 if(ierr /= 0) error stop "ERROR:h5fortran:write:create_user: closing datatype: " // dname // " in " // self%filename
@@ -58,46 +55,32 @@ end procedure hdf_create_user
 
 module procedure hdf_create
 
-logical :: exists
 integer :: ierr
 integer(HID_T) :: dcpl, type_id
-
-memspace = H5S_ALL_F
 
 if(dtype == H5T_NATIVE_CHARACTER) then
   if(.not. present(charlen)) error stop "h5fortran:hdf_create: character type must specify charlen"
   if(.not. present(dtype_id)) error stop "h5fortran:hdf_create: character type must specify dtype_id"
 endif
 
-!> sanity check: file is open
-if(.not. self%is_open()) error stop 'ERROR:h5fortran:write: file handle is not open: ' // self%filename
-
-!> sanity check: dataset path is valid
-call h5ltpath_valid_f(self%file_id, dname, .true., exists, ierr)
-if (ierr /= 0) error stop 'ERROR:h5fortran:create: variable path invalid: ' // dname // ' in ' // self%filename
-!! h5lexists_f can false error with groups--just use h5ltpath_valid
-!! stricter than self%exist() since we're creating and/or writing variable
-
-if(self%debug) print *,'h5fortran:TRACE:create:exists: ' // dname, exists
-
-if(exists) then
-  if (.not.present(istart)) then
-    if (size(mem_dims) == 0) then
-      !! scalar
-      call hdf_rank_check(self, dname, size(mem_dims))
-    else
-      call hdf_shape_check(self, dname, mem_dims)
-    endif
-  endif
-  !! FIXME: read and write slice shape not checked; but should check in future versions
-
-  !> open dataset
+if(self%exist(dname)) then
   call h5dopen_f(self%file_id, dname, dset_id, ierr)
   if (ierr /= 0) error stop 'ERROR:h5fortran:create: could not open ' // dname // ' in ' // self%filename
 
-  !> get dataset filespace
   call h5dget_space_f(dset_id, filespace_id, ierr)
   if(ierr /= 0) error stop 'ERROR:h5fortran:create could not get dataset ' // dname // ' in ' // self%filename
+
+
+  if (present(istart)) then
+    !! FIXME: read and write slice shape not checked; but should check in future versions
+  else
+    if (size(mem_dims) == 0) then
+      !! scalar
+      call hdf_rank_check(self, dname, filespace_id, size(mem_dims))
+    else
+      call hdf_shape_check(self, dname, filespace_id, mem_dims)
+    endif
+  endif
 
   if(dtype == H5T_NATIVE_CHARACTER) then
     call h5tcopy_f(dtype, type_id, ierr)

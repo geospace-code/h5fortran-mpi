@@ -2,23 +2,24 @@ integer(HSIZE_T), dimension(rank(A)) :: dims, dset_dims
 integer(HID_T) :: dset_id, file_space_id, mem_space_id, xfer_id
 integer :: dclass, ier
 
-file_space_id = H5S_ALL_F
-mem_space_id = H5S_ALL_F
 
 dims = shape(A, HSIZE_T)
 
-call H5Dopen_f(self%file_id, dname, dset_id, ier)
-if(ier /= 0) error stop 'ERROR:h5open_read: open ' // dname // ' from ' // self%filename
+call h5dopen_f(self%file_id, dname, dset_id, ier)
+if(ier/=0) error stop 'ERROR:h5fortran:reader:H5Dopen ' // dname // ' from ' // self%filename
+call H5Dget_space_f(dset_id, file_space_id, ier)
+if(ier/=0) error stop 'ERROR:h5fortran:reader:H5Dget_space ' // dname // ' from ' // self%filename
 
 if(present(istart) .and. present(iend)) then
   call mpi_hyperslab(dims, dset_dims, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend, stride=stride)
 else
-  call hdf_shape_check(self, dname, dims, dset_dims)
+  call hdf_shape_check(self, dname, file_space_id, dims)
+  mem_space_id = H5S_ALL_F
 endif
 
 xfer_id = mpi_collective(dname, self%use_mpi)
 
-call get_dset_class(self, dname, dclass, dset_id)
+call get_obj_class(self, dname, dset_id, dclass)
 
 !> casting is handled by HDF5 library internally
 !! select case doesn't allow H5T_*
@@ -53,7 +54,7 @@ if(ier /= 0) error stop "ERROR:h5fortran:reader: closing dataset: " // dname // 
 if(mem_space_id /= H5S_ALL_F) call h5sclose_f(mem_space_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:reader closing memory dataspace: " // dname // " in " // self%filename
 
-if(file_space_id /= H5S_ALL_F) call h5sclose_f(file_space_id, ier)
+call h5sclose_f(file_space_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:reader closing file dataspace: " // dname // " in " // self%filename
 
 if(self%use_mpi) call h5pclose_f(xfer_id, ier)

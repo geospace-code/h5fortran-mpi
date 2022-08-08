@@ -1,20 +1,19 @@
 submodule (h5fortran) utils_smod
 
 use hdf5, only: h5get_libversion_f, &
+H5Dget_create_plist_f, H5Dget_space_f, &
 h5eset_auto_f, &
-h5iis_valid_f, h5iget_type_f, h5iget_name_f, &
+h5iis_valid_f, h5iget_name_f, H5Iget_type_f, &
 h5open_f, h5close_f, &
 h5fopen_f, h5fcreate_f, h5fclose_f, h5fis_hdf5_f, h5fget_filesize_f, &
 h5fget_obj_count_f, h5fget_obj_ids_f, h5fget_name_f, &
+H5Pall_filters_avail_f, H5Pclose_f, &
 h5sselect_hyperslab_f, h5screate_simple_f, &
-h5dopen_f, h5dclose_f, h5dget_space_f, &
-h5dget_create_plist_f, &
-h5pcreate_f, h5pall_filters_avail_f, h5pclose_f, &
+H5Sget_simple_extent_ndims_f, H5Sget_simple_extent_dims_f, H5Sget_simple_extent_npoints_f, &
 H5F_ACC_RDONLY_F, H5F_ACC_RDWR_F, H5F_ACC_TRUNC_F, &
 H5F_OBJ_FILE_F, H5F_OBJ_GROUP_F, H5F_OBJ_DATASET_F, H5F_OBJ_DATATYPE_F, H5F_OBJ_ALL_F, &
-H5D_CONTIGUOUS_F, H5D_CHUNKED_F, H5D_COMPACT_F
-
-use h5lt, only : h5ltget_dataset_ndims_f, h5ltget_dataset_info_f
+H5D_CONTIGUOUS_F, H5D_CHUNKED_F, H5D_COMPACT_F, &
+H5I_FILE_F
 
 implicit none (type, external)
 
@@ -91,9 +90,6 @@ else
   call h5eset_auto_f(0, ier)
 endif
 if (ier /= 0) error stop 'ERROR:h5fortran:open: HDF5 library set traceback'
-
-!! OK to call repeatedly
-!! https://support.hdfgroup.org/HDF5/doc/RM/RM_H5.html#Library-Open
 
 select case(laction)
 case('r')
@@ -202,14 +198,13 @@ end procedure h5close
 
 module procedure is_open
 
-! integer :: hid_type
-integer :: ierr
+integer :: obj_type, ier
 
-call h5iis_valid_f(self%file_id, is_open, ierr)
-if(ierr /= 0) error stop "ERROR:h5fortran:is_open:h5iis_valid: " // self%filename
+call H5Iis_valid_f(self%file_id, is_open, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:is_open:h5iis_valid: " // self%filename
 
-! call h5iget_type_f(self%file_id, hid_type, ierr)
-! if(ierr /= 0 .or. hid_type /= H5I_FILE_F) is_open = .false.
+call H5Iget_type_f(self%file_id, obj_type, ier)
+if(ier /= 0 .or. obj_type /= H5I_FILE_F) is_open = .false.
 
 end procedure is_open
 
@@ -295,17 +290,17 @@ character(:), allocatable :: dset_name
 dset_name = id2name(dset_id)
 
 !> check that all necessary filters to access dataset are available on the system.
-call h5dget_create_plist_f(dset_id, dcpl, ierr)
+call H5Dget_create_plist_f(dset_id, dcpl, ierr)
 if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5dget_create_plist: " // dset_name
 
-call h5pall_filters_avail_f(dcpl, filters_OK, ierr)
+call H5Pall_filters_avail_f(dcpl, filters_OK, ierr)
 if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5pall_filters_avail: " // dset_name
 if (.not. filters_OK) then
   error stop "h5fortran: filter(s) missing necessary for dataset " // dset_name // " in parallel with MPI. This is " // &
     "typically caused by missing DEFLATE compression with HDF5-MPI."
 endif
 
-call h5pclose_f(dcpl, ierr)
+call H5Pclose_f(dcpl, ierr)
 if(ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5pclose: " // dset_name
 
 istride = 1
@@ -357,32 +352,26 @@ end procedure mpi_hyperslab
 
 module procedure hdf_rank_check
 
-integer(HSIZE_T) :: ddims(1)
-integer(SIZE_T) :: type_size
-integer :: ierr, drank, type_class
+integer(HSIZE_T) :: N
+integer :: ierr, drank
 
-if(present(vector_scalar)) vector_scalar = .false.
+if(present(is_scalar)) is_scalar = .false.
 
-if (.not.self%exist(dname)) error stop 'ERROR:h5fortran:rank_check: ' // dname // ' does not exist in ' // self%filename
-
-!> check for matching rank, else bad reads can occur--doesn't always crash without this check
-call h5ltget_dataset_ndims_f(self%file_id, dname, drank, ierr)
-if (ierr/=0) error stop 'ERROR:h5fortran:rank_check:get_dataset_ndims: ' // dname // ' in ' // self%filename
+call H5Sget_simple_extent_ndims_f(file_space_id, drank, ierr)
+if (ierr/=0) error stop 'ERROR:h5fortran:rank_check:H5Sget_simple_extent_ndims: ' // obj_name // ' in ' // self%filename
 
 if (drank == mrank) return
 
-if (present(vector_scalar) .and. drank == 1 .and. mrank == 0) then
-  !! check if vector of length 1
-  call h5ltget_dataset_info_f(self%file_id, dname, dims=ddims, &
-    type_class=type_class, type_size=type_size, errcode=ierr)
-  if (ierr/=0) error stop 'ERROR:h5fortran:rank_check:get_dataset_info ' // dname // ' in ' // self%filename
-  if (ddims(1) == 1) then
-    vector_scalar = .true.
-    return
-  endif
+if (present(is_scalar)) then
+  !! check if single element
+  call H5Sget_simple_extent_npoints_f(file_space_id, N, ierr)
+  if (ierr /= 0) error stop 'ERROR:h5fortran:rank_check:H5Sget_simple_extent_npoints: ' // obj_name // ' in ' // self%filename
+
+  is_scalar = N == 1
+  if(is_scalar) return
 endif
 
-write(stderr,'(A,I0,A,I0)') 'ERROR:h5fortran:rank_check: rank mismatch ' // dname // ' = ',drank,'  variable rank =', mrank
+write(stderr,'(A,I0,A,I0)') 'ERROR:h5fortran:rank_check: rank mismatch ' // obj_name // ' = ', drank,'  variable rank =', mrank
 error stop
 
 end procedure hdf_rank_check
@@ -391,19 +380,12 @@ end procedure hdf_rank_check
 module procedure hdf_shape_check
 
 integer :: ierr
-integer(SIZE_T) :: type_size
-integer(HSIZE_T), dimension(size(dims)):: ddims
-integer :: type_class
+integer(HSIZE_T), dimension(size(dims)):: ddims, maxdims
 
-call hdf_rank_check(self, dname, size(dims))
+call hdf_rank_check(self, dname, file_space_id, size(dims))
 
-!> check for matching size, else bad reads can occur.
-
-call h5ltget_dataset_info_f(self%file_id, dname, dims=ddims, &
-    type_class=type_class, type_size=type_size, errcode=ierr)
-if (ierr/=0) error stop 'ERROR:h5fortran:shape_check: get_dataset_info ' // dname // ' read ' // self%filename
-
-if(present(dset_dims)) dset_dims = ddims
+call H5Sget_simple_extent_dims_f(file_space_id, ddims, maxdims, ierr)
+if (ierr /= size(dims)) error stop 'ERROR:h5fortran:rank_check:H5Sget_simple_extent_dims: ' // dname // ' in ' // self%filename
 
 if(self%use_mpi) return
 

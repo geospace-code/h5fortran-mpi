@@ -1,6 +1,6 @@
 submodule (h5fortran:hdf5_read) hdf5_reader
 
-use hdf5, only : h5dread_f, h5sclose_f
+use hdf5, only : H5Dread_f
 
 implicit none (type, external)
 
