@@ -6,7 +6,6 @@ LANGUAGES C Fortran
 
 enable_testing()
 
-find_package(MPI COMPONENTS C Fortran REQUIRED)
 find_package(h5fortran CONFIG REQUIRED)
 
 # --- example 1
