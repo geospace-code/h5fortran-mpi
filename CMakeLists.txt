@@ -26,15 +26,21 @@ endif()
 include(cmake/options.cmake)
 include(cmake/compilers.cmake)
 
+# if HDF5-MPI, ensure all the pieces are working together at configure time.
 if(hdf5_parallel)
   find_package(HDF5 COMPONENTS Fortran parallel)
 
-  if(HDF5_FOUND AND MPI_FOUND)
+  if(MPI_FOUND)
     include(cmake/check_mpi.cmake)
     check_mpi_version()
+    if(HDF5_FOUND)
+      include(cmake/hdf5_compression.cmake)
+      hdf5_compression_flag()
+    endif()
   endif()
 else()
   find_package(HDF5 COMPONENTS Fortran)
+  set(hdf5_parallel_compression .false.)
 endif()
 
 if(NOT HDF5_FOUND)
@@ -56,7 +62,9 @@ endif()
 
 # --- h5fortran library
 
-add_library(h5fortran)
+configure_file(src/hdf5_config.f90.in hdf5_config.f90 @ONLY)
+
+add_library(h5fortran ${CMAKE_CURRENT_BINARY_DIR}/hdf5_config.f90)
 target_compile_definitions(h5fortran PRIVATE
 $<$<BOOL:${hdf5_parallel}>:h5fortran_HAVE_PARALLEL>
 )
