@@ -11,7 +11,7 @@ call H5Dget_space_f(dset_id, file_space_id, ier)
 if(ier/=0) error stop 'ERROR:h5fortran:reader:H5Dget_space ' // dname // ' from ' // self%filename
 
 if(present(istart) .and. present(iend)) then
-  call mpi_hyperslab(dims, dset_dims, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend, stride=stride)
+  call hdf_get_slice(dims, dset_dims, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend, stride=stride)
 else
   call hdf_shape_check(self, dname, file_space_id, dims)
   mem_space_id = H5S_ALL_F

@@ -279,42 +279,55 @@ if (ierr/=0) is_hdf5 = .false.
 end procedure is_hdf5
 
 
-module procedure mpi_hyperslab
+subroutine check_filters(dset_name, dset_id)
+!! check that all necessary filters to access dataset are available on the system.
+
+character(*), intent(in) :: dset_name
+integer(HID_T), intent(in) :: dset_id
+
+integer(HID_T) :: pid
+integer :: ier
+logical :: ok
+
+call H5Dget_create_plist_f(dset_id, pid, ier)
+if (ier /= 0) error stop "ERROR:h5fortran:check_filters:H5Dget_create_plist: " // dset_name
+
+call H5Pall_filters_avail_f(pid, ok, ier)
+if (ier /= 0) error stop "ERROR:h5fortran:check_filters:H5Pall_filters_avail: " // dset_name
+
+if (.not. ok) then
+  error stop "ERROR:h5fortran: filter(s) missing necessary for dataset " // dset_name // " in parallel with MPI. This is " // &
+    "typically caused by missing DEFLATE compression with HDF5-MPI."
+endif
+
+call H5Pclose_f(pid, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:check_filters:H5Pclose: " // dset_name
+
+end subroutine check_filters
+
+
+module procedure hdf_get_slice
 
 integer(HSIZE_T), dimension(size(mem_dims)) :: c_mem_dims, i0, istride
-integer(HID_T) :: dcpl
-integer :: ierr
-logical :: filters_OK
+integer :: ier
 character(:), allocatable :: dset_name
 
 dset_name = id2name(dset_id)
 
-!> check that all necessary filters to access dataset are available on the system.
-call H5Dget_create_plist_f(dset_id, dcpl, ierr)
-if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5dget_create_plist: " // dset_name
-
-call H5Pall_filters_avail_f(dcpl, filters_OK, ierr)
-if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5pall_filters_avail: " // dset_name
-if (.not. filters_OK) then
-  error stop "h5fortran: filter(s) missing necessary for dataset " // dset_name // " in parallel with MPI. This is " // &
-    "typically caused by missing DEFLATE compression with HDF5-MPI."
-endif
-
-call H5Pclose_f(dcpl, ierr)
-if(ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5pclose: " // dset_name
+call check_filters(dset_name, dset_id)
 
 istride = 1
 if(present(stride)) istride = int(stride, HSIZE_T)
 
 if(filespace == H5S_ALL_F) then
   !> create dataspace
-  call h5screate_simple_f(rank=size(dset_dims), dims=dset_dims, space_id=filespace, hdferr=ierr)
-  if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5screate_simple:filespace " // dset_name
+  call h5screate_simple_f(rank=size(dset_dims), dims=dset_dims, space_id=filespace, hdferr=ier)
+  if (ier/=0) error stop "ERROR:h5fortran:hdf_get_slice:h5screate_simple:filespace " // dset_name
 endif
 
 !> Select hyperslab in the file.
-call h5dget_space_f(dset_id, filespace, ierr)
-if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5dget_space: " // dset_name
+call h5dget_space_f(dset_id, filespace, ier)
+if (ier/=0) error stop "ERROR:h5fortran:hdf_get_slice:h5dget_space: " // dset_name
 
 
 ! blk(1) = 1
@@ -325,12 +338,12 @@ i0 = istart - 1
 c_mem_dims = iend - i0
 
 if(any(c_mem_dims /= mem_dims)) then
-  write(stderr,*) "ERROR:h5fortran:mpi_hyperslab: memory size /= dataset size: check variable slice (index). " // &
+  write(stderr,*) "ERROR:h5fortran:hdf_get_slice: memory size /= dataset size: check variable slice (index). " // &
     " Dset_dims:", dset_dims, "C Mem_dims", c_mem_dims
-  error stop "ERROR:h5fortran:mpi_hyperslab"
+  error stop "ERROR:h5fortran:hdf_get_slice"
 endif
 
-! print *, 'TRACE:mpi_hyperslab: ' // dset_name //': istart', i0, 'C mem_dims: ', c_mem_dims, 'mem_dims', mem_dims
+! print *, 'TRACE:hdf_get_slice: ' // dset_name //': istart', i0, 'C mem_dims: ', c_mem_dims, 'mem_dims', mem_dims
 
 if(any(c_mem_dims < 1)) error stop "ERROR:h5fortran:hyperslab:non-positive hyperslab: " // dset_name
 
@@ -338,16 +351,16 @@ call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
 start=i0, &
 stride=istride, &
 count=c_mem_dims, &
-hdferr=ierr)
+hdferr=ier)
 ! block=blk  !< would this help performance?
 
-if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5sselect_hyperslab: " // dset_name
+if (ier/=0) error stop "ERROR:h5fortran:hdf_get_slice:h5sselect_hyperslab: " // dset_name
 
 !> create memory dataspace
-call h5screate_simple_f(rank=size(c_mem_dims), dims=c_mem_dims, space_id=memspace, hdferr=ierr)
-if (ierr/=0) error stop "ERROR:h5fortran:mpi_hyperslab:h5screate_simple:memspace " // dset_name
+call h5screate_simple_f(rank=size(c_mem_dims), dims=c_mem_dims, space_id=memspace, hdferr=ier)
+if (ier/=0) error stop "ERROR:h5fortran:hdf_get_slice:h5screate_simple:memspace " // dset_name
 
-end procedure mpi_hyperslab
+end procedure hdf_get_slice
 
 
 module procedure hdf_rank_check

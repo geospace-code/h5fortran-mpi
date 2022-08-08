@@ -38,7 +38,7 @@ istart=istart, iend=iend, stride=stride, chunk_size=chunk_size, compact=compact,
 dtype_id=dtype_id, charlen=charlen)
 
 if((self%use_mpi .and. present(dset_dims)) .or. (present(istart) .and. present(iend))) then
-  call mpi_hyperslab(mem_dims, dims_dset, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend, stride=stride)
+  call hdf_get_slice(mem_dims, dims_dset, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend, stride=stride)
 else
   mem_space_id = H5S_ALL_F
 endif

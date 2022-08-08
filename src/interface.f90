@@ -87,7 +87,7 @@ end type hdf5_file
 public :: has_parallel_compression
 public :: hdf5_file, is_hdf5
 public :: hdf_rank_check, hdf_shape_check, hdf5version, h5exist, hdf5_close
-public :: mpi_collective, mpi_hyperslab
+public :: mpi_collective, hdf_get_slice
 public :: h5write, h5read, h5write_attr, h5read_attr
 
 interface h5write
@@ -678,8 +678,8 @@ module logical function is_hdf5(filename)
 character(*), intent(in) :: filename
 end function
 
-module subroutine mpi_hyperslab(mem_dims, dset_dims, dset_id, filespace, memspace, istart, iend, stride)
-!! Each process defines dataset in memory and writes it to the hyperslab in the file.
+module subroutine hdf_get_slice(mem_dims, dset_dims, dset_id, filespace, memspace, istart, iend, stride)
+!! Each process defines dataset in memory for the hyperslab in the file.
 integer(HSIZE_T), dimension(:), intent(in) :: mem_dims, dset_dims
 integer(HID_T), intent(in) :: dset_id
 integer(HID_T), intent(inout) :: filespace
