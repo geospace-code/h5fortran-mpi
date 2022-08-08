@@ -14,7 +14,6 @@ on:
       - "**.cmake"
       - "**/CMakeLists.txt"
       - ".github/workflows/intel-oneapi.yml"
-      - "!cray.cmake"
 
 
 jobs:
@@ -52,8 +51,7 @@ jobs:
       run: cmake -S scripts -B scripts/build -DCMAKE_INSTALL_PREFIX=${{ runner.temp }}
 
     - name: Build/install HDF5
-      run: cmake --build scripts/build --parallel || cmake --build scripts/build -v
-# double build to workaround HDF5 build bug--can't find MPI_C first time.
+      run: cmake --build scripts/build --parallel
 
     - name: Configure h5fortran
       run: cmake --preset multi -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DCMAKE_PREFIX_PATH=${{ runner.temp }}

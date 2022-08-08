@@ -10,14 +10,9 @@ LANGUAGES C Fortran
 VERSION 2.0.2
 )
 
-enable_testing()
-
+include(CTest)
 if(NOT DEFINED ${PROJECT_NAME}_BUILD_TESTING)
-  if(DEFINED BUILD_TESTING)
-    set(${PROJECT_NAME}_BUILD_TESTING ${BUILD_TESTING})
-  else()
-    set(${PROJECT_NAME}_BUILD_TESTING true)
-  endif()
+  set(${PROJECT_NAME}_BUILD_TESTING ${BUILD_TESTING})
 endif()
 
 if(benchmark)
@@ -32,20 +27,34 @@ include(cmake/options.cmake)
 include(cmake/compilers.cmake)
 
 if(hdf5_parallel)
-  find_package(MPI COMPONENTS C Fortran REQUIRED)
+  find_package(HDF5 COMPONENTS Fortran parallel)
 
-  include(cmake/check_mpi.cmake)
-  check_mpi_version()
-
-  find_package(HDF5 COMPONENTS Fortran parallel REQUIRED)
-  if(HDF5_VERSION VERSION_LESS 1.10.2)
-    message(WARNING "HDF5 >= 1.10.2 is needed for HDF5-MPI")
+  if(HDF5_FOUND AND MPI_FOUND)
+    include(cmake/check_mpi.cmake)
+    check_mpi_version()
   endif()
 else()
-  find_package(HDF5 COMPONENTS Fortran REQUIRED)
+  find_package(HDF5 COMPONENTS Fortran)
 endif()
 
-# --- h5fortran object oriented API
+if(NOT HDF5_FOUND)
+  message(FATAL_ERROR "HDF5 not found or working on the system. First build HDF5 by:
+
+  cmake -S scripts -B scripts/build -DCMAKE_INSTALL_PREFIX=~/mylibs
+  cmake --build scripts/build
+
+  Then build h5fortran:
+
+  cmake -B build -DCMAKE_PREFIX_PATH=~/mylibs
+  cmake --build build
+  ")
+endif()
+
+if(HDF5_VERSION VERSION_LESS 1.10.2)
+  message(WARNING "HDF5 >= 1.10.2 is needed for HDF5-MPI")
+endif()
+
+# --- h5fortran library
 
 add_library(h5fortran)
 target_compile_definitions(h5fortran PRIVATE

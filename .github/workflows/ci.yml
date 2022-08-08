@@ -13,12 +13,11 @@ on:
       - "**/CMakeLists.txt"
       - "**.cmake"
       - ".github/workflows/ci.yml"
-      - "!cray.cmake"
 
 
 jobs:
 
-  linux:
+  linux_mac:
     timeout-minutes: 15
 
     strategy:
@@ -61,7 +60,8 @@ jobs:
 
     - uses: actions/checkout@v3
 
-    - run: cmake --preset multi -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
+    - name: Configure h5fortran
+      run: cmake --preset multi -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
 
     - name: Build Debug
       run: cmake --build --parallel --preset debug
@@ -72,6 +72,12 @@ jobs:
       run: cmake --build --parallel --preset release
     - name: Test Release
       run: ctest --preset release --output-junit test-release.xml
+
+    - name: Publish Unit Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        junit_files: build/test-*.xml
 
     - run: cmake --install build
 
@@ -84,7 +90,7 @@ jobs:
 
 
   linux-coverage:
-    needs: linux
+    needs: linux_mac
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -97,7 +103,7 @@ jobs:
     - name: install hdf5
       run: |
         sudo apt update
-        sudo apt install --no-install-recommends libhdf5-mpi-dev hdf5-tools mpi-default-dev mpi-default-bin
+        sudo apt install --no-install-recommends libhdf5-mpi-dev mpi-default-dev mpi-default-bin
 
     - name: install Gcovr
       run: pip install gcovr
@@ -108,7 +114,7 @@ jobs:
     - name: Code coverage
       run: cmake --build --parallel --preset run-coverage
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: coverage-report-html
         path: build-coverage/coverage/
