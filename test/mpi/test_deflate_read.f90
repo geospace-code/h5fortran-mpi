@@ -11,8 +11,7 @@ external :: mpi_finalize
 
 integer :: ierr, mpi_id, Nmpi
 character(*), parameter :: fn1='deflate1.h5'
-integer, parameter :: N(2) = [50, 1000], &
-MIN_COMP = 2  !< lots of CPUs, smaller arrays => poorer compression
+integer, parameter :: N(2) = [50, 1000]
 
 
 call mpi_init(ierr)
