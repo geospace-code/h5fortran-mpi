@@ -6,10 +6,9 @@ implicit none (type, external)
 
 interface
 
-module subroutine read_scalar_char(A, dset_id, file_space_id, mem_space_id, dims)
+module subroutine read_scalar_char(A, dset_id, file_space_id, dims)
 class(*), intent(inout) :: A
 integer(HID_T), intent(in) :: dset_id, file_space_id
-integer(HID_T), intent(inout) :: mem_space_id
 integer(HSIZE_T), intent(in) :: dims(:)
 end subroutine
 
@@ -67,7 +66,7 @@ elseif(dclass == H5T_INTEGER_F) then
     error stop 'ERROR:h5fortran:read: integer disk dataset ' // dname // ' needs integer memory variable'
   end select
 elseif(dclass == H5T_STRING_F) then
-  call read_scalar_char(A, dset_id, file_space_id, mem_space_id, dims)
+  call read_scalar_char(A, dset_id, file_space_id, dims)
 else
   error stop 'ERROR:h5fortran:reader: non-handled datatype--please reach out to developers.'
 end if

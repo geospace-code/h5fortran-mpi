@@ -11,7 +11,7 @@ contains
 
 module procedure read_scalar_char
 
-integer(HID_T) :: type_id
+integer(HID_T) :: type_id, mem_space_id
 integer :: ier, i, pad_type, L
 integer(SIZE_T) :: dsize
 logical :: vstatus
