@@ -678,15 +678,16 @@ module logical function is_hdf5(filename)
 character(*), intent(in) :: filename
 end function
 
-module subroutine hdf_get_slice(mem_dims, dset_dims, dset_id, filespace, memspace, istart, iend, stride)
+module subroutine hdf_get_slice(mem_dims, dset_id, filespace_id, memspace_id, istart, iend, stride, dset_dims)
 !! Each process defines dataset in memory for the hyperslab in the file.
-integer(HSIZE_T), dimension(:), intent(in) :: mem_dims, dset_dims
+integer(HSIZE_T), dimension(:), intent(in) :: mem_dims
 integer(HID_T), intent(in) :: dset_id
-integer(HID_T), intent(inout) :: filespace
-integer(HID_T), intent(out) :: memspace
+integer(HID_T), intent(in) :: filespace_id
+integer(HID_T), intent(out) :: memspace_id
 integer, dimension(:), intent(in) :: istart
 integer, dimension(size(istart)), intent(in) :: iend
 integer, dimension(size(istart)), intent(in), optional :: stride
+integer(HSIZE_T), dimension(:), intent(in), optional :: dset_dims
 end subroutine
 
 module subroutine hdf_rank_check(self, obj_name, file_space_id, mrank, is_scalar)
