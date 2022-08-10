@@ -6,6 +6,7 @@ target_include_directories(cpu_count PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 # --- Python h5py
 if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
 
+set(Python_FIND_REGISTRY LAST)
 find_package(Python COMPONENTS Interpreter)
 if(NOT DEFINED h5py_ok)
   execute_process(COMMAND ${Python_EXECUTABLE} -c "import h5py"

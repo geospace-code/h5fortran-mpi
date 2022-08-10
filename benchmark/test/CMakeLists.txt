@@ -139,21 +139,19 @@ foreach(comp_lvl 0 1)
 endforeach()
 
 if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
+  set(Python_FIND_REGISTRY LAST)
   find_package(Python COMPONENTS Interpreter)
-endif()
-if(NOT Python_FOUND)
-  set(PySkip 1 CACHE STRING "python not ready")
-endif()
 
-if(NOT DEFINED PySkip)
-  execute_process(COMMAND ${Python_EXECUTABLE} -c "import h5py,numpy,pandas,matplotlib"
-  TIMEOUT 10
-  RESULT_VARIABLE ret
-  )
-  if(ret EQUAL 0)
-    set(PySkip 0 CACHE STRING "Python ready")
-  else()
-    set(PySkip 1 CACHE STRING "python not ready")
+  if(NOT DEFINED PyOK)
+    execute_process(COMMAND ${Python_EXECUTABLE} -c "import h5py,numpy,pandas,matplotlib"
+    TIMEOUT 10
+    RESULT_VARIABLE ret
+    )
+    if(ret EQUAL 0)
+      set(PyOK true CACHE BOOL "Python ready")
+    else()
+      set(PyOK false CACHE BOOL "python not ready")
+    endif()
   endif()
 endif()
 
@@ -168,4 +166,4 @@ set_property(TEST Plotter PROPERTY FIXTURES_REQUIRED PyRun_fxt)
 
 set_property(TEST PythonRunner Plotter PROPERTY LABELS python)
 set_property(TEST PythonRunner Plotter PROPERTY TIMEOUT 60)
-set_property(TEST PythonRunner Plotter PROPERTY DISABLED ${PySkip})
+set_property(TEST PythonRunner Plotter PROPERTY DISABLED $<NOT:$<BOOL:${PyOK}>>)
