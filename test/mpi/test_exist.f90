@@ -3,7 +3,7 @@ program exist_tests
 
 use, intrinsic :: iso_fortran_env, only : stderr=>error_unit
 
-use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank
+use mpi, only : mpi_init, MPI_COMM_WORLD, mpi_comm_rank, mpi_barrier
 
 use h5fortran, only: hdf5_file, h5exist, is_hdf5, hdf5_close
 
@@ -45,9 +45,15 @@ integer :: i
 
 if(is_hdf5('apidfjpj-8j9ejfpq984jfp89q39SHf.h5')) error stop 'test_exist: non-existent file declared hdf5'
 
-open(newunit=i, file='not_hdf5.h5', action='write')
-write(i,*) 'I am not an HDF5 file.'
-close(i)
+if(mpi_id == 0) then
+  open(newunit=i, file='not_hdf5.h5', action='write')
+  write(i,*) 'I am not an HDF5 file.'
+  close(i)
+endif
+
+call mpi_barrier(MPI_COMM_WORLD, i)
+if(i /= 0) error stop "ERROR: test_is_hdf5: mpi_barrier"
+
 
 if(is_hdf5('not_hdf5.h5')) error stop 'text files are not hdf5'
 
