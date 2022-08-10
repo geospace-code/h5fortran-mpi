@@ -20,7 +20,7 @@ MIN_COMP = 2  !< lots of CPUs, smaller arrays => poorer compression
 integer :: ierr, mpi_id, Nmpi
 
 
-logical :: debug = .false.
+logical :: debug = .true.
 
 
 call mpi_init(ierr)
@@ -77,7 +77,9 @@ i1(2) = i0(2) + dx2 - 1
 if(debug) print '(a,i0,1x,2i5,2x,2i5)', "write_deflate partition: mpi_id, i0, i1 ", mpi_id, i0, i1
 
 call h5f%open(fn, action='w', comp_lvl=1, mpi=.true.)
+if(debug) print *, "TRACE: write_deflate: open file " // fn
 call h5f%write('/A', A, dset_dims=N, istart=i0, iend=i1, chunk_size=[5, 50])
+if(debug) print *, "TRACE: write_deflate: write data"
 call h5f%close()
 
 deallocate(A)
