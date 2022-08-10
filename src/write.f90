@@ -55,14 +55,10 @@ end procedure hdf_create_user
 
 module procedure hdf_create
 
-integer :: ier, drank
-integer(HID_T) :: dcpl
-integer(HSIZE_T), dimension(:), allocatable :: ddims, maxdims
-
+integer :: ier
 
 call H5Tcopy_f(dtype, dtype_id, ier)
 if(ier /= 0) error stop "h5fortran:create:H5Tcopy: " // dname // ' in ' // self%filename
-
 
 if(dtype == H5T_NATIVE_CHARACTER) then
   if(.not. present(charlen)) error stop "h5fortran:hdf_create: character type must specify charlen"
@@ -71,94 +67,127 @@ if(dtype == H5T_NATIVE_CHARACTER) then
   if(ier /= 0) error stop "h5fortran:h5tset_size:character: " // dname // " in " // self%filename
 endif
 
-
 if(self%exist(dname)) then
-  call H5Dopen_f(self%file_id, dname, dset_id, ier)
-  if (ier /= 0) error stop 'ERROR:h5fortran:create: could not open ' // dname // ' in ' // self%filename
-
-  call H5Dget_space_f(dset_id, filespace_id, ier)
-  if(ier /= 0) error stop 'ERROR:h5fortran:create could not get dataset ' // dname // ' in ' // self%filename
-
-
-  if (present(istart)) then
-    if(any(istart < 1)) error stop 'ERROR:h5fortran:create: istart must be >= 1'
-    if(any(iend <= istart)) error stop 'ERROR:h5fortran:create: iend must be > istart'
-
-    call H5Sget_simple_extent_ndims_f(filespace_id, drank, ier)
-    if(ier /= 0) error stop "ERROR:h5fortran:create: H5Sget_simple_extent_ndims: "  // dname // ' in ' // self%filename
-
-    allocate(ddims(drank), maxdims(drank))
-
-    call H5Sget_simple_extent_dims_f(filespace_id, ddims, maxdims, ier)
-    if (ier /= drank) error stop 'ERROR:h5fortran:create: H5Sget_simple_extent_dims: ' // dname // ' in ' // self%filename
-
-    if(any(iend > ddims)) error stop 'ERROR:h5fortran:create: iend > dset_dims'  // dname // ' in ' // self%filename
-  else
-    if (size(mem_dims) == 0) then
-      !! scalar
-      call hdf_rank_check(self, dname, filespace_id, size(mem_dims))
-    else
-      call hdf_shape_check(self, dname, filespace_id, mem_dims)
-    endif
-  endif
-
-  return
+  call dataset_open(self, dname, mem_dims, filespace_id, dset_id, istart, iend)
+else
+  call dataset_create(self, dname, mem_dims, dset_dims, filespace_id, dset_id, dtype_id, chunk_size, compact, fill_value)
 endif
 
-!> Only new datasets go past this point
+end procedure hdf_create
+
+
+subroutine dataset_open(self, dset_name, mem_dims, filespace_id, dset_id, istart, iend)
+
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dset_name
+INTEGER(HSIZE_T), DIMENSION(:), INTENT(IN) :: mem_dims
+INTEGER(HID_T), INTENT(OUT) :: filespace_id, dset_id
+INTEGER, OPTIONAL, DIMENSION(:), INTENT(IN) :: istart
+INTEGER, OPTIONAL, DIMENSION(:), INTENT(IN) :: iend
+
+integer :: ier, drank
+integer(HSIZE_T), dimension(:), allocatable :: ddims, maxdims
+
+call H5Dopen_f(self%file_id, dset_name, dset_id, ier)
+if (ier /= 0) error stop 'ERROR:h5fortran:create: could not open ' // dset_name // ' in ' // self%filename
+
+call H5Dget_space_f(dset_id, filespace_id, ier)
+if(ier /= 0) error stop 'ERROR:h5fortran:create could not get dataset ' // dset_name // ' in ' // self%filename
+
+
+if (present(istart)) then
+  if(any(istart < 1)) error stop 'ERROR:h5fortran:create: istart must be >= 1'
+  if(any(iend <= istart)) error stop 'ERROR:h5fortran:create: iend must be > istart'
+
+  call H5Sget_simple_extent_ndims_f(filespace_id, drank, ier)
+  if(ier /= 0) error stop "ERROR:h5fortran:create: H5Sget_simple_extent_ndims: "  // dset_name // ' in ' // self%filename
+
+  allocate(ddims(drank), maxdims(drank))
+
+  call H5Sget_simple_extent_dims_f(filespace_id, ddims, maxdims, ier)
+  if (ier /= drank) error stop 'ERROR:h5fortran:create: H5Sget_simple_extent_dims: ' // dset_name // ' in ' // self%filename
+
+  if(any(iend > ddims)) error stop 'ERROR:h5fortran:create: iend > dset_dims'  // dset_name // ' in ' // self%filename
+else
+  if (size(mem_dims) == 0) then
+    !! scalar
+    call hdf_rank_check(self, dset_name, filespace_id, size(mem_dims))
+  else
+    call hdf_shape_check(self, dset_name, filespace_id, mem_dims)
+  endif
+endif
+
+end subroutine dataset_open
+
+
+subroutine dataset_create(self, dset_name, mem_dims, dset_dims, filespace_id, dset_id, dtype_id, &
+  chunk_size, compact, fill_value)
+
+class(hdf5_file), intent(in) :: self
+character(*), intent(in) :: dset_name
+INTEGER(HSIZE_T), DIMENSION(:), INTENT(IN) :: mem_dims, dset_dims
+INTEGER(HID_T), INTENT(OUT) :: filespace_id, dset_id
+integer(HID_T), intent(in) ::  dtype_id
+INTEGER, OPTIONAL, DIMENSION(:), INTENT(IN) :: chunk_size
+LOGICAL, OPTIONAL, INTENT(IN) :: compact
+CLASS(*), OPTIONAL, INTENT(IN) :: fill_value
+
+integer(HID_T) :: dcpl
+integer :: ier
+
 dcpl = H5P_DEFAULT_F
 
-call self%write_group(dname)
+call self%write_group(dset_name)
 !! write_group is needed for any dataset in a group e.g. /hi/there/var
 
 !> compression
 if(size(mem_dims) >= 2) then
-  if(self%debug) print *, 'h5fortran:TRACE:create: deflate: ' // dname
-  call set_deflate(self, mem_dims, dcpl, chunk_size)
+if(self%debug) print *, 'h5fortran:TRACE:create: deflate: ' // dset_name
+call set_deflate(self, mem_dims, dcpl, chunk_size)
 endif
 
-if(present(compact)) call set_compact(dcpl, dset_dims, compact, dname)
+if(present(compact)) call set_compact(dcpl, dset_dims, compact, dset_name)
 
 !> create dataset dataspace
 if(size(dset_dims) == 0) then
-  call h5screate_f(H5S_SCALAR_F, filespace_id, ier)
+call h5screate_f(H5S_SCALAR_F, filespace_id, ier)
 else
-  call h5screate_simple_f(size(dset_dims), dset_dims, filespace_id, ier)
+call h5screate_simple_f(size(dset_dims), dset_dims, filespace_id, ier)
 endif
-if (ier /= 0) error stop "ERROR:h5fortran:hdf_create:h5screate:filespace " // dname // " in " // self%filename
+if (ier /= 0) error stop "ERROR:h5fortran:hdf_create:h5screate:filespace " // dset_name // " in " // self%filename
 
 !> fill value
 if(present(fill_value)) then
-  if(dcpl == H5P_DEFAULT_F) then
-    call h5pcreate_f(H5P_DATASET_CREATE_F, dcpl, ier)
-    if (ier /= 0) error stop "ERROR:h5fortran:set_fill:h5pcreate: " // self%filename
-  endif
+if(dcpl == H5P_DEFAULT_F) then
+  call h5pcreate_f(H5P_DATASET_CREATE_F, dcpl, ier)
+  if (ier /= 0) error stop "ERROR:h5fortran:set_fill:h5pcreate: " // self%filename
+endif
 
-  select type (fill_value)
-  !! dtype_id MUST equal the fill_value type or "transfer()" like bit pattern unexpected data will result
-  type is (real(real32))
-    call h5pset_fill_value_f(dcpl, H5T_NATIVE_REAL, fill_value, ier)
-  type is (real(real64))
-    call h5pset_fill_value_f(dcpl, H5T_NATIVE_DOUBLE, fill_value, ier)
-  type is (integer(int32))
-    call h5pset_fill_value_f(dcpl, H5T_NATIVE_INTEGER, fill_value, ier)
-  !! int64 is NOT available for h5pset_fill_value_f
-  type is (character(*))
-    call h5pset_fill_value_f(dcpl, dtype_id, fill_value, ier)
-  class default
-    error stop "ERROR:h5fortran:create: unknown fill value type"
-  end select
+select type (fill_value)
+!! dtype_id MUST equal the fill_value type or "transfer()" like bit pattern unexpected data will result
+type is (real(real32))
+  call h5pset_fill_value_f(dcpl, H5T_NATIVE_REAL, fill_value, ier)
+type is (real(real64))
+  call h5pset_fill_value_f(dcpl, H5T_NATIVE_DOUBLE, fill_value, ier)
+type is (integer(int32))
+  call h5pset_fill_value_f(dcpl, H5T_NATIVE_INTEGER, fill_value, ier)
+!! int64 is NOT available for h5pset_fill_value_f
+type is (character(*))
+  call h5pset_fill_value_f(dcpl, dtype_id, fill_value, ier)
+class default
+  error stop "ERROR:h5fortran:create: unknown fill value type"
+end select
 endif
 
 !> create dataset
-call h5dcreate_f(self%file_id, dname, type_id=dtype_id, space_id=filespace_id, dset_id=dset_id, hdferr=ier, dcpl_id=dcpl)
-if (ier /= 0) error stop "ERROR:h5fortran:hdf_create:h5dcreate: " // dname // " in " // self%filename
+call h5dcreate_f(self%file_id, dset_name, type_id=dtype_id, space_id=filespace_id, dset_id=dset_id, hdferr=ier, dcpl_id=dcpl)
+if (ier /= 0) error stop "ERROR:h5fortran:hdf_create:h5dcreate: " // dset_name // " in " // self%filename
 
 !> free resources
 call h5pclose_f(dcpl, ier)
-if (ier /= 0) error stop "ERROR:h5fortran:h5pclose: " // dname // ' in ' // self%filename
+if (ier /= 0) error stop "ERROR:h5fortran:h5pclose: " // dset_name // ' in ' // self%filename
 
-end procedure hdf_create
+end subroutine dataset_create
 
 
 subroutine set_compact(dcpl, dset_dims, compact, dset_name)
