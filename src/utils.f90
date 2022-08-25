@@ -1,10 +1,10 @@
 submodule (h5fortran) utils_smod
 
 use hdf5, only: h5get_libversion_f, &
-H5Dget_create_plist_f, H5Dget_space_f, &
 h5eset_auto_f, &
 h5iis_valid_f, h5iget_name_f, H5Iget_type_f, &
 h5open_f, h5close_f, &
+H5Dget_create_plist_f, &
 h5fopen_f, h5fcreate_f, h5fclose_f, h5fis_hdf5_f, h5fget_filesize_f, &
 h5fget_obj_count_f, h5fget_obj_ids_f, h5fget_name_f, &
 H5Pall_filters_avail_f, H5Pclose_f, &
@@ -13,7 +13,8 @@ H5Sget_simple_extent_ndims_f, H5Sget_simple_extent_dims_f, H5Sget_simple_extent_
 H5F_ACC_RDONLY_F, H5F_ACC_RDWR_F, H5F_ACC_TRUNC_F, &
 H5F_OBJ_FILE_F, H5F_OBJ_GROUP_F, H5F_OBJ_DATASET_F, H5F_OBJ_DATATYPE_F, H5F_OBJ_ALL_F, &
 H5D_CONTIGUOUS_F, H5D_CHUNKED_F, H5D_COMPACT_F, &
-H5I_FILE_F
+H5I_FILE_F, &
+H5S_SELECT_SET_F
 
 implicit none (type, external)
 
@@ -361,6 +362,7 @@ hdferr=ier)
 if (ier /= 0) error stop "ERROR:h5fortran:get_slice:h5sselect_hyperslab: " // dset_name
 
 !> create memory dataspace
+!! H5Dread needs this for non-scalar
 call h5screate_simple_f(rank=size(c_mem_dims), dims=c_mem_dims, space_id=memspace_id, hdferr=ier)
 if (ier /= 0) error stop "ERROR:h5fortran:get_slice:h5screate_simple:memspace " // dset_name
 

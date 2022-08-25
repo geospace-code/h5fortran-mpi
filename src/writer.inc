@@ -1,7 +1,6 @@
 integer(HID_T) :: file_space_id, mem_space_id, dset_id, xfer_id, dtype, dtype_id
 integer(HSIZE_T), dimension(rank(A)) :: mem_dims, dims_dset
 integer :: ier, charlen
-type(C_PTR) :: cA
 
 mem_dims = shape(A, HSIZE_T)
 
@@ -19,20 +18,15 @@ charlen = 0
 select type (A)
 type is (real(real32))
   dtype = H5T_NATIVE_REAL
-  cA = C_LOC(A)
 type is (real(real64))
   dtype = H5T_NATIVE_DOUBLE
-  cA = C_LOC(A)
 type is (integer(int32))
   dtype = H5T_NATIVE_INTEGER
-  cA = C_LOC(A)
 type is (integer(int64))
   dtype = H5T_STD_I64LE
-  cA = C_LOC(A)
 type is (character(*))
   dtype = H5T_NATIVE_CHARACTER
   charlen = len(A)  !< workaround for GCC 8.3.0 bug
-  cA = C_LOC(A)
 class default
   error stop "ERROR:h5fortran:writer:unknown variable type for " // dname
 end select
@@ -46,7 +40,8 @@ dtype_id=dtype_id, charlen=charlen)
 if((self%use_mpi .and. present(dset_dims)) .or. (present(istart) .and. present(iend))) then
   call hdf_get_slice(mem_dims, dset_id, file_space_id, mem_space_id, istart=istart, iend=iend, stride=stride, dset_dims=dims_dset)
 else
-  mem_space_id = H5S_ALL_F
+  call H5Dget_space_f(dset_id, mem_space_id, ier)
+  if(ier/=0) error stop "ERROR:h5fortran:writer:H5Dget_space " // dname
 endif
 
 if(self%use_mpi) then
@@ -60,8 +55,21 @@ endif
 
 xfer_id = mpi_collective(dname, self%use_mpi)
 
-call H5Dwrite_f(dset_id, dtype_id, cA, ier, mem_space_id=mem_space_id, file_space_id=file_space_id, xfer_prp=xfer_id)
-if (ier /= 0) error stop 'ERROR:h5fortran:write: could not write ' // dname // ' ' // self%filename
+select type (A)
+type is (real(real32))
+  call h5dwrite_f(dset_id, dtype, A, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+type is (real(real64))
+  call h5dwrite_f(dset_id, dtype, A, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+type is (integer(int32))
+  call h5dwrite_f(dset_id, dtype, A, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+type is (integer(int64))
+  call h5dwrite_f(dset_id, dtype, A, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+type is (character(*))
+  call h5dwrite_f(dset_id, dtype_id, A, dims_dset, ier, file_space_id=file_space_id, mem_space_id=mem_space_id, xfer_prp=xfer_id)
+class default
+  error stop "ERROR:h5fortran:writer: unknown variable type for " // dname
+end select
+if (ier /= 0) error stop 'ERROR:h5fortran:write:H5Dwrite: could not write ' // dname // ' ' // self%filename
 
 call H5Tclose_f(dtype_id, ier)
 if (ier /= 0) error stop 'ERROR:h5fortran:write:H5Tclose ' // dname // ' ' // self%filename
@@ -69,7 +77,7 @@ if (ier /= 0) error stop 'ERROR:h5fortran:write:H5Tclose ' // dname // ' ' // se
 call H5Dclose_f(dset_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:writer:H5Dclose: " // dname // " " // self%filename
 
-if(mem_space_id /= H5S_ALL_F) call h5sclose_f(mem_space_id, ier)
+call H5Sclose_f(mem_space_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:writer:H5Sclose memory: " // dname // " " // self%filename
 
 call H5Sclose_f(file_space_id, ier)
