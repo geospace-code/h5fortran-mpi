@@ -62,23 +62,23 @@ jobs:
       run: cmake --build scripts/build --parallel
 
     - name: Configure h5fortran
-      run: cmake -Bbuild -G "Ninja Multi-Config" -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DCMAKE_PREFIX_PATH=${{ runner.temp }}
+      run: cmake --preset multi -DCMAKE_INSTALL_PREFIX=${{ runner.temp }} -DCMAKE_PREFIX_PATH=${{ runner.temp }}
 
     - name: print config log
       if: ${{ failure() }}
       run: cat build/CMakeFiles/CMakeError.log
 
     - name: Release build
-      run: cmake --build build --config Release --parallel
+      run: cmake --build --preset release --parallel
 
     - name: Release unit test
-      run: ctest --test-dir build -C Release --output-junit test-release-oneapi.xml
+      run: ctest --preset release --output-junit test-release-oneapi.xml
 
     - name: debug build
-      run: cmake --build build --config Debug --parallel
+      run: cmake --build --preset debug --parallel
 
     - name: debug unit test
-      run: ctest --test-dir build -C Debug --output-junit test-debug-oneapi.xml
+      run: ctest --preset debug --output-junit test-debug-oneapi.xml
 
     - name: install package
       run: cmake --install build

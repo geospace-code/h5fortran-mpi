@@ -3,6 +3,12 @@
 
 "configurePresets": [
 {
+  "name": "multi",
+  "binaryDir": "${sourceDir}/build",
+  "displayName": "Ninja Multi-Config",
+  "generator": "Ninja Multi-Config"
+},
+{
   "name": "coverage",
   "binaryDir": "${sourceDir}/build-coverage",
   "displayName": "Code Coverage",
@@ -17,6 +23,22 @@
 }
 ],
 "buildPresets": [
+  {
+    "name": "release",
+    "configurePreset": "multi",
+    "configuration": "Release"
+  },
+  {
+    "name": "reldebug",
+    "configurePreset": "multi",
+    "configuration": "RelWithDebInfo",
+    "displayName": "Release with Debug Info"
+  },
+  {
+    "name": "debug",
+    "configurePreset": "multi",
+    "configuration": "Debug"
+  },
   {
     "name": "coverage",
     "configurePreset": "coverage"
@@ -41,6 +63,22 @@
     "stopOnFailure": false,
     "timeout": 10
   }
+},
+{
+  "name": "release", "inherits": "default",
+  "configurePreset": "multi",
+  "configuration": "Release"
+},
+{
+  "name": "reldebug", "inherits": "default",
+  "configurePreset": "multi",
+  "configuration": "RelWithDebInfo",
+  "displayName": "Release with Debug Info"
+},
+{
+  "name": "debug", "inherits": "default",
+  "configurePreset": "multi",
+  "configuration": "Debug"
 }
 ]
 }
