@@ -5,7 +5,6 @@ use, intrinsic :: iso_c_binding, only : c_ptr, c_loc
 use, intrinsic :: iso_fortran_env, only : real32, real64, int64, int32, stderr=>error_unit
 
 use hdf5, only : HID_T, SIZE_T, HSIZE_T, &
-H5S_SELECT_SET_F, &
 H5T_NATIVE_DOUBLE, H5T_NATIVE_REAL, H5T_NATIVE_INTEGER, H5T_NATIVE_CHARACTER, H5T_STD_I64LE, &
 H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F, &
 H5P_DEFAULT_F
@@ -111,7 +110,7 @@ procedure read_char0, read_char1, read_char2, read_char3, read_char4, read_char5
 end interface
 
 !! for submodules only
-public :: HSIZE_T, H5T_NATIVE_REAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_NATIVE_CHARACTER, H5T_STD_I64LE
+public :: HSIZE_T, HID_T, H5T_NATIVE_DOUBLE, H5T_NATIVE_REAL, H5T_NATIVE_INTEGER, H5T_NATIVE_CHARACTER, H5T_STD_I64LE
 public :: H5T_INTEGER_F, H5T_FLOAT_F, H5T_STRING_F
 !! HDF5 types for end users
 
