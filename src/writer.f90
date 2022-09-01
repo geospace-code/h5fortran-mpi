@@ -1,6 +1,6 @@
 submodule (h5fortran:write) writer
 
-use hdf5, only: h5dwrite_f, h5sselect_none_f
+use hdf5, only: h5dwrite_f, h5sselect_none_f, H5S_ALL_F
 
 implicit none (type, external)
 
