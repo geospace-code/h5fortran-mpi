@@ -77,7 +77,6 @@ set_property(TEST string_read_mpi PROPERTY DISABLED $<NOT:$<BOOL:${h5py_ok}>>)
 
 get_property(test_names DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY TESTS)
 
-set_property(TEST ${test_names} PROPERTY TIMEOUT 30)
 set_property(TEST ${test_names} PROPERTY WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_property(TEST ${test_names} PROPERTY RESOURCE_LOCK cpu_mpi)
 

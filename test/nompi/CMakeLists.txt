@@ -43,7 +43,6 @@ set_property(TEST deflate_props deflate_read PROPERTY REQUIRED_FILES ${CMAKE_CUR
 
 get_property(test_names DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY TESTS)
 
-set_property(TEST ${test_names} PROPERTY TIMEOUT 30)
 set_property(TEST ${test_names} PROPERTY WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 # --- Windows shared DLLs

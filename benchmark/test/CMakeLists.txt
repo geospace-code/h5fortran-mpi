@@ -144,7 +144,6 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
 
   if(NOT DEFINED PyOK)
     execute_process(COMMAND ${Python_EXECUTABLE} -c "import h5py,numpy,pandas,matplotlib"
-    TIMEOUT 10
     RESULT_VARIABLE ret
     )
     if(ret EQUAL 0)

@@ -1,3 +1,7 @@
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+  add_compile_options("$<$<COMPILE_LANGUAGE:Fortran>:-Wno-compare-reals;-Wno-maybe-uninitialized>")
+endif()
+
 add_library(cpu_count OBJECT cpu_count.cpp)
 target_compile_features(cpu_count PRIVATE cxx_std_11)
 target_compile_definitions(cpu_count PRIVATE $<$<BOOL:${MSVC}>:_CRT_SECURE_NO_WARNINGS>)
