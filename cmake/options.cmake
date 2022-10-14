@@ -4,6 +4,8 @@ message(STATUS "${PROJECT_NAME} ${PROJECT_VERSION}  CMake ${CMAKE_VERSION}")
 
 option(benchmark "Run benchmarks")
 option(coverage "Code coverage tests")
+option(tidy "Run clang-tidy on the code")
+
 option(hdf5_parallel "use HDF5-MPI layer" true)
 
 set(CMAKE_TLS_VERIFY true)

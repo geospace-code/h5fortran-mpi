@@ -690,7 +690,7 @@ module subroutine h5close(self, close_hdf5_interface)
 !! close_hdf5_interface is when you know you have exactly one HDF5 file in your
 !! application, if true it closes ALL files, even those invoked directly from HDF5.
 
-class(hdf5_file), intent(in) :: self
+class(hdf5_file), intent(inout) :: self
 logical, intent(in), optional :: close_hdf5_interface
 end subroutine
 
@@ -704,7 +704,7 @@ end function
 
 module subroutine destructor(self)
 !! Close file and handle if user forgets to do so
-type(hdf5_file), intent(in) :: self
+type(hdf5_file), intent(inout) :: self
 end subroutine
 
 module function hdf5version() result(v)

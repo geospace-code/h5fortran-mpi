@@ -37,7 +37,7 @@ end procedure id2name
 
 module procedure h5open
 
-character(:), allocatable :: laction
+character(2) :: laction
 integer :: ier
 integer(HID_T) :: fapl !< file access property list
 integer :: file_mode
@@ -181,11 +181,13 @@ if(Ngroup > 0 .or. Ndset > 0 .or. Ndtype > 0) error stop "ERROR:h5fortran:close:
 
 
 !> close hdf5 file
-call h5fclose_f(self%file_id, ierr)
+call H5Fclose_f(self%file_id, ierr)
 if (ierr /= 0) then
-  write(stderr,'(a,i0)') 'ERROR:h5fortran:h5fclose: HDF5 file close: ' // self%filename // ' mpi_id: ', self%mpi_id
+  write(stderr,'(a,i0)') 'ERROR:h5fortran:H5Fclose: HDF5 file close: ' // self%filename // ' mpi_id: ', self%mpi_id
   error stop
 endif
+
+deallocate(self%filename)
 
 if (present(close_hdf5_interface)) then
   if (close_hdf5_interface) then

@@ -11,7 +11,9 @@ module procedure h5write_scalar
 
 integer(HSIZE_T) :: dset_dims(0), mem_dims(0)
 integer(HID_T) :: file_space_id, dset_id, dtype_id, xfer_id, dtype
-integer :: ier, L
+integer :: ier, charlen
+
+charlen = 0
 
 select type (A)
 type is (real(real32))
@@ -24,14 +26,14 @@ type is (integer(int64))
   dtype = H5T_STD_I64LE
 type is (character(*))
   dtype = H5T_NATIVE_CHARACTER
-  L = len(A)  !< workaround for GCC 8.3.0 bug
+  charlen = len(A)  !< workaround for GCC 8.3.0 bug
 class default
   error stop "ERROR:h5fortran:write: unknown variable type for " // dname
 end select
 
 call hdf_create(self, dname, dtype, mem_dims=mem_dims, dset_dims=dset_dims, &
   filespace_id=file_space_id, dset_id=dset_id, compact=compact, dtype_id=dtype_id, &
-  charlen=L)
+  charlen=charlen)
 
 xfer_id = mpi_collective(dname, self%use_mpi)
 
@@ -58,13 +60,13 @@ type is (character(*))
 class default
   error stop "ERROR:h5fortran:write: unsupported type for " // dname
 end select
-if (ier /= 0) error stop 'ERROR:h5fortran:write: could not write ' // dname // ' to ' // self%filename
+if (ier /= 0) error stop 'ERROR:h5fortran:write:H5Dwrite ' // dname // ' to ' // self%filename
 
 call H5Dclose_f(dset_id, ier)
-if(ier /= 0) error stop "ERROR:h5fortran:writer: closing dataset: " // dname // " in " // self%filename
+if(ier /= 0) error stop "ERROR:h5fortran:writer:H5Dclose: " // dname // " " // self%filename
 
-call h5sclose_f(file_space_id, ier)
-if(ier /= 0) error stop "ERROR:h5fortran:writer closing file dataspace: " // dname // " in " // self%filename
+call H5Sclose_f(file_space_id, ier)
+if(ier /= 0) error stop "ERROR:h5fortran:writer:H5Sclose file: " // dname // " " // self%filename
 
 if(self%use_mpi) call h5pclose_f(xfer_id, ier)
 if(ier /= 0) error stop "ERROR:h5fortran:writer closing property: " // dname // " in " // self%filename
