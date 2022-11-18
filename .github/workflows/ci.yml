@@ -24,15 +24,14 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-22.04]
         shared: [true, false]
-        gcc: [8, 11]
+        gcc: [9, 11]
         mpi: [mpich, openmpi]
-        exclude:
+        include:
         - os: macos-latest
-          mpi: mpich
-        - os: macos-latest
-          gcc: 8
+          mpi: openmpi
+          gcc: 11
 
     runs-on: ${{ matrix.os }}
     env:
@@ -52,13 +51,11 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt update
-        sudo apt install --no-install-recommends gcc-${{ matrix.gcc }} gfortran-${{ matrix.gcc}} ninja-build libhdf5-${{ matrix.mpi }}-dev hdf5-tools lib${{ matrix.mpi }}-dev
+        sudo apt install --no-install-recommends ninja-build libhdf5-${{ matrix.mpi }}-dev hdf5-tools lib${{ matrix.mpi }}-dev
 
     - name: Install HDF5-${{ matrix.mpi }} (MacOS)
       if: runner.os == 'macOS'
-      run: |
-        brew install hdf5-mpi ninja ${{ matrix.mpi }}
-        brew reinstall gcc
+      run: brew install hdf5-mpi ninja ${{ matrix.mpi }}
 
     - uses: actions/checkout@v3
 
