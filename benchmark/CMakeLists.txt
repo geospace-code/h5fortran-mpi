@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11...3.24)
+cmake_minimum_required(VERSION 3.14...3.24)
 
 project(h5mpi-benchmark
 LANGUAGES C CXX Fortran
@@ -8,10 +8,7 @@ enable_testing()
 
 set_property(DIRECTORY PROPERTY LABELS benchmark)
 
-# --- auto-ignore build directory
-if(NOT EXISTS ${PROJECT_BINARY_DIR}/.gitignore)
-  file(WRITE ${PROJECT_BINARY_DIR}/.gitignore "*")
-endif()
+file(GENERATE OUTPUT .gitignore CONTENT "*")
 
 if(CMAKE_VERSION VERSION_LESS 3.21)
   get_property(not_top DIRECTORY PROPERTY PARENT_DIRECTORY)

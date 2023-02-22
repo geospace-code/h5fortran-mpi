@@ -64,7 +64,4 @@ add_feature_info(HDF5parallel hdf5_parallel "HDF5 MPI layer")
 
 feature_summary(WHAT ENABLED_FEATURES DISABLED_FEATURES)
 
-# --- auto-ignore build directory
-if(NOT EXISTS ${PROJECT_BINARY_DIR}/.gitignore)
-  file(WRITE ${PROJECT_BINARY_DIR}/.gitignore "*")
-endif()
+file(GENERATE OUTPUT .gitignore CONTENT "*")

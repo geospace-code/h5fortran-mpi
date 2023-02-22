@@ -11,10 +11,7 @@ cmake_path(SET CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../cmake/Modules)
 find_package(MPI COMPONENTS Fortran REQUIRED)
 find_package(HDF5 COMPONENTS parallel Fortran REQUIRED)
 
-# --- auto-ignore build directory
-if(NOT EXISTS ${PROJECT_BINARY_DIR}/.gitignore)
-  file(WRITE ${PROJECT_BINARY_DIR}/.gitignore "*")
-endif()
+file(GENERATE OUTPUT .gitignore CONTENT "*")
 
 add_executable(write_char write_char.f90)
 target_link_libraries(write_char PRIVATE HDF5::HDF5 MPI::MPI_Fortran)
