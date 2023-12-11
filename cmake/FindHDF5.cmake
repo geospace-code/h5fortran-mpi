@@ -60,8 +60,8 @@ Targets
 #]=======================================================================]
 
 include(CheckSymbolExists)
-include(CheckCSourceCompiles)
-include(CheckFortranSourceCompiles)
+include(CheckSourceCompiles)
+
 
 function(get_flags exec outvar)
 
@@ -146,13 +146,13 @@ endif()
 # get version
 # from CMake/Modules/FindHDF5.cmake
 file(STRINGS ${h5_conf} _def
-REGEX "^[ \t]*#[ \t]*define[ \t]+H5_VERSION[ \t]+"
+ REGEX "^[ \t]*#[ \t]*define[ \t]+H5_VERSION[ \t]+"
 )
 message(DEBUG "HDF5 version define: ${_def}")
 
 if("${_def}" MATCHES "H5_VERSION[ \t]+\"([0-9]+\\.[0-9]+\\.[0-9]+)")
   set(HDF5_VERSION "${CMAKE_MATCH_1}")
-  endif()
+endif()
 message(DEBUG "HDF5 version match 0, 1: ${CMAKE_MATCH_0}   ${CMAKE_MATCH_1}")
 
 # avoid picking up incompatible zlib over the desired zlib
@@ -501,7 +501,7 @@ if(HDF5_ROOT)
   NO_DEFAULT_PATH
   HINTS ${HDF5_ROOT}
   PATH_SUFFIXES ${hdf5_binsuf}
-   DOC "HDF5 Fortran compiler script"
+  DOC "HDF5 Fortran compiler script"
   )
 else()
   find_program(HDF5_Fortran_COMPILER_EXECUTABLE
@@ -695,7 +695,7 @@ else()
   ]=])
 endif(HDF5_parallel_FOUND)
 
-check_c_source_compiles("${src}" HDF5_C_links)
+check_source_compiles(C "${src}" HDF5_C_links)
 
 endfunction(check_c_links)
 
@@ -736,7 +736,7 @@ else()
   end program")
 endif()
 
-check_fortran_source_compiles(${src} HDF5_Fortran_links SRC_EXT f90)
+check_source_compiles(Fortran ${src} HDF5_Fortran_links)
 
 endfunction(check_fortran_links)
 
@@ -784,6 +784,7 @@ if(NOT HDF5_ROOT)
     set(HDF5_ROOT $ENV{HDF5_ROOT})
   endif()
 endif()
+
 
 # --- library suffixes
 
