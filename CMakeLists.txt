@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.19...3.28)
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+  message(FATAL_ERROR "please use out-of-source build
+  cmake -Bbuild")
+endif()
+
 get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(NOT is_multi_config AND NOT (CMAKE_BUILD_TYPE OR DEFINED ENV{CMAKE_BUILD_TYPE}))
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Release default")
@@ -7,7 +12,7 @@ endif()
 
 project(h5fortran
 LANGUAGES C Fortran
-VERSION 2.0.2
+VERSION 2.1.0
 )
 
 include(CTest)
@@ -43,21 +48,27 @@ if(hdf5_parallel)
   include(cmake/check_mpi.cmake)
   check_mpi_version()
 
-  find_package(HDF5 COMPONENTS Fortran parallel)
+  if(find_hdf5)
+    find_package(HDF5 COMPONENTS Fortran parallel)
+  endif()
 
   if(HDF5_FOUND)
+    if(HDF5_VERSION VERSION_LESS 1.10.2)
+      message(WARNING "HDF5 >= 1.10.2 is needed for HDF5-MPI")
+    endif()
     include(cmake/hdf5_compression.cmake)
     hdf5_compression_flag()
   else()
     include(cmake/hdf5.cmake)
   endif()
 else()
-  find_package(HDF5 COMPONENTS Fortran)
+  if(find_hdf5)
+    find_package(HDF5 COMPONENTS Fortran)
+  endif()
+  if(NOT HDF5_FOUND)
+    include(cmake/hdf5.cmake)
+  endif()
   set(hdf5_parallel_compression ".false.")
-endif()
-
-if(HDF5_VERSION VERSION_LESS 1.10.2)
-  message(WARNING "HDF5 >= 1.10.2 is needed for HDF5-MPI")
 endif()
 
 # --- h5fortran library

@@ -6,7 +6,6 @@ LANGUAGES C Fortran
 )
 
 option(hdf5_parallel "build HDF5 parallel MPI" on)
-option(zlib_legacy "use legacy zlib 1.x")
 
 # --- system checks
 file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX})
