@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11...3.25)
+cmake_minimum_required(VERSION 3.14...3.28)
 
 get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(NOT is_multi_config AND NOT (CMAKE_BUILD_TYPE OR DEFINED ENV{CMAKE_BUILD_TYPE}))
@@ -23,7 +23,18 @@ if(${PROJECT_NAME}_BUILD_TESTING)
   enable_language(CXX)
 endif()
 
-include(cmake/options.cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+# --- avoid Anaconda libraries
+if(DEFINED ENV{CONDA_PREFIX})
+  list(APPEND CMAKE_IGNORE_PREFIX_PATH $ENV{CONDA_PREFIX})
+  list(APPEND CMAKE_IGNORE_PATH $ENV{CONDA_PREFIX}/bin)
+  # need CMAKE_IGNORE_PATH for CMake < 3.23
+  # and to ensure system env var PATH doesn't interfere
+  # despite CMAKE_IGNORE_PREFIX_PATH
+endif()
+
+include(options.cmake)
 include(cmake/compilers.cmake)
 
 # if HDF5-MPI, ensure all the pieces are working together at configure time.
@@ -83,14 +94,9 @@ set_property(TARGET h5fortran PROPERTY VERSION ${PROJECT_VERSION})
 add_library(h5fortran::h5fortran INTERFACE IMPORTED GLOBAL)
 target_link_libraries(h5fortran::h5fortran INTERFACE h5fortran)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/h5fortran.mod DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/h5fortran.mod TYPE INCLUDE)
 
-install(TARGETS h5fortran EXPORT ${PROJECT_NAME}-targets
-LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
+install(TARGETS h5fortran EXPORT ${PROJECT_NAME}-targets)
 
 add_subdirectory(src)
 
