@@ -27,7 +27,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         shared: [true, false]
-        gcc: [9, 11, 12, 13]
+        gcc: [9, 10, 11, 12, 13]
         mpi: [openmpi]
         include:
         - os: macos-latest
@@ -100,6 +100,8 @@ jobs:
       working-directory: example
 
   linux-coverage:
+    # GCOVR doesn't work with .inc files right now
+    if: false
     needs: core
     runs-on: ubuntu-latest
     timeout-minutes: 10
