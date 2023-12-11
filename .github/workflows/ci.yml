@@ -27,12 +27,15 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         shared: [true, false]
-        gcc: [9, 11, 12]
-        mpi: [mpich, openmpi]
+        gcc: [9, 11, 12, 13]
+        mpi: [openmpi]
         include:
         - os: macos-latest
           mpi: openmpi
-          gcc: 12
+          gcc: 13
+        - os: ubuntu-latest
+          mpi: mpich
+          gcc: 13
 
     runs-on: ${{ matrix.os }}
     env:
@@ -58,7 +61,7 @@ jobs:
       if: runner.os == 'macOS'
       run: brew install hdf5-mpi ninja ${{ matrix.mpi }}
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Configure
       run: >-
@@ -102,7 +105,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: actions/setup-python@v4
       with:
         python-version: '3.x'
