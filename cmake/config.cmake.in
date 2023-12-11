@@ -4,9 +4,9 @@ include(CMakeFindDependencyMacro)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
-find_dependency(HDF5 COMPONENTS Fortran parallel)
-
 find_dependency(MPI COMPONENTS C Fortran)
+
+find_dependency(HDF5 COMPONENTS Fortran parallel)
 
 set(@PROJECT_NAME@_HAVE_PARALLEL @hdf5_parallel@)
 

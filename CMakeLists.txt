@@ -39,32 +39,21 @@ include(cmake/compilers.cmake)
 
 # if HDF5-MPI, ensure all the pieces are working together at configure time.
 if(hdf5_parallel)
+  find_package(MPI COMPONENTS C Fortran REQUIRED)
+  include(cmake/check_mpi.cmake)
+  check_mpi_version()
+
   find_package(HDF5 COMPONENTS Fortran parallel)
 
-  if(MPI_FOUND)
-    include(cmake/check_mpi.cmake)
-    check_mpi_version()
-    if(HDF5_FOUND)
-      include(cmake/hdf5_compression.cmake)
-      hdf5_compression_flag()
-    endif()
+  if(HDF5_FOUND)
+    include(cmake/hdf5_compression.cmake)
+    hdf5_compression_flag()
+  else()
+    include(cmake/hdf5.cmake)
   endif()
 else()
   find_package(HDF5 COMPONENTS Fortran)
-  set(hdf5_parallel_compression .false.)
-endif()
-
-if(NOT HDF5_FOUND)
-  message(FATAL_ERROR "HDF5 not found or working on the system. First build HDF5 by:
-
-  cmake -S scripts -B scripts/build -DCMAKE_INSTALL_PREFIX=~/mylibs
-  cmake --build scripts/build
-
-  Then build h5fortran:
-
-  cmake -B build -DCMAKE_PREFIX_PATH=~/mylibs
-  cmake --build build
-  ")
+  set(hdf5_parallel_compression ".false.")
 endif()
 
 if(HDF5_VERSION VERSION_LESS 1.10.2)
@@ -115,3 +104,5 @@ DESTINATION cmake
 )
 
 include(cmake/install.cmake)
+
+file(GENERATE OUTPUT .gitignore CONTENT "*")
