@@ -94,6 +94,20 @@ set(${outvar} ${_v} PARENT_SCOPE)
 
 endfunction(pop_flag)
 
+macro(find_mpi)
+# non-cache set by FindMPI are not visible outside function -- need macro just to see within that function
+set(mpi_comp C)
+if(Fortran IN_LIST HDF5_FIND_COMPONENTS)
+  list(APPEND mpi_comp Fortran)
+endif()
+if(HDF5_FIND_REQUIRED)
+  find_package(MPI COMPONENTS ${mpi_comp} REQUIRED)
+else()
+  find_package(MPI COMPONENTS ${mpi_comp})
+endif()
+
+endmacro(find_mpi)
+
 
 macro(detect_config)
 
@@ -121,8 +135,8 @@ check_symbol_exists(H5_HAVE_PARALLEL ${h5_conf} HDF5_HAVE_PARALLEL)
 set(HDF5_parallel_FOUND false)
 
 if(HDF5_HAVE_PARALLEL)
+  find_mpi()
   if(NOT MPI_FOUND)
-    message(WARNING "user CMakeLists.txt must do find_package(MPI) if using parallel HDF5")
     return()
   endif()
 
@@ -638,10 +652,11 @@ endfunction(hdf5_c_wrap)
 
 function(check_c_links)
 
-list(INSERT CMAKE_REQUIRED_LIBRARIES 0 ${HDF5_C_LIBRARIES})
+list(PREPEND CMAKE_REQUIRED_LIBRARIES ${HDF5_C_LIBRARIES})
 set(CMAKE_REQUIRED_INCLUDES ${HDF5_C_INCLUDE_DIR})
 
 if(HDF5_parallel_FOUND)
+  find_mpi()
 
   list(APPEND CMAKE_REQUIRED_INCLUDES ${MPI_C_INCLUDE_DIRS})
   list(APPEND CMAKE_REQUIRED_LIBRARIES ${MPI_C_LIBRARIES})
@@ -687,10 +702,11 @@ endfunction(check_c_links)
 
 function(check_fortran_links)
 
-list(INSERT CMAKE_REQUIRED_LIBRARIES 0 ${HDF5_Fortran_LIBRARIES} ${HDF5_C_LIBRARIES})
+list(PREPEND CMAKE_REQUIRED_LIBRARIES ${HDF5_Fortran_LIBRARIES} ${HDF5_C_LIBRARIES})
 set(CMAKE_REQUIRED_INCLUDES ${HDF5_Fortran_INCLUDE_DIR} ${HDF5_C_INCLUDE_DIR})
 
 if(HDF5_parallel_FOUND)
+  find_mpi()
 
   list(APPEND CMAKE_REQUIRED_INCLUDES ${MPI_Fortran_INCLUDE_DIRS})
   list(APPEND CMAKE_REQUIRED_LIBRARIES ${MPI_Fortran_LIBRARIES})
@@ -726,6 +742,15 @@ endfunction(check_fortran_links)
 
 
 function(check_hdf5_link)
+
+# HDF5 bug #3663 for HDF5 1.14.2, 1.14.3, ...?
+# https://github.com/HDFGroup/hdf5/issues/3663
+if(WIN32 AND CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
+if(HDF5_VERSION MATCHES "1.14.[2-3]")
+  message(VERBOSE "FindHDF5: applying workaround for HDF5 bug #3663 with Intel oneAPI on Windows")
+  list(APPEND CMAKE_REQUIRED_LIBRARIES shlwapi)
+endif()
+endif()
 
 if(NOT HDF5_C_FOUND)
   return()
@@ -774,10 +799,10 @@ endif()
 
 set(hdf5_lsuf lib hdf5/lib)  # need explicit "lib" for self-built HDF5
 if(NOT HDF5_ROOT)
-  list(INSERT hdf5_lsuf 0 hdf5/openmpi hdf5/mpich)  # Ubuntu
-  list(INSERT hdf5_lsuf 0 openmpi/lib mpich/lib)  # CentOS
+  list(PREPEND hdf5_lsuf hdf5/openmpi hdf5/mpich)  # Ubuntu
+  list(PREPEND hdf5_lsuf openmpi/lib mpich/lib)  # CentOS
   if(NOT parallel IN_LIST HDF5_FIND_COMPONENTS)
-    list(INSERT hdf5_lsuf 0 hdf5/serial)  # Ubuntu
+    list(PREPEND hdf5_lsuf hdf5/serial)  # Ubuntu
   endif()
 endif()
 
@@ -792,13 +817,13 @@ else()
 endif()
 
 # Ubuntu
-list(INSERT hdf5_isuf 0 hdf5/openmpi hdf5/mpich)
-list(INSERT hdf5_msuf 0 hdf5/openmpi hdf5/mpich)
+list(PREPEND hdf5_isuf hdf5/openmpi hdf5/mpich)
+list(PREPEND hdf5_msuf hdf5/openmpi hdf5/mpich)
 
 if(NOT parallel IN_LIST HDF5_FIND_COMPONENTS)
   # Ubuntu
-  list(INSERT hdf5_isuf 0 hdf5/serial)
-  list(INSERT hdf5_msuf 0 hdf5/serial)
+  list(PREPEND hdf5_isuf hdf5/serial)
+  list(PREPEND hdf5_msuf hdf5/serial)
 endif()
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64|AMD64)")
@@ -810,7 +835,7 @@ endif()
 if(NOT HDF5_ROOT AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   # CentOS paths
   if(parallel IN_LIST HDF5_FIND_COMPONENTS)
-    list(INSERT hdf5_msuf 0 gfortran/modules/openmpi gfortran/modules/mpich)
+    list(PREPEND hdf5_msuf gfortran/modules/openmpi gfortran/modules/mpich)
   else()
     list(APPEND hdf5_msuf gfortran/modules)
   endif()

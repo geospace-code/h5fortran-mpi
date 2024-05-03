@@ -22,12 +22,14 @@ if(hdf5_parallel)
     set(MPI_ROOT $ENV{MPI_ROOT})
   endif()
 
+  set(MPI_DETERMINE_LIBRARY_VERSION true)
+  find_package(MPI COMPONENTS C REQUIRED)
+  message(STATUS "MPI_C: ${MPI_C_LIBRARY_VERSION_STRING}")
+
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND MPI_ROOT)
     set(ld_path $ENV{LD_LIBRARY_PATH})
     cmake_path(CONVERT "${ld_path}" TO_CMAKE_PATH_LIST ld_path NORMALIZE)
     cmake_path(CONVERT "${MPI_ROOT}" TO_CMAKE_PATH_LIST MPI_ROOT NORMALIZE)
-
-    find_package(MPI COMPONENTS C REQUIRED)
 
     include(${PROJECT_SOURCE_DIR}/../cmake/check_mpi.cmake)
     check_mpi_version()
