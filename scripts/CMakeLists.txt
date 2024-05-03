@@ -1,5 +1,10 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.20...3.30)
 # https://github.com/HDFGroup/hdf5/blob/develop/CMakeLists.txt
+
+get_property(gen_multi GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(NOT gen_multi AND NOT (CMAKE_BUILD_TYPE OR DEFINED ENV{CMAKE_BUILD_TYPE}))
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "")
+endif()
 
 project(HDF5_build
 LANGUAGES C Fortran

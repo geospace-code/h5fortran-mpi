@@ -19,7 +19,7 @@ set(hdf5_cmake_args
 -DHDF5_BUILD_FORTRAN:BOOL=true
 -DHDF5_BUILD_CPP_LIB:BOOL=false
 -DHDF5_BUILD_EXAMPLES:BOOL=false
--DHDF5_BUILD_TOOLS:BOOL=$<NOT:$<BOOL:${hdf5_parallel}>>
+-DHDF5_BUILD_TOOLS:BOOL=$<BOOL:${hdf5_parallel}>
 -DHDF5_ENABLE_PARALLEL:BOOL=$<BOOL:${hdf5_parallel}>
 )
 # https://github.com/HDFGroup/hdf5/issues/818  for broken ph5diff in HDF5_BUILD_TOOLS
