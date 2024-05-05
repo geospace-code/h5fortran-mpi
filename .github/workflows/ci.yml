@@ -28,7 +28,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        shared: [true, false]
         gcc: [9, 10, 11, 12, 13]
         mpi: [openmpi]
         include:
@@ -38,10 +37,15 @@ jobs:
         - os: ubuntu-latest
           mpi: mpich
           gcc: 13
+        - os: ubuntu-latest
+          mpi: openmpi
+          gcc: 13
+          shared: true
 
     runs-on: ${{ matrix.os }}
     env:
       CC: gcc-${{ matrix.gcc }}
+      CXX: g++-${{ matrix.gcc }}
       FC: gfortran-${{ matrix.gcc }}
 
     steps:
