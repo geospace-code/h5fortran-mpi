@@ -22,11 +22,15 @@ if(${name} STREQUAL "string_read")
 endif()
 
 add_test(NAME ${tname} COMMAND ${cmd})
+set_property(TEST ${tname} PROPERTY DISABLED $<AND:$<BOOL:${use_runner}>,$<NOT:$<TARGET_EXISTS:test_runner>>>)
 
 endfunction(mpi_test)
 
 # --- test files
 
+if(APPLE AND "$ENV{GITHUB_ACTIONS}")
+  message(WARNING "Skipping MPI test_runner due to build quirk in GitHub Actions")
+else()
 add_executable(test_runner runner.f90
 ${PROJECT_SOURCE_DIR}/benchmark/partition.f90
 ${PROJECT_SOURCE_DIR}/benchmark/cli.f90
@@ -36,6 +40,7 @@ target_include_directories(test_runner PRIVATE ${PROJECT_SOURCE_DIR}/benchmark)
 # not linked as libraries in case benchmarks aren't built
 if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
   set_property(TARGET test_runner PROPERTY LINKER_LANGUAGE Fortran)
+endif()
 endif()
 
 
