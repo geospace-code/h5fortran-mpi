@@ -38,8 +38,6 @@ target_include_directories(runner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(runner PRIVATE partition cli)
 if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
   set_property(TARGET runner PROPERTY LINKER_LANGUAGE Fortran)
-else()
-  set_property(TARGET runner PROPERTY LINKER_LANGUAGE CXX)
 endif()
 
 set_property(TARGET cli kernel perf PROPERTY Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)

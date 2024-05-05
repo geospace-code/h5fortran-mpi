@@ -36,8 +36,6 @@ target_include_directories(test_runner PRIVATE ${PROJECT_SOURCE_DIR}/benchmark)
 # not linked as libraries in case benchmarks aren't built
 if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
   set_property(TARGET test_runner PROPERTY LINKER_LANGUAGE Fortran)
-else()
-  set_property(TARGET test_runner PROPERTY LINKER_LANGUAGE CXX)
 endif()
 
 
