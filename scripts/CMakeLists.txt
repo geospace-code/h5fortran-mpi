@@ -13,7 +13,13 @@ LANGUAGES C Fortran
 option(hdf5_parallel "build HDF5 parallel MPI" on)
 
 # --- system checks
+message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
 file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX})
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.29)
+  if(NOT IS_WRITABLE ${CMAKE_INSTALL_PREFIX})
+    message(STATUS "CMAKE_INSTALL_PREFIX is not writable, install will fail: ${CMAKE_INSTALL_PREFIX}")
+  endif()
+endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
