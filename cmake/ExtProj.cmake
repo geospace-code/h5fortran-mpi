@@ -4,10 +4,6 @@ include_guard()
 
 include(ExternalProject)
 
-if(CMAKE_VERSION VERSION_LESS 3.19)
-  message(FATAL_ERROR "CMake >= 3.19 required to use JSON")
-endif()
-
 file(READ ${CMAKE_CURRENT_LIST_DIR}/libraries.json json)
 
 

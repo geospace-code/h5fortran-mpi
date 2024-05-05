@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14...3.24)
+cmake_minimum_required(VERSION 3.21...3.30)
 
 project(h5mpi-benchmark
 LANGUAGES C CXX Fortran
@@ -10,14 +10,9 @@ set_property(DIRECTORY PROPERTY LABELS benchmark)
 
 file(GENERATE OUTPUT .gitignore CONTENT "*")
 
-if(CMAKE_VERSION VERSION_LESS 3.21)
-  get_property(not_top DIRECTORY PROPERTY PARENT_DIRECTORY)
-  if(NOT not_top)
-    set(PROJECT_IS_TOP_LEVEL true)
-  endif()
-endif()
-
 if(PROJECT_IS_TOP_LEVEL)
+  find_package(Python COMPONENTS Interpreter)
+
   find_package(h5fortran CONFIG REQUIRED)
 
   add_library(cpu_count OBJECT ${PROJECT_SOURCE_DIR}/../test/cpu_count.cpp)

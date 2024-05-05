@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19...3.28)
+cmake_minimum_required(VERSION 3.20...3.30)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
   message(FATAL_ERROR "please use out-of-source build
@@ -16,15 +16,12 @@ VERSION 2.1.0
 )
 
 include(CTest)
-if(NOT DEFINED ${PROJECT_NAME}_BUILD_TESTING)
-  set(${PROJECT_NAME}_BUILD_TESTING ${BUILD_TESTING})
-endif()
 
-if(benchmark)
-  set(${PROJECT_NAME}_BUILD_TESTING true)
-endif()
+include(options.cmake)
 
 if(${PROJECT_NAME}_BUILD_TESTING)
+  find_package(Python COMPONENTS Interpreter)
+
   enable_language(CXX)
 endif()
 
@@ -39,7 +36,6 @@ if(DEFINED ENV{CONDA_PREFIX})
   # despite CMAKE_IGNORE_PREFIX_PATH
 endif()
 
-include(options.cmake)
 include(cmake/compilers.cmake)
 
 # if HDF5-MPI, ensure all the pieces are working together at configure time.

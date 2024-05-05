@@ -2,9 +2,7 @@ set_property(DIRECTORY PROPERTY LABELS mpi)
 
 # --- helper functions
 
-function(mpi_test names use_runner)
-
-foreach(name IN LISTS names)
+function(mpi_test name use_runner)
 
 set(tname "${name}_mpi")
 
@@ -24,8 +22,6 @@ if(${name} STREQUAL "string_read")
 endif()
 
 add_test(NAME ${tname} COMMAND ${cmd})
-
-endforeach()
 
 endfunction(mpi_test)
 
@@ -52,33 +48,45 @@ fill groups layout shape
 string string_read write
 )
 
-mpi_test("${mpi_tests}" false)
+foreach(t IN LISTS mpi_tests)
+  mpi_test(${t} false)
+endforeach()
 
 set(runner_tests deflate_write deflate_props deflate_read)
 
-mpi_test("${runner_tests}" true)
+foreach(t IN LISTS runner_tests)
+  mpi_test(${t} true)
+endforeach()
 
 # --- test dependencies
 
 set_property(TEST write_mpi PROPERTY FIXTURES_SETUP test_files)
 
-set_property(TEST layout_mpi shape_mpi PROPERTY FIXTURES_REQUIRED test_files)
-set_property(TEST layout_mpi shape_mpi PROPERTY REQUIRED_FILES "${CMAKE_CURRENT_BINARY_DIR}/test_write.h5;${CMAKE_CURRENT_BINARY_DIR}/test_layout.h5")
+set_tests_properties(layout_mpi shape_mpi PROPERTIES
+FIXTURES_REQUIRED test_files
+REQUIRED_FILES "${CMAKE_CURRENT_BINARY_DIR}/test_write.h5;${CMAKE_CURRENT_BINARY_DIR}/test_layout.h5"
+)
 
 set_property(TEST deflate_write_mpi PROPERTY FIXTURES_SETUP deflate_files_mpi)
 
-set_property(TEST deflate_props_mpi deflate_read_mpi PROPERTY FIXTURES_REQUIRED deflate_files_mpi)
-set_property(TEST deflate_props_mpi deflate_read_mpi PROPERTY REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/deflate1.h5)
+set_tests_properties(deflate_props_mpi deflate_read_mpi PROPERTIES
+FIXTURES_REQUIRED deflate_files_mpi
+REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/deflate1.h5
+)
 
-set_property(TEST string_read_mpi PROPERTY FIXTURES_REQUIRED h5str)
-set_property(TEST string_read_mpi PROPERTY DISABLED $<NOT:$<BOOL:${h5py_ok}>>)
+set_tests_properties(string_read_mpi PROPERTIES
+FIXTURES_REQUIRED h5str
+DISABLED $<NOT:$<BOOL:${h5py_ok}>>
+)
 
 # --- test properties
 
 get_property(test_names DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY TESTS)
 
-set_property(TEST ${test_names} PROPERTY WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-set_property(TEST ${test_names} PROPERTY RESOURCE_LOCK cpu_mpi)
+set_tests_properties(${test_names} PROPERTIES
+WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+RESOURCE_LOCK cpu_mpi
+)
 
 # --- Windows shared DLLs
 if(WIN32 AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)

@@ -8,11 +8,7 @@ target_compile_definitions(cpu_count PRIVATE $<$<BOOL:${MSVC}>:_CRT_SECURE_NO_WA
 target_include_directories(cpu_count PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # --- Python h5py
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
-
-set(Python_FIND_REGISTRY LAST)
-find_package(Python COMPONENTS Interpreter)
-if(NOT DEFINED h5py_ok)
+if(Python_Interpreter_FOUND AND NOT DEFINED h5py_ok)
   execute_process(COMMAND ${Python_EXECUTABLE} -c "import h5py"
   RESULT_VARIABLE h5py_code
   ERROR_VARIABLE err
@@ -22,20 +18,20 @@ if(NOT DEFINED h5py_ok)
     set(h5py_ok true CACHE BOOL "h5py OK")
   else()
     set(h5py_ok false CACHE BOOL "h5py not OK")
-    message(VERBOSE "${err}")
+    message(VERBOSE "${Python_EXECUTABLE}: ${err}")
   endif()
-endif()
-
 endif()
 
 set(string_file ${CMAKE_CURRENT_BINARY_DIR}/test_string_py.h5)
 
 add_test(NAME PythonString
-COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_string.py ${string_file}
+COMMAND Python::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/test_string.py ${string_file}
 )
 
-set_property(TEST PythonString PROPERTY FIXTURES_SETUP h5str)
-set_property(TEST PythonString PROPERTY DISABLED $<NOT:$<BOOL:${h5py_ok}>>)
+set_tests_properties(PythonString PROPERTIES
+FIXTURES_SETUP h5str
+DISABLED $<NOT:$<BOOL:${h5py_ok}>>
+)
 
 # --- test subdirs
 

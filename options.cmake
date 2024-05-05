@@ -3,6 +3,12 @@ message(STATUS "${PROJECT_NAME} ${PROJECT_VERSION}  CMake ${CMAKE_VERSION}")
 option(find_hdf5 "search for HDF5 and Zlib" true)
 
 option(benchmark "Run benchmarks")
+
+option(${PROJECT_NAME}_BUILD_TESTING "Build tests" ${PROJECT_IS_TOP_LEVEL})
+if(benchmark)
+  set(${PROJECT_NAME}_BUILD_TESTING true)
+endif()
+
 option(coverage "Code coverage tests")
 option(tidy "Run clang-tidy on the code")
 

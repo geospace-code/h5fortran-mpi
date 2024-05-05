@@ -16,13 +16,9 @@ target_link_libraries(slab_serial_write PRIVATE cli perf test_utils kernel h5for
 add_executable(slab_serial_read slab_serial_read.f90)
 target_link_libraries(slab_serial_read PRIVATE cli perf h5fortran::h5fortran)
 
-if(CMAKE_VERSION VERSION_LESS 3.20)
-  get_filename_component(HDF5_LIBRARY_DIR ${HDF5_C_LIBRARY} DIRECTORY)
-  get_filename_component(HDF5_DIR ${HDF5_LIBRARY_DIR} DIRECTORY)
-else()
-  cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
-  cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
-endif()
+cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
+cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
+
 find_program(H5DIFF
 NAMES h5diff
 HINTS ${HDF5_ROOT} ${HDF5_DIR}
@@ -138,19 +134,14 @@ foreach(comp_lvl 0 1)
   set_property(TEST mpi-cleanup-comp${comp_lvl} PROPERTY TIMEOUT ${read_timeout})
 endforeach()
 
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
-  set(Python_FIND_REGISTRY LAST)
-  find_package(Python COMPONENTS Interpreter)
-
-  if(NOT DEFINED PyOK)
-    execute_process(COMMAND ${Python_EXECUTABLE} -c "import h5py,numpy,pandas,matplotlib"
-    RESULT_VARIABLE ret
-    )
-    if(ret EQUAL 0)
-      set(PyOK true CACHE BOOL "Python ready")
-    else()
-      set(PyOK false CACHE BOOL "python not ready")
-    endif()
+if(Python_Interpreter_FOUND AND NOT DEFINED PyOK)
+  execute_process(COMMAND ${Python_EXECUTABLE} -c "import h5py,numpy,pandas,matplotlib"
+  RESULT_VARIABLE ret
+  )
+  if(ret EQUAL 0)
+    set(PyOK true CACHE BOOL "Python ready")
+  else()
+    set(PyOK false CACHE BOOL "python not ready")
   endif()
 endif()
 

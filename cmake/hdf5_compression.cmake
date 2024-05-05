@@ -85,11 +85,8 @@ end program
 
 set(CMAKE_REQUIRED_LIBRARIES HDF5::HDF5 MPI::MPI_Fortran MPI::MPI_C)
 
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.14)
-  # need this if() for parser
-  include(CheckFortranSourceRuns)
-  check_fortran_source_runs(${src} hdf5_parallel_compression_run)
-endif()
+include(CheckSourceRuns)
+check_source_runs(Fortran ${src} hdf5_parallel_compression_run)
 
 if(hdf5_parallel_compression_run)
   message(CHECK_PASS "${CMAKE_MATCH_1}")
@@ -108,13 +105,8 @@ if(DEFINED CACHE{hdf5_parallel_compression})
   return()
 endif()
 
-if(CMAKE_VERSION VERSION_LESS 3.20)
-  get_filename_component(HDF5_LIBRARY_DIR ${HDF5_C_LIBRARY} DIRECTORY)
-  get_filename_component(HDF5_DIR ${HDF5_LIBRARY_DIR} DIRECTORY)
-else()
-  cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
-  cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
-endif()
+cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
+cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
 
 message(CHECK_START "Checking if HDF5 configured for parallel compression")
 
@@ -147,13 +139,7 @@ file(READ ${hdf5_settings_file} hdf5_settings)
 string(REGEX MATCH "Parallel Filtered Dataset Writes:[ ]*([a-zA-Z]+)" hdf5_parallel_compression_match ${hdf5_settings})
 
 if(${CMAKE_MATCH_1})
-
-  if(CMAKE_VERSION VERSION_LESS 3.14)
-    check_compression()
-  else()
-    set(hdf5_parallel_compression .true. CACHE STRING "HDF5-MPI configured for parallel compression (assumed due to CMake < 3.14)")
-  endif()
-
+  check_compression()
 else()
   message(CHECK_FAIL "NO")
   set(hdf5_parallel_compression .false. CACHE STRING "HDF5-MPI does not have parallel compression")
