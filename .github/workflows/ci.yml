@@ -5,6 +5,8 @@ env:
   CTEST_NO_TESTS_ACTION: error
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   CTEST_PARALLEL_LEVEL: 0
+  CMAKE_INSTALL_PREFIX: ~/libs
+  CMAKE_PREFIX_PATH: ~/libs
 
 on:
   push:
@@ -73,7 +75,6 @@ jobs:
       run: >-
         cmake
         --preset multi
-        --install-prefix ${{ runner.temp }}
         -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
 
     - name: Build Debug
@@ -94,7 +95,6 @@ jobs:
         cmake
         --preset default
         -GNinja
-        -DCMAKE_PREFIX_PATH:PATH=${{ runner.temp }}
       working-directory: example
 
     - name: example build
