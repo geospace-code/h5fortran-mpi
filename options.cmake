@@ -4,17 +4,15 @@ option(find_hdf5 "search for HDF5 and Zlib" true)
 
 option(benchmark "Run benchmarks")
 
-option(${PROJECT_NAME}_BUILD_TESTING "Build tests" ${PROJECT_IS_TOP_LEVEL})
+option(h5fortran_BUILD_TESTING "Build tests" ${h5fortran_IS_TOP_LEVEL})
 if(benchmark)
-  set(${PROJECT_NAME}_BUILD_TESTING true)
+  set(h5fortran_BUILD_TESTING true)
 endif()
 
 option(coverage "Code coverage tests")
 option(tidy "Run clang-tidy on the code")
 
 option(hdf5_parallel "use HDF5-MPI layer" true)
-
-option(CMAKE_TLS_VERIFY "Verify TLS certificates" true)
 
 include(GNUInstallDirs)
 
