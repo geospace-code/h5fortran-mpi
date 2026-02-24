@@ -40,9 +40,14 @@ include(cmake/compilers.cmake)
 
 # if HDF5-MPI, ensure all the pieces are working together at configure time.
 if(hdf5_parallel)
+
+  set(MPI_DETERMINE_LIBRARY_VERSION true)
+
   find_package(MPI COMPONENTS C Fortran REQUIRED)
   include(cmake/check_mpi.cmake)
   check_mpi_version()
+
+  message(STATUS "MPI: ${MPI_Fortran_LIBRARY_VERSION_STRING}")
 
   if(h5fortran_find)
     find_package(HDF5 COMPONENTS Fortran parallel)

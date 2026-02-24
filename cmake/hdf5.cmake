@@ -6,17 +6,16 @@ include(ExternalProject)
 include(FetchContent)
 
 if(NOT DEFINED hdf5_req)
-  if(LINUX)
-    set(hdf5_req 1.10)
-  elseif(CMAKE_VERSION VERSION_GREATER_EQUAL 3.26)
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.26)
     set(hdf5_req 2.0)
   else()
     set(hdf5_req 1.14)
   endif()
+  # HDF5 1.10 has runtime bugs
 endif()
 
-if(hdf5_parallel)
-  find_package(MPI REQUIRED COMPONENTS C)
+if(hdf5_parallel AND NOT MPI_Fortran_FOUND)
+  find_package(MPI REQUIRED COMPONENTS C Fortran)
 endif()
 
 # pass MPI hints to HDF5
@@ -84,18 +83,20 @@ set(hdf5_cmake_args
 -DCMAKE_BUILD_TYPE=Release
 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
 -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
+-DCMAKE_INTERPROCEDURAL_OPTIMIZATION:BOOL=OFF
 -DHDF5_BUILD_HL_LIB:BOOL=true
 -DHDF5_BUILD_FORTRAN:BOOL=true
 -DHDF5_BUILD_CPP_LIB:BOOL=false
 -DBUILD_TESTING:BOOL=false
 -DHDF5_BUILD_EXAMPLES:BOOL=false
--DHDF5_BUILD_TOOLS:BOOL=true
+-DHDF5_BUILD_TOOLS:BOOL=false
 -DHDF5_ENABLE_PARALLEL:BOOL=$<BOOL:${hdf5_parallel}>
 -DHDF5_BUILD_PARALLEL_TOOLS:BOOL=false
 -DHDF5_ENABLE_NONSTANDARD_FEATURE_FLOAT16:BOOL=OFF
 -DHDF5_USE_GNU_DIRS:BOOL=ON
 )
 
+# -DHDF5_BUILD_TOOLS:BOOL=false to save build time
 # -DHDF5_BUILD_PARALLEL_TOOLS:BOOL=false avoids error with HDF5 2.0 needing libMFU mpiFileUtils
 
 # -DHDF5_ENABLE_NONSTANDARD_FEATURE_FLOAT16:BOOL=OFF avoids error with GCC or Clang
@@ -103,6 +104,11 @@ set(hdf5_cmake_args
 #
 # -DHDF5_USE_GNU_DIRS:BOOL=ON  # new for 1.14
 # -DHDF5_ENABLE_ZLIB_SUPPORT:BOOL=ON switched from -DHDF5_ENABLE_Z_LIB_SUPPORT:BOOL=ON for HDF5 2.0
+
+if(MPI_Fortran_LIBRARY_VERSION_STRING MATCHES "MPICH")
+  list(APPEND hdf5_cmake_flags "-DCMAKE_C_FLAGS=$<$<COMPILE_LANG_AND_ID:C,AppleClang,Clang,GNU,IntelLLVM>:-fno-strict-aliasing>")
+  list(APPEND hdf5_cmake_flags "-DCMAKE_Fortran_FLAGS=$<$<COMPILE_LANG_AND_ID:Fortran,FlangLLVM,GNU>:-fno-strict-aliasing>")
+endif()
 
 if(MPI_ROOT)
   list(APPEND hdf5_cmake_args -DMPI_ROOT:PATH=${MPI_ROOT})
