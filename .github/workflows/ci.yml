@@ -34,26 +34,11 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-24.04]
-        gcc: [12, 13, 14]
-        mpi: [openmpi]
-        include:
-        - os: macos-latest
-          mpi: openmpi
-          gcc: 13
-        - os: ubuntu-24.04
-          mpi: mpich
-          gcc: 13
-        - os: ubuntu-24.04
-          mpi: openmpi
-          gcc: 13
-          shared: true
+        conf: [ { os: ubuntu-24.04, mpi: openmpi },
+                { os: ubuntu-24.04, mpi: mpich },
+                { os: macos-latest, mpi: openmpi } ]
 
-    runs-on: ${{ matrix.os }}
-    env:
-      CC: gcc-${{ matrix.gcc }}
-      CXX: g++-${{ matrix.gcc }}
-      FC: gfortran-${{ matrix.gcc }}
+    runs-on: ${{ matrix.conf.os }}
 
     steps:
 
@@ -64,27 +49,32 @@ jobs:
     - name: Python pkgs
       run: pip install numpy h5py
 
-    - name: install HDF5-${{ matrix.mpi }} (Linux)
+    - name: install MPI (Linux)
       if: runner.os == 'Linux'
       run: |
         sudo apt update
-        sudo apt install --no-install-recommends libhdf5-${{ matrix.mpi }}-dev hdf5-tools lib${{ matrix.mpi }}-dev
+        sudo apt install --no-install-recommends lib${{ matrix.conf.mpi }}-dev
 
-    - name: Install HDF5-${{ matrix.mpi }} (MacOS)
+    - name: Install HDF5-${{ matrix.conf.mpi }} and MPI (MacOS)
       if: runner.os == 'macOS'
-      run: brew install hdf5-mpi ${{ matrix.mpi }}
+      run: brew install hdf5-mpi ${{ matrix.conf.mpi }}
+
+    - name: GCC (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        echo "CC=gcc-15" >> $GITHUB_ENV
+        echo "FC=gfortran-15" >> $GITHUB_ENV
 
     - uses: actions/checkout@v6
 
     - name: Configure
-      run: >-
-        cmake --preset default
-        -DBUILD_SHARED_LIBS:BOOL=${{ matrix.shared }}
+      run: cmake -B build -Dhdf5_req="2.0"
 
-    - name: Build Debug
-      run: cmake --build --preset default
-    - name: Test Debug
-      run: ctest --preset default
+    - name: build
+      run: cmake --build build
+
+    - name: Test
+      run: ctest --test-dir build
 
     - name: install package
       run: cmake --install build
