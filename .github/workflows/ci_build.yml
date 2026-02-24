@@ -1,7 +1,6 @@
 name: build
 
 env:
-   CMAKE_BUILD_PARALLEL_LEVEL: 4
    CTEST_PARALLEL_LEVEL: 0
    CTEST_NO_TESTS_ACTION: error
    CMAKE_INSTALL_PREFIX: ~/libs
@@ -37,14 +36,8 @@ jobs:
       run: cmake --build build
       working-directory: scripts
 
-    - name: configure h5fortran
-      run: cmake --preset default
-
-    - name: build h5fortran
-      run: cmake --build --preset default
-
-    - name: test h5fortran
-      run: ctest --preset default
+    - name: build & test h5fortran
+      run: cmake --workflow default
 
     - name: install h5fortran
       run: cmake --install build
