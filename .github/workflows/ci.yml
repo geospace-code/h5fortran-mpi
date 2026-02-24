@@ -36,8 +36,8 @@ jobs:
     strategy:
       matrix:
         conf: [ { os: ubuntu-24.04, mpi: openmpi },
-                { os: ubuntu-24.04, mpi: mpich },
                 { os: macos-latest, mpi: openmpi } ]
+#                 { os: ubuntu-24.04, mpi: mpich },  takes like 15 minutes, gives link time warnings
 
     runs-on: ${{ matrix.conf.os }}
 

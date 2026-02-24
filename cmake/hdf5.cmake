@@ -105,10 +105,11 @@ set(hdf5_cmake_args
 # -DHDF5_USE_GNU_DIRS:BOOL=ON  # new for 1.14
 # -DHDF5_ENABLE_ZLIB_SUPPORT:BOOL=ON switched from -DHDF5_ENABLE_Z_LIB_SUPPORT:BOOL=ON for HDF5 2.0
 
-if(MPI_Fortran_LIBRARY_VERSION_STRING MATCHES "MPICH")
-  list(APPEND hdf5_cmake_flags "-DCMAKE_C_FLAGS=$<$<COMPILE_LANG_AND_ID:C,AppleClang,Clang,GNU,IntelLLVM>:-fno-strict-aliasing>")
-  list(APPEND hdf5_cmake_flags "-DCMAKE_Fortran_FLAGS=$<$<COMPILE_LANG_AND_ID:Fortran,FlangLLVM,GNU>:-fno-strict-aliasing>")
-endif()
+# didn't seem to help with MPICH for final executable link warnings
+# if(MPI_Fortran_LIBRARY_VERSION_STRING MATCHES "MPICH")
+#   list(APPEND hdf5_cmake_flags "-DCMAKE_C_FLAGS=$<$<COMPILE_LANG_AND_ID:C,AppleClang,Clang,GNU,IntelLLVM>:-fno-strict-aliasing>")
+#   list(APPEND hdf5_cmake_flags "-DCMAKE_Fortran_FLAGS=$<$<COMPILE_LANG_AND_ID:Fortran,FlangLLVM,GNU>:-fno-strict-aliasing>")
+# endif()
 
 if(MPI_ROOT)
   list(APPEND hdf5_cmake_args -DMPI_ROOT:PATH=${MPI_ROOT})
