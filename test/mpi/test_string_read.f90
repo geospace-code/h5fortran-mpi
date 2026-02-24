@@ -13,7 +13,7 @@ character(4), parameter :: smiley = "😀", wink = "😉"
 character(4) :: u1
 
 
-integer :: i, mpi_id, ierr
+integer :: mpi_id, ierr
 
 type(hdf5_file) :: h
 
@@ -23,8 +23,7 @@ if (ierr /= 0) error stop "mpi_init"
 call mpi_comm_rank(MPI_COMM_WORLD, mpi_id, ierr)
 if(ierr/=0) error stop "mpi_comm_rank"
 
-call get_command_argument(1, pyp, status=i)
-if (i/=0) error stop "specify file to read"
+pyp = "test_string_py.h5"
 
 call h%open(pyp, "r", mpi=.true.)
 

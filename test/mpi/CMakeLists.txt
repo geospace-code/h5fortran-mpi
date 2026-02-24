@@ -14,13 +14,12 @@ target_link_libraries(test_${tname} PRIVATE h5fortran::h5fortran)
 if(use_runner)
   add_test(NAME ${tname}
    COMMAND test_runner -exe $<TARGET_FILE:test_${tname}> -mpiexec ${MPIEXEC_EXECUTABLE} -lx 1000
+   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
    )
 else()
-  add_test(NAME ${tname} COMMAND test_${tname})
-endif()
-
-if(${name} STREQUAL "string_read")
-  list(APPEND cmd ${string_file})
+  add_test(NAME ${tname} COMMAND test_${tname}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  )
 endif()
 
 
@@ -86,6 +85,7 @@ REQUIRED_FILES ${CMAKE_CURRENT_BINARY_DIR}/deflate1.h5
 set_tests_properties(string_read_mpi PROPERTIES
 FIXTURES_REQUIRED h5str
 DISABLED $<NOT:$<BOOL:${h5py_ok}>>
+WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/..
 )
 
 # --- test properties
@@ -93,7 +93,6 @@ DISABLED $<NOT:$<BOOL:${h5py_ok}>>
 get_property(test_names DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY TESTS)
 
 set_tests_properties(${test_names} PROPERTIES
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 RESOURCE_LOCK cpu_mpi
 )
 

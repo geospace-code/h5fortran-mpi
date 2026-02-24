@@ -6,11 +6,14 @@ add_executable(test_${name} test_${name}.f90)
 target_link_libraries(test_${name} PRIVATE h5fortran::h5fortran)
 
 if(${name} STREQUAL "string_read")
-  add_test(NAME ${name} COMMAND test_${name} ${string_file})
+  add_test(NAME ${name} COMMAND test_${name} ${string_file}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/..)
 elseif(${name} STREQUAL "attributes_read")
-  add_test(NAME ${name} COMMAND test_${name} ${attr_file})
+  add_test(NAME ${name} COMMAND test_${name} ${attr_file}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 else()
-  add_test(NAME ${name} COMMAND test_${name})
+  add_test(NAME ${name} COMMAND test_${name}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
 endfunction(nompi_test)
@@ -45,8 +48,6 @@ DISABLED $<NOT:$<BOOL:${h5py_ok}>>
 # --- test properties
 
 get_property(test_names DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY TESTS)
-
-set_property(TEST ${test_names} PROPERTY WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 # --- Windows shared DLLs
 if(WIN32 AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
