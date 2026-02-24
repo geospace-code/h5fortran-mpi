@@ -1,5 +1,7 @@
 set_property(DIRECTORY PROPERTY LABELS mpi)
 
+include(${PROJECT_SOURCE_DIR}/cmake/mpi_launcher.cmake)
+
 # --- helper functions
 
 function(mpi_test name use_runner)
@@ -10,19 +12,23 @@ add_executable(test_${tname} test_${name}.f90)
 target_link_libraries(test_${tname} PRIVATE h5fortran::h5fortran)
 
 if(use_runner)
-  set(cmd test_runner -exe $<TARGET_FILE:test_${tname}> -mpiexec ${MPIEXEC_EXECUTABLE} -lx 1000)
+  add_test(NAME ${tname}
+   COMMAND test_runner -exe $<TARGET_FILE:test_${tname}> -mpiexec ${MPIEXEC_EXECUTABLE} -lx 1000
+   )
 else()
-  set(cmd ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} $<TARGET_FILE:test_${tname}>)
-  # these tests could also be -n 2 instead of max_numprocs.
-  # Just trying to keep aware of possible problems vs. MPI worker count.
+  add_test(NAME ${tname} COMMAND test_${tname})
 endif()
 
 if(${name} STREQUAL "string_read")
   list(APPEND cmd ${string_file})
 endif()
 
-add_test(NAME ${tname} COMMAND ${cmd})
+
 set_property(TEST ${tname} PROPERTY DISABLED $<AND:$<BOOL:${use_runner}>,$<NOT:$<TARGET_EXISTS:test_runner>>>)
+
+if(NOT use_runner)
+  test_mpi_launcher(test_${tname} ${tname} 2)
+endif()
 
 endfunction(mpi_test)
 
