@@ -182,16 +182,19 @@ if(hdf5_have_zlib)
     NAMES szip sz
     NAMES_PER_DIR
     HINTS ${SZIP_ROOT} ${ZLIB_ROOT}
+    PATH_SUFFIXES lib lib64
     DOC "SZIP API"
     )
 
     find_path(SZIP_INCLUDE_DIR
     NAMES szlib.h
     HINTS ${SZIP_ROOT} ${ZLIB_ROOT}
+    PATH_SUFFIXES include
     DOC "SZIP header"
     )
 
-    if(NOT SZIP_LIBRARY AND SZIP_INCLUDE_DIR)
+    if(NOT (SZIP_LIBRARY AND SZIP_INCLUDE_DIR))
+      message(VERBOSE "FindHDF5: SZIP not found, but HDF5 indicates it was built with SZIP. This may cause build errors.")
       return()
     endif()
 
@@ -303,6 +306,14 @@ if(HDF5_ROOT)
   HINTS ${HDF5_C_INCLUDE_DIR} ${HDF5_ROOT}
   DOC "HDF5 Fortran module path"
   )
+
+  find_path(HDF5_Fortran_HL_INCLUDE_DIR
+  NAMES h5lt.mod
+  NO_DEFAULT_PATH
+  HINTS ${HDF5_Fortran_INCLUDE_DIR}
+  DOC "HDF5 Fortran HL module path"
+  PATH_SUFFIXES ${hdf5_msuf_hl}
+  )
 else()
   if(HDF5_parallel_FOUND)
     # HDF5-MPI system library presents a unique challenge, as when non-MPI HDF5 is
@@ -312,19 +323,29 @@ else()
     # search in a for loop and do a link check.
     if(NOT HDF5_Fortran_INCLUDE_DIR)
       foreach(i IN LISTS HDF5_C_INCLUDE_DIR hdf5_inc_dirs)
+
         find_path(HDF5_Fortran_INCLUDE_DIR
         NAMES hdf5.mod
         NO_DEFAULT_PATH
         HINTS ${i}
         DOC "HDF5 Fortran module path"
         )
-        message(VERBOSE "FindHDF5: trying hdf5.mod in ${i} - got: ${HDF5_Fortran_INCLUDE_DIR}")
-        if(HDF5_Fortran_INCLUDE_DIR)
+
+        find_path(HDF5_Fortran_HL_INCLUDE_DIR
+        NAMES h5lt.mod
+        NO_DEFAULT_PATH
+        HINTS ${HDF5_Fortran_INCLUDE_DIR}
+        DOC "HDF5 Fortran HL module path"
+        PATH_SUFFIXES ${hdf5_msuf_hl}
+        )
+        message(VERBOSE "FindHDF5: trying hdf5.mod in ${i} - got: ${HDF5_Fortran_INCLUDE_DIR} ${HDF5_Fortran_HL_INCLUDE_DIR}")
+        if(HDF5_Fortran_INCLUDE_DIR AND HDF5_Fortran_HL_INCLUDE_DIR)
           check_fortran_links()
           if(HDF5_Fortran_links)
             break()
           else()
             unset(HDF5_Fortran_INCLUDE_DIR CACHE)
+            unset(HDF5_Fortran_HL_INCLUDE_DIR CACHE)
             unset(HDF5_Fortran_links CACHE)
           endif()
         endif()
@@ -340,6 +361,14 @@ else()
       PATH_SUFFIXES ${hdf5_msuf}
       DOC "HDF5 Fortran module path"
       )
+
+      find_path(HDF5_Fortran_HL_INCLUDE_DIR
+      NAMES h5lt.mod
+      NO_DEFAULT_PATH
+      HINTS ${HDF5_Fortran_INCLUDE_DIR}
+      DOC "HDF5 Fortran HL module path"
+      PATH_SUFFIXES ${hdf5_msuf_hl}
+      )
     endif()
   else()
     find_path(HDF5_Fortran_INCLUDE_DIR
@@ -348,6 +377,14 @@ else()
     PATHS ${hdf5_binpref}
     PATH_SUFFIXES ${hdf5_msuf}
     DOC "HDF5 Fortran module path"
+    )
+
+    find_path(HDF5_Fortran_HL_INCLUDE_DIR
+    NAMES h5lt.mod
+    NO_DEFAULT_PATH
+    HINTS ${HDF5_Fortran_INCLUDE_DIR}
+    DOC "HDF5 Fortran HL module path"
+    PATH_SUFFIXES ${hdf5_msuf_hl}
     )
   endif()
 endif()
@@ -715,7 +752,7 @@ endfunction(check_c_links)
 function(check_fortran_links)
 
 list(PREPEND CMAKE_REQUIRED_LIBRARIES ${HDF5_Fortran_LIBRARIES} ${HDF5_C_LIBRARIES})
-set(CMAKE_REQUIRED_INCLUDES ${HDF5_Fortran_INCLUDE_DIR} ${HDF5_C_INCLUDE_DIR})
+set(CMAKE_REQUIRED_INCLUDES ${HDF5_Fortran_INCLUDE_DIR} ${HDF5_Fortran_HL_INCLUDE_DIR} ${HDF5_C_INCLUDE_DIR})
 
 if(HDF5_parallel_FOUND)
   find_mpi()
@@ -823,9 +860,11 @@ endif()
 if(BUILD_SHARED_LIBS)
   set(hdf5_isuf shared include)
   set(hdf5_msuf shared include)
+  set(hdf5_msuf_hl mod/shared)
 else()
   set(hdf5_isuf static include)
   set(hdf5_msuf static include)
+  set(hdf5_msuf_hl mod/static)
 endif()
 
 # Ubuntu
@@ -901,7 +940,7 @@ HANDLE_COMPONENTS
 )
 
 if(HDF5_FOUND)
-  set(HDF5_INCLUDE_DIRS ${HDF5_Fortran_INCLUDE_DIR} ${HDF5_CXX_INCLUDE_DIR} ${HDF5_C_INCLUDE_DIR})
+  set(HDF5_INCLUDE_DIRS ${HDF5_Fortran_INCLUDE_DIR} ${HDF5_Fortran_HL_INCLUDE_DIR} ${HDF5_CXX_INCLUDE_DIR} ${HDF5_C_INCLUDE_DIR})
   set(HDF5_LIBRARIES ${HDF5_Fortran_LIBRARIES} ${HDF5_CXX_LIBRARIES} ${HDF5_C_LIBRARIES})
 
   if(NOT TARGET HDF5::HDF5)
@@ -909,21 +948,33 @@ if(HDF5_FOUND)
     set_property(TARGET HDF5::HDF5 PROPERTY INTERFACE_LINK_LIBRARIES "${HDF5_LIBRARIES}")
     set_property(TARGET HDF5::HDF5 PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${HDF5_INCLUDE_DIRS}")
 
-    target_include_directories(HDF5::HDF5 INTERFACE
-    $<$<BOOL:${hdf5_have_szip}>:${SZIP_INCLUDE_DIR}>
-    )
+    if(hdf5_have_szip)
+      if(IS_DIRECTORY "${SZIP_INCLUDE_DIR}")
+        target_include_directories(HDF5::HDF5 INTERFACE ${SZIP_INCLUDE_DIR})
+      else()
+        message(STATUS "FindHDF5: SZIP_INCLUDE_DIR ${SZIP_INCLUDE_DIR} is not a directory.")
+      endif()
+    endif()
+
+    target_link_libraries(HDF5::HDF5 INTERFACE $<$<BOOL:${hdf5_have_zlib}>:ZLIB::ZLIB>)
+
+    if(hdf5_have_szip)
+      if(EXISTS "${SZIP_LIBRARY}")
+        target_link_libraries(HDF5::HDF5 INTERFACE ${SZIP_LIBRARY})
+      else()
+        message(STATUS "FindHDF5: SZIP_LIBRARY ${SZIP_LIBRARY} is not a file.")
+      endif()
+    endif()
+
     target_link_libraries(HDF5::HDF5 INTERFACE
-    $<$<BOOL:${hdf5_have_zlib}>:ZLIB::ZLIB>
-    $<$<BOOL:${hdf5_have_szip}>:${SZIP_LIBRARY}>
     ${CMAKE_THREAD_LIBS_INIT}
     ${CMAKE_DL_LIBS}
     $<$<BOOL:${UNIX}>:m>
     )
-
   endif()
 endif(HDF5_FOUND)
 
 mark_as_advanced(HDF5_Fortran_LIBRARY HDF5_Fortran_HL_LIBRARY
 HDF5_C_LIBRARY HDF5_C_HL_LIBRARY
 HDF5_CXX_LIBRARY HDF5_CXX_HL_LIBRARY
-HDF5_C_INCLUDE_DIR HDF5_CXX_INCLUDE_DIR HDF5_Fortran_INCLUDE_DIR)
+HDF5_C_INCLUDE_DIR HDF5_CXX_INCLUDE_DIR HDF5_Fortran_INCLUDE_DIR HDF5_Fortran_HL_INCLUDE_DIR)

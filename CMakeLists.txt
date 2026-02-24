@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21...3.30)
+cmake_minimum_required(VERSION 3.21...4.2)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
   message(FATAL_ERROR "please use out-of-source build
@@ -28,7 +28,7 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # --- avoid Anaconda libraries
-if(DEFINED ENV{CONDA_PREFIX})
+if(DEFINED ENV{CONDA_PREFIX} AND h5fortran_IGNORE_CONDA_LIBRARIES)
   list(APPEND CMAKE_IGNORE_PREFIX_PATH $ENV{CONDA_PREFIX})
   list(APPEND CMAKE_IGNORE_PATH $ENV{CONDA_PREFIX}/bin)
   # need CMAKE_IGNORE_PATH for CMake < 3.23
@@ -44,7 +44,7 @@ if(hdf5_parallel)
   include(cmake/check_mpi.cmake)
   check_mpi_version()
 
-  if(find_hdf5)
+  if(h5fortran_find)
     find_package(HDF5 COMPONENTS Fortran parallel)
   endif()
 
@@ -58,13 +58,20 @@ if(hdf5_parallel)
     include(cmake/hdf5.cmake)
   endif()
 else()
-  if(find_hdf5)
+  if(h5fortran_find)
     find_package(HDF5 COMPONENTS Fortran)
   endif()
   if(NOT HDF5_FOUND)
     include(cmake/hdf5.cmake)
   endif()
   set(hdf5_parallel_compression ".false.")
+endif()
+
+if(WIN32 AND CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
+if(HDF5_VERSION MATCHES "(1\.14\.[2-6]|2\.0\.0)")
+  message(STATUS "HDF5: applying workaround for HDF5 bug #3663 with Intel oneAPI on Windows")
+  target_link_libraries(HDF5::HDF5 INTERFACE shlwapi)
+endif()
 endif()
 
 # --- h5fortran library
