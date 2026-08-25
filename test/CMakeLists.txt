@@ -33,6 +33,22 @@ FIXTURES_SETUP h5str
 DISABLED $<NOT:$<BOOL:${h5py_ok}>>
 )
 
+# --- shared library PATH
+if(WIN32)
+  set(_hdf5_test_env_mod
+  "PATH=path_list_append:${ZLIB_INCLUDE_DIRS}/../bin"
+  "PATH=path_list_append:${HDF5_INCLUDE_DIRS}/../bin"
+  "PATH=path_list_prepend:${CMAKE_INSTALL_FULL_BINDIR}"
+  "PATH=path_list_prepend:${CMAKE_PREFIX_PATH}/bin"
+  )
+
+  if(TARGET hdf5-${_hdf5_lib_type})
+    list(APPEND _hdf5_test_env_mod "PATH=path_list_prepend:$<TARGET_FILE_DIR:hdf5-${_hdf5_lib_type}>")
+  elseif(TARGET hdf5::hdf5)
+    list(APPEND _hdf5_test_env_mod "PATH=path_list_prepend:$<TARGET_FILE_DIR:hdf5::hdf5>")
+  endif()
+endif()
+
 # --- test subdirs
 
 add_subdirectory(nompi)
