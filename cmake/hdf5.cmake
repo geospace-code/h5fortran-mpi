@@ -6,12 +6,7 @@ include(ExternalProject)
 include(FetchContent)
 
 if(NOT DEFINED hdf5_req)
-  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.26)
-    set(hdf5_req 2.0)
-  else()
-    set(hdf5_req 1.14)
-  endif()
-  # HDF5 1.10 has runtime bugs
+  set(hdf5_req 2.2)
 endif()
 
 if(hdf5_parallel AND NOT MPI_Fortran_FOUND)

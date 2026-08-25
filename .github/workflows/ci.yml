@@ -2,10 +2,6 @@ name: ci
 
 env:
   HOMEBREW_NO_INSTALL_CLEANUP: 1
-  CTEST_NO_TESTS_ACTION: error
-  CTEST_PARALLEL_LEVEL: 0
-  CMAKE_INSTALL_PREFIX: ~/libs
-  CMAKE_PREFIX_PATH: ~/libs
   CMAKE_GENERATOR: Ninja
 
 on:
@@ -35,15 +31,16 @@ jobs:
 
     strategy:
       matrix:
-        conf: [ { os: ubuntu-24.04, mpi: openmpi },
-                { os: macos-latest, mpi: openmpi } ]
+        conf: [ { os: ubuntu-latest, mpi: openmpi },
+                { os: macos-latest, mpi: open-mpi } ]
 #                 { os: ubuntu-24.04, mpi: mpich },  takes like 15 minutes, gives link time warnings
 
     runs-on: ${{ matrix.conf.os }}
 
     steps:
 
-    - uses: actions/setup-python@v6
+    - &python
+      uses: actions/setup-python@v7
       with:
         python-version: '3.13'
 
@@ -66,60 +63,15 @@ jobs:
         echo "CC=gcc-15" >> $GITHUB_ENV
         echo "FC=gfortran-15" >> $GITHUB_ENV
 
-    - uses: actions/checkout@v6
+    - &checkout
+      uses: actions/checkout@v7
 
-    - name: Configure
-      run: cmake -B build -Dhdf5_req="2.0"
-
-    - name: build
-      run: cmake --build build
-
-    - name: Test
-      run: ctest --test-dir build
+    - name: build and test
+      run: cmake --workflow default
 
     - name: install package
       run: cmake --install build
 
-    - name: example config
-      run: cmake --preset default
+    - name: example build and test
+      run: cmake --workflow default
       working-directory: example
-
-    - name: example build
-      run: cmake --build --preset default
-      working-directory: example
-
-    - name: example test
-      run: ctest --preset default
-      working-directory: example
-
-  linux-coverage:
-    # GCOVR doesn't work with .inc files right now
-    if: false
-    needs: gcc-new
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-    - uses: actions/checkout@v6
-    - uses: actions/setup-python@v6
-      with:
-        python-version: '3.x'
-
-    - name: install hdf5
-      run: |
-        sudo apt update
-        sudo apt install --no-install-recommends libhdf5-mpi-dev mpi-default-dev mpi-default-bin
-
-    - name: install Gcovr
-      run: pip install gcovr
-
-    - run: cmake --preset coverage
-    - run: cmake --build --preset coverage
-
-    - name: Code coverage
-      run: cmake --build --preset run-coverage
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report-html
-        path: build-coverage/coverage/

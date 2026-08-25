@@ -4,19 +4,23 @@
 "configurePresets": [
 {
   "name": "default",
-  "binaryDir": "${sourceDir}/build",
+  "binaryDir": "build",
+  "installDir": "${fileDir}/build/local",
   "cacheVariables": {
-    "CMAKE_COMPILE_WARNING_AS_ERROR": true
+    "CMAKE_COMPILE_WARNING_AS_ERROR": false,
+    "CMAKE_BUILD_TYPE": "Release"
   }
 },
 {
-  "name": "multi", "inherits": "default",
-  "displayName": "Ninja Multi-Config",
-  "generator": "Ninja Multi-Config"
+  "name": "debug", "inherits": "default",
+  "binaryDir": "build",
+  "cacheVariables": {
+    "CMAKE_BUILD_TYPE": "Debug"
+  }
 },
 {
   "name": "coverage",
-  "binaryDir": "${sourceDir}/build-coverage",
+  "binaryDir": "build-coverage",
   "displayName": "Code Coverage",
   "description": "Build with code coverage enabled.",
   "cacheVariables": {
@@ -26,10 +30,7 @@
 }
 ],
 "buildPresets": [
-  {
-    "name": "default",
-    "configurePreset": "default"
-  },
+  { "name": "default", "configurePreset": "default", "configuration": "Release" },
   {
     "name": "explain",
     "configurePreset": "default",
@@ -45,22 +46,7 @@
     "configurePreset": "default",
     "nativeToolOptions": ["-d", "stats"]
   },
-  {
-    "name": "release",
-    "configurePreset": "multi",
-    "configuration": "Release"
-  },
-  {
-    "name": "reldebug",
-    "configurePreset": "multi",
-    "configuration": "RelWithDebInfo",
-    "displayName": "Release with Debug Info"
-  },
-  {
-    "name": "debug",
-    "configurePreset": "multi",
-    "configuration": "Debug"
-  },
+  { "name": "debug", "configurePreset": "debug", "configuration": "Debug" },
   {
     "name": "coverage",
     "configurePreset": "coverage"
@@ -75,6 +61,7 @@
 {
   "name": "default",
   "configurePreset": "default",
+  "configuration": "Release",
   "output": {
     "outputOnFailure": true,
     "verbosity": "verbose"
@@ -87,19 +74,8 @@
   }
 },
 {
-  "name": "release", "inherits": "default",
-  "configurePreset": "multi",
-  "configuration": "Release"
-},
-{
-  "name": "reldebug", "inherits": "default",
-  "configurePreset": "multi",
-  "configuration": "RelWithDebInfo",
-  "displayName": "Release with Debug Info"
-},
-{
   "name": "debug", "inherits": "default",
-  "configurePreset": "multi",
+  "configurePreset": "debug",
   "configuration": "Debug"
 }
 ],
@@ -126,7 +102,7 @@
     "steps": [
       {
         "type": "configure",
-        "name": "multi"
+        "name": "debug"
       },
       {
         "type": "build",
@@ -135,23 +111,6 @@
       {
         "type": "test",
         "name": "debug"
-      }
-    ]
-  },
-  {
-    "name": "release",
-    "steps": [
-      {
-        "type": "configure",
-        "name": "multi"
-      },
-      {
-        "type": "build",
-        "name": "release"
-      },
-      {
-        "type": "test",
-        "name": "release"
       }
     ]
   }

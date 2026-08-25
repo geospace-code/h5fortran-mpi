@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.21...4.2)
+cmake_minimum_required(VERSION 3.26...4.5)
+# 3.26 for building HDF5 if needed
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
   message(FATAL_ERROR "please use out-of-source build
@@ -15,7 +16,7 @@ LANGUAGES C Fortran
 VERSION 2.1.0
 )
 
-include(CTest)
+enable_testing()
 
 include(options.cmake)
 
