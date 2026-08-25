@@ -113,18 +113,16 @@ endif()
 if(NOT TARGET HDF5::HDF5)
 
   set(_hdf5_parcomps HL Fortran C)
-  # "C" as well so that link tests work and corner cases OK
   if(hdf5_parallel)
     list(APPEND _hdf5_parcomps parallel)
   endif()
-
-  if(h5fortran_hdf5_nobuild)
-    find_package(HDF5 REQUIRED COMPONENTS ${_hdf5_parcomps})
-  else()
-    FetchContent_Declare(HDF5 URL ${hdf5_url} FIND_PACKAGE_ARGS COMPONENTS ${_hdf5_parcomps})
-
-    FetchContent_MakeAvailable(HDF5)
-  endif()
+if(h5fortran_hdf5_nobuild)
+  find_package(HDF5 REQUIRED COMPONENTS ${_hdf5_parcomps})
+else()
+  FetchContent_Declare(HDF5 URL ${hdf5_url} FIND_PACKAGE_ARGS COMPONENTS ${_hdf5_parcomps})
+  # "C" as well so that link tests work and corner cases OK
+  FetchContent_MakeAvailable(HDF5)
+endif()
 
 endif()
 

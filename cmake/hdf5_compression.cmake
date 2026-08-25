@@ -105,9 +105,6 @@ if(DEFINED CACHE{hdf5_parallel_compression})
   return()
 endif()
 
-cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
-cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
-
 message(CHECK_START "Checking if HDF5 configured for parallel compression")
 
 if(HDF5_VERSION VERSION_LESS 1.10.2)
@@ -123,9 +120,20 @@ if(MPI_VERSION VERSION_LESS 3)
   return()
 endif()
 
+set(_hdf5_settings_hints)
+if(DEFINED HDF5_C_LIBRARY)
+  # system/installed HDF5 found via find_package(HDF5): HDF5_C_LIBRARY is the libhdf5 file itself
+  cmake_path(GET HDF5_C_LIBRARY PARENT_PATH HDF5_LIBRARY_DIR)
+  cmake_path(GET HDF5_LIBRARY_DIR PARENT_PATH HDF5_DIR)
+  list(APPEND _hdf5_settings_hints ${HDF5_LIBRARY_DIR} ${HDF5_DIR})
+elseif(DEFINED hdf5_BINARY_DIR)
+  # HDF5 built in-tree via FetchContent: settings file lives in the build tree, not yet installed
+  list(APPEND _hdf5_settings_hints ${hdf5_BINARY_DIR}/src)
+endif()
+
 find_file(hdf5_settings_file
 NAMES libhdf5_openmpi.settings libhdf5_mpich.settings libhdf5.settings
-HINTS ${HDF5_LIBRARY_DIR} ${HDF5_DIR}
+HINTS ${_hdf5_settings_hints}
 PATH_SUFFIXES lib hdf5/openmpi hdf5/mpich share/hdf5-mpi share/hdf5 share
 NO_DEFAULT_PATH
 REQUIRED
@@ -136,7 +144,7 @@ REQUIRED
 # Homebrew: share/hdf5-mpi share/hdf5
 
 file(READ ${hdf5_settings_file} hdf5_settings)
-string(REGEX MATCH "Parallel Filtered Dataset Writes:[ ]*([a-zA-Z]+)" hdf5_parallel_compression_match ${hdf5_settings})
+string(REGEX MATCH "Parallel Filtered Dataset Writes:[ ]*([a-zA-Z]+)" _ ${hdf5_settings})
 
 if(${CMAKE_MATCH_1})
   check_compression()

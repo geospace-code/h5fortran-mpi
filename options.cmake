@@ -14,11 +14,6 @@ option(hdf5_parallel "use HDF5-MPI layer" true)
 
 include(GNUInstallDirs)
 
-if(BUILD_SHARED_LIBS AND MSVC)
-  message(WARNING "Intel oneAPI has trouble with shared libs in general on Windows, try
-    cmake -DBUILD_SHARED_LIBS=off")
-endif()
-
 # Necessary for shared library with Visual Studio / Windows oneAPI
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS true)
 
