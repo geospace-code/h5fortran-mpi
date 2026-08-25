@@ -1,11 +1,7 @@
 name: build
 
 env:
-   CTEST_PARALLEL_LEVEL: 0
-   CTEST_NO_TESTS_ACTION: error
-   CMAKE_INSTALL_PREFIX: ~/libs
-   CMAKE_PREFIX_PATH: ~/libs
-   CMAKE_GENERATOR: Ninja
+  HOMEBREW_NO_INSTALL_CLEANUP: 1
 
 on:
   push:
@@ -28,13 +24,17 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      CMAKE_INSTALL_PREFIX: ~/libs
+      CMAKE_PREFIX_PATH: ~/libs
+
     steps:
 
     - name: prereqs (Linux)
       if: runner.os == 'Linux'
       run: sudo apt install --no-install-recommends libopenmpi-dev
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Configure HDF5-MPI
       run: cmake -B /tmp/build -S scripts
@@ -48,14 +48,6 @@ jobs:
     - name: install h5fortran
       run: cmake --install build
 
-    - name: configure examples
-      run: cmake --preset default
-      working-directory: example
-
-    - name: build Examples
-      run: cmake --build --preset default
-      working-directory: example
-
-    - name: Test Examples
-      run: ctest --preset default
+    - name: example build and test
+      run: cmake --workflow default
       working-directory: example

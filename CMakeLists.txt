@@ -40,6 +40,7 @@ endif()
 include(cmake/compilers.cmake)
 
 # if HDF5-MPI, ensure all the pieces are working together at configure time.
+set(hdf5_parallel_compression ".false.")
 if(hdf5_parallel)
 
   set(MPI_DETERMINE_LIBRARY_VERSION true)
@@ -50,27 +51,15 @@ if(hdf5_parallel)
 
   message(STATUS "MPI: ${MPI_Fortran_LIBRARY_VERSION_STRING}")
 
-  if(h5fortran_find)
-    find_package(HDF5 COMPONENTS Fortran parallel)
+  include(cmake/hdf5.cmake)
+
+  if(HDF5_VERSION VERSION_LESS 1.10.2)
+    message(WARNING "HDF5 >= 1.10.2 is needed for HDF5-MPI")
   endif()
 
-  if(HDF5_FOUND)
-    if(HDF5_VERSION VERSION_LESS 1.10.2)
-      message(WARNING "HDF5 >= 1.10.2 is needed for HDF5-MPI")
-    endif()
-    include(cmake/hdf5_compression.cmake)
-    hdf5_compression_flag()
-  else()
-    include(cmake/hdf5.cmake)
-  endif()
-else()
-  if(h5fortran_find)
-    find_package(HDF5 COMPONENTS Fortran)
-  endif()
-  if(NOT HDF5_FOUND)
-    include(cmake/hdf5.cmake)
-  endif()
-  set(hdf5_parallel_compression ".false.")
+  include(cmake/hdf5_compression.cmake)
+  hdf5_compression_flag()
+
 endif()
 
 if(WIN32 AND CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
