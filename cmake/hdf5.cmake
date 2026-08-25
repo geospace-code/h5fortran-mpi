@@ -108,7 +108,7 @@ set(hdf5_cmake_args
 # didn't seem to help with MPICH for final executable link warnings
 # if(MPI_Fortran_LIBRARY_VERSION_STRING MATCHES "MPICH")
 #   list(APPEND hdf5_cmake_flags "-DCMAKE_C_FLAGS=$<$<COMPILE_LANG_AND_ID:C,AppleClang,Clang,GNU,IntelLLVM>:-fno-strict-aliasing>")
-#   list(APPEND hdf5_cmake_flags "-DCMAKE_Fortran_FLAGS=$<$<COMPILE_LANG_AND_ID:Fortran,FlangLLVM,GNU>:-fno-strict-aliasing>")
+#   list(APPEND hdf5_cmake_flags "-DCMAKE_Fortran_FLAGS=$<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-fno-strict-aliasing>")
 # endif()
 
 if(MPI_ROOT)
