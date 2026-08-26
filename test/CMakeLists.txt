@@ -36,17 +36,21 @@ DISABLED $<NOT:$<BOOL:${h5py_ok}>>
 # --- shared library PATH
 if(WIN32)
   set(_hdf5_test_env_mod
-  "PATH=path_list_append:${ZLIB_INCLUDE_DIRS}/../bin"
-  "PATH=path_list_append:${HDF5_INCLUDE_DIRS}/../bin"
+  "PATH=path_list_append:${h5fortran_BINARY_DIR}"
   "PATH=path_list_prepend:${CMAKE_INSTALL_FULL_BINDIR}"
-  "PATH=path_list_prepend:${CMAKE_PREFIX_PATH}/bin"
   )
 
-  if(TARGET hdf5-${_hdf5_lib_type})
-    list(APPEND _hdf5_test_env_mod "PATH=path_list_prepend:$<TARGET_FILE_DIR:hdf5-${_hdf5_lib_type}>")
-  elseif(TARGET hdf5::hdf5)
-    list(APPEND _hdf5_test_env_mod "PATH=path_list_prepend:$<TARGET_FILE_DIR:hdf5::hdf5>")
-  endif()
+  foreach(p IN ITEMS ${ZLIB_INCLUDE_DIRS}/../bin ${HDF5_INCLUDE_DIRS}/../bin ${CMAKE_PREFIX_PATH}/bin)
+    if(IS_DIRECTORY ${p})
+      list(APPEND _hdf5_test_env_mod "PATH=path_list_append:${p}")
+    endif()
+  endforeach()
+
+  foreach(t IN ITEMS hdf5-${_hdf5_lib_type} hdf5_hl_fortran-${_hdf5_lib_type} hdf5_fortran-${_hdf5_lib_type} hdf5::hdf5)
+    if(TARGET ${t})
+      list(APPEND _hdf5_test_env_mod "PATH=path_list_prepend:$<TARGET_FILE_DIR:${t}>")
+    endif()
+  endforeach()
 endif()
 
 # --- test subdirs
