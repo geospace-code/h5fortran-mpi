@@ -12,24 +12,26 @@ add_executable(test_${tname} test_${name}.f90)
 target_link_libraries(test_${tname} PRIVATE h5fortran::h5fortran)
 
 if(use_runner)
-  add_test(NAME ${tname}
-   COMMAND test_runner -exe $<TARGET_FILE:test_${tname}> -mpiexec ${MPIEXEC_EXECUTABLE} -lx 1000
-   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-   )
+  add_test(NAME ${tname} COMMAND test_runner -exe $<TARGET_FILE:test_${tname}> -mpiexec ${MPIEXEC_EXECUTABLE} -lx 1000)
+elseif(name IN_LIST runner_tests)
+  add_test(NAME ${tname} COMMAND test_${tname} -lx 1000)
 else()
-  add_test(NAME ${tname} COMMAND test_${tname}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  )
+  add_test(NAME ${tname} COMMAND test_${tname})
 endif()
 
 
-set_property(TEST ${tname} PROPERTY DISABLED $<AND:$<BOOL:${use_runner}>,$<NOT:$<TARGET_EXISTS:test_runner>>>)
+set_tests_properties(${tname} PROPERTIES
+DISABLED $<AND:$<BOOL:${use_runner}>,$<NOT:$<TARGET_EXISTS:test_runner>>>
+WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
 
-if(NOT use_runner)
+if(name IN_LIST runner_tests)
+  test_mpi_launcher(test_${tname} ${tname} ${MPIEXEC_MAX_NUMPROCS})
+elseif(NOT use_runner)
   test_mpi_launcher(test_${tname} ${tname} 2)
 endif()
 
-endfunction(mpi_test)
+endfunction()
 
 # --- test files
 
@@ -43,7 +45,7 @@ $<TARGET_OBJECTS:cpu_count>
 )
 target_include_directories(test_runner PRIVATE ${PROJECT_SOURCE_DIR}/benchmark)
 # not linked as libraries in case benchmarks aren't built
-if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
   set_property(TARGET test_runner PROPERTY LINKER_LANGUAGE Fortran)
 endif()
 endif()
@@ -53,7 +55,8 @@ endif()
 
 set(mpi_tests array attributes cast destructor exist
 fill groups layout shape
-string string_read write
+string string_read
+write
 )
 
 foreach(t IN LISTS mpi_tests)
@@ -66,16 +69,19 @@ foreach(t IN LISTS runner_tests)
   mpi_test(${t} true)
 endforeach()
 
+add_executable(test_parallel_filter_write test_parallel_filter_write.f90)
+target_link_libraries(test_parallel_filter_write PRIVATE h5fortran::h5fortran)
+add_test(NAME parallel_filter_write_mpi COMMAND test_parallel_filter_write)
+
 # --- test dependencies
 
 set_property(TEST write_mpi PROPERTY FIXTURES_SETUP test_files)
+set_property(TEST deflate_write_mpi parallel_filter_write_mpi PROPERTY FIXTURES_SETUP deflate_files_mpi)
 
 set_tests_properties(layout_mpi shape_mpi PROPERTIES
 FIXTURES_REQUIRED test_files
 REQUIRED_FILES "${CMAKE_CURRENT_BINARY_DIR}/test_write.h5;${CMAKE_CURRENT_BINARY_DIR}/test_layout.h5"
 )
-
-set_property(TEST deflate_write_mpi PROPERTY FIXTURES_SETUP deflate_files_mpi)
 
 set_tests_properties(deflate_props_mpi deflate_read_mpi PROPERTIES
 FIXTURES_REQUIRED deflate_files_mpi

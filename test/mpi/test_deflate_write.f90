@@ -156,7 +156,7 @@ if(mpi_id == 0) then
   if (h5f%parallel_compression) then
     if(crat < MIN_COMP) error stop fn // ' low compression'
   else
-    print *, "test_deflate_whole: MPI commpression was disabled, so " // fn // " was not compressed."
+    print *, "test_deflate_whole: MPI compression was disabled, so " // fn // " was not compressed."
   endif
 
   call h5f%close()
@@ -217,7 +217,7 @@ if(mpi_id == 0) then
   if (h5f%parallel_compression) then
     if(crat < MIN_COMP) error stop fn // ' low compression'
   else
-    print *, "test_deflate_slice: MPI commpression was disabled, so " // fn // " was not compressed."
+    print *, "test_deflate_slice: MPI compression was disabled, so " // fn // " was not compressed."
   endif
 
   call h5f%close()

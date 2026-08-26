@@ -40,7 +40,7 @@ endif()
 include(cmake/compilers.cmake)
 
 # if HDF5-MPI, ensure all the pieces are working together at configure time.
-set(hdf5_parallel_compression ".false.")
+
 if(hdf5_parallel)
 
   set(MPI_DETERMINE_LIBRARY_VERSION true)
@@ -53,13 +53,13 @@ if(hdf5_parallel)
 
   include(cmake/hdf5.cmake)
 
-  if(HDF5_VERSION VERSION_LESS 1.10.2)
-    message(WARNING "HDF5 >= 1.10.2 is needed for HDF5-MPI")
-  endif()
-
   include(cmake/hdf5_compression.cmake)
-  hdf5_compression_flag()
 
+  if(NOT HDF5_HAVE_DEFLATE AND HDF5_HAVE_PARALLEL_FILTERED_WRITES)
+    message(WARNING "HDF5-MPI does not have parallel compression: HDF5 built without zlib")
+  endif()
+else()
+  set(hdf5_parallel_compression .false.)
 endif()
 
 if(WIN32 AND CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
@@ -73,20 +73,34 @@ endif()
 
 configure_file(src/hdf5_config.f90.in hdf5_config.f90 @ONLY)
 
-add_library(h5fortran ${CMAKE_CURRENT_BINARY_DIR}/hdf5_config.f90)
-target_compile_definitions(h5fortran PRIVATE
-$<$<BOOL:${hdf5_parallel}>:h5fortran_HAVE_PARALLEL>
+add_library(h5fortran ${CMAKE_CURRENT_BINARY_DIR}/hdf5_config.f90
+src/utils.f90
+src/read.f90 src/read_scalar.f90 src/read_ascii.f90 src/reader.f90
+src/write.f90 src/write_scalar.f90 src/writer.f90
+src/reader_lt.f90 src/writer_lt.f90
+src/interface.f90
+src/attr.f90
+src/attr_read.f90
+src/attr_write.f90
+src/mpi.F90
 )
+
+target_compile_definitions(h5fortran PRIVATE $<$<BOOL:${hdf5_parallel}>:h5fortran_HAVE_PARALLEL>)
+
 target_include_directories(h5fortran PUBLIC
 $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
 $<INSTALL_INTERFACE:include>
 )
+
 target_link_libraries(h5fortran PUBLIC HDF5::HDF5
 $<$<BOOL:${hdf5_parallel}>:MPI::MPI_Fortran>
 )
-set_property(TARGET h5fortran PROPERTY Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
-set_property(TARGET h5fortran PROPERTY LABELS core)
-set_property(TARGET h5fortran PROPERTY VERSION ${PROJECT_VERSION})
+
+set_target_properties(h5fortran PROPERTIES
+Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include
+LABELS core
+VERSION ${PROJECT_VERSION}
+)
 
 # GLOBAL needed for use by FetchContent
 add_library(h5fortran::h5fortran INTERFACE IMPORTED GLOBAL)
@@ -96,9 +110,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/h5fortran.mod TYPE INCLUDE)
 
 install(TARGETS h5fortran EXPORT ${PROJECT_NAME}-targets)
 
-add_subdirectory(src)
-
-if(${PROJECT_NAME}_BUILD_TESTING)
+if(h5fortran_BUILD_TESTING)
   add_subdirectory(test)
 endif()
 

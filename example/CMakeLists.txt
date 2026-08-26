@@ -1,8 +1,6 @@
-cmake_minimum_required(VERSION 3.11...3.25)
+cmake_minimum_required(VERSION 3.25)
 
-project(h5mpiExample
-LANGUAGES C Fortran
-)
+project(h5mpiExample LANGUAGES C Fortran)
 
 enable_testing()
 

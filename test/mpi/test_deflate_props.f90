@@ -54,7 +54,7 @@ if(mpi_id == 0) then
   if (has_parallel_compression()) then
     if(crat < MIN_COMP) error stop '2D low compression'
   else
-    print *, "test_read_deflate_props: MPI commpression was disabled, so " // fn // " was not compressed."
+    print *, "test_read_deflate_props: MPI compression was disabled, so " // fn // " was not compressed."
   endif
 endif
 
