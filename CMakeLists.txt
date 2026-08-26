@@ -85,6 +85,8 @@ src/attr_write.f90
 src/mpi.F90
 )
 
+target_compile_options(h5fortran PRIVATE ${h5fortran_fflags})
+
 target_compile_definitions(h5fortran PRIVATE $<$<BOOL:${hdf5_parallel}>:h5fortran_HAVE_PARALLEL>)
 
 target_include_directories(h5fortran PUBLIC

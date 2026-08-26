@@ -5,7 +5,7 @@
 FindMPI
 -------
 
-by Michael Hirsch www.scivision.dev
+by SciVision www.scivision.dev
 
 Finds compiler flags or library necessary to use MPI library (MPICH, OpenMPI, MS-MPI, Intel MPI, ...)
 
