@@ -7,23 +7,24 @@ endif()
 
 message(CHECK_START "Checking MPI API level")
 
-set(_mpi_src   [=[
-  #include <mpi.h>
-  #include <stdio.h>
+set(_mpi_src
+[=[
+#include <mpi.h>
+#include <stdio.h>
 
-  int main(void) {
-  int version, subversion;
+int main(void) {
+int version, subversion;
 
-  int ierr = MPI_Get_version(&version, &subversion);
-  if (ierr != 0) return 1;
-  printf("CMAKE_MPI_VERSION %d.%d\n", version, subversion);
+int ierr = MPI_Get_version(&version, &subversion);
+if (ierr != 0) return 1;
+printf("CMAKE_MPI_VERSION %d.%d\n", version, subversion);
 
-  return 0;
-  }
+return 0;
+}
 ]=])
 
 try_run(h5fortran_mpi_run_ok h5fortran_mpi_build_ok
-SOURCE_FROM_VAR get_mpi_version.c ${_mpi_src}
+SOURCE_FROM_VAR get_mpi_version.c _mpi_src
 CMAKE_FLAGS "-DINCLUDE_DIRECTORIES:PATH=${MPI_C_INCLUDE_DIRS}"
 # LINK_OPTIONS ${MPI_C_LINK_FLAGS}  # breaks CentOS GCC with -Wl,-rpath
 LINK_LIBRARIES ${MPI_C_LIBRARIES}
