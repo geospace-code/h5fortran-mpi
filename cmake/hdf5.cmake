@@ -53,9 +53,7 @@ if(h5fortran_hdf5_req STREQUAL "2.1patch" OR h5fortran_hdf5_req VERSION_GREATER_
     set(HDF5_ALLOW_EXTERNAL_SUPPORT TGZ)
   endif()
 
-  if(h5fortran_hdf5_zlib)
-    set(HDF5_ENABLE_ZLIB_SUPPORT ON)
-  endif()
+  set(HDF5_ENABLE_ZLIB_SUPPORT ON)
 
   # ZLIB_NG with HDF5 2.2 still has issues at build or link time with symbols.
   set(HDF5_USE_ZLIB_NG OFF)
